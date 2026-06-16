@@ -54,7 +54,8 @@ function computech_register_products_cpt(): void {
         'taxonomies' => array('product_category'),
         'rewrite' => array('slug' => 'product', 'with_front' => false),
         'has_archive' => false,
-        'show_in_rest' => true,
+        // Use the Classic editor for products so the full architecture metaboxes are visible and editable.
+        'show_in_rest' => false,
     ));
 
     register_taxonomy('product_category', 'products', array(
@@ -70,6 +71,49 @@ function computech_register_products_cpt(): void {
     ));
 }
 add_action('init', 'computech_register_products_cpt');
+
+/**
+ * Product edit screen
+ *
+ * The product architecture depends on traditional WordPress meta boxes.
+ * In the block editor these boxes are collapsed into a small "Meta Boxes" drawer,
+ * so product fields look missing. Force the products CPT to use the Classic edit
+ * screen where price, specs, warranty, buttons, gallery, visibility, featured
+ * products settings and primary category are all directly editable.
+ */
+function computech_use_classic_editor_for_products(bool $use_block_editor, string $post_type): bool {
+    if ($post_type === 'products') {
+        return false;
+    }
+    return $use_block_editor;
+}
+add_filter('use_block_editor_for_post_type', 'computech_use_classic_editor_for_products', 20, 2);
+
+function computech_product_admin_screen_css(): void {
+    $screen = function_exists('get_current_screen') ? get_current_screen() : null;
+    if (!$screen || $screen->post_type !== 'products') {
+        return;
+    }
+    ?>
+    <style>
+        body.post-type-products #poststuff #post-body.columns-2 #postbox-container-1{margin-left:0}
+        body.post-type-products #computech_product_architecture_data .inside{margin:0;padding:0}
+        body.post-type-products #computech_product_architecture_data{border-radius:12px;overflow:hidden}
+        body.post-type-products #computech_product_architecture_data .hndle,
+        body.post-type-products #computech_product_architecture_data h2{font-weight:800}
+        body.post-type-products .computech-arch-admin{padding:16px;background:#f6f7f7}
+        body.post-type-products .computech-arch-admin input[type="text"],
+        body.post-type-products .computech-arch-admin input[type="url"],
+        body.post-type-products .computech-arch-admin input[type="number"],
+        body.post-type-products .computech-arch-admin select,
+        body.post-type-products .computech-arch-admin textarea{max-width:100%}
+        body.post-type-products .taxonomy-product_category .categorychecklist{max-height:320px;overflow:auto}
+    </style>
+    <?php
+}
+add_action('admin_head-post.php', 'computech_product_admin_screen_css');
+add_action('admin_head-post-new.php', 'computech_product_admin_screen_css');
+
 
 function computech_page_definitions(): array {
     return array(
