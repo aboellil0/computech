@@ -266,7 +266,7 @@ function computech_clean_phone(string $phone): string {
 }
 
 function computech_header_initial_settings(): array {
-    // Empty schema only. Header content is created/edited from Dashboard > إعدادات كمبيوتك.
+    // Empty schema only. Main navigation is edited from Appearance > Menus.
     return computech_header_empty_settings();
 }
 
@@ -303,9 +303,6 @@ function computech_seed_header_database_options(): void {
     }
     if (get_option('computech_header_topbar_items', null) === null) {
         add_option('computech_header_topbar_items', array(), '', false);
-    }
-    if (get_option('computech_header_menu_items', null) === null) {
-        add_option('computech_header_menu_items', array(), '', false);
     }
     if (get_option('computech_header_logo_id', null) === null) {
         add_option('computech_header_logo_id', 0, '', false);
@@ -443,110 +440,120 @@ function computech_render_header_topbar(): void {
     echo '</div></div></div>';
 }
 
-function computech_default_header_menu_items(): array {
-    return array();
-}
+/**
+ * Main header navigation
+ *
+ * The main header menu is managed only from WordPress native menus:
+ * Appearance > Menus, then assign the menu to "القائمة الرئيسية".
+ * No header links are read from the custom Computech settings page anymore.
+ */
+function computech_get_primary_nav_menu_items(): array {
+    $locations = get_nav_menu_locations();
+    $menu_id = isset($locations['primary']) ? absint($locations['primary']) : 0;
+    if (!$menu_id) {
+        return array();
+    }
 
-function computech_get_header_menu_items(): array {
-    $items = get_option('computech_header_menu_items', array());
+    $items = wp_get_nav_menu_items($menu_id, array('post_status' => 'publish'));
     if (!is_array($items)) {
-        $items = array();
+        return array();
     }
-    $clean = array();
-    foreach ($items as $item) {
-        if (!is_array($item)) {
-            continue;
-        }
-        $label = trim((string) ($item['label'] ?? ''));
-        if ($label === '') {
-            continue;
-        }
-        $type = (string) ($item['type'] ?? 'page');
-        $type = in_array($type, array('page', 'custom'), true) ? $type : 'page';
-        $clean[] = array(
-            'show' => !empty($item['show']) ? '1' : '0',
-            'label' => $label,
-            'type' => $type,
-            'page_id' => absint($item['page_id'] ?? 0),
-            'url' => esc_url_raw((string) ($item['url'] ?? '')),
-            'new_tab' => !empty($item['new_tab']) ? '1' : '0',
-        );
-    }
-    return $clean;
+
+    // Render the top level items only to keep the existing header layout stable.
+    $items = array_values(array_filter($items, static function ($item): bool {
+        return empty($item->menu_item_parent) || (string) $item->menu_item_parent === '0';
+    }));
+
+    usort($items, static function ($a, $b): int {
+        return ((int) $a->menu_order) <=> ((int) $b->menu_order);
+    });
+
+    return $items;
 }
 
-function computech_resolve_header_menu_url(array $item): string {
-    if (($item['type'] ?? '') === 'page' && !empty($item['page_id'])) {
-        $url = get_permalink((int) $item['page_id']);
-        return $url ?: home_url('/');
+function computech_is_wp_nav_item_active($item): bool {
+    $classes = is_array($item->classes ?? null) ? $item->classes : array();
+    $active_classes = array('current-menu-item', 'current_page_item', 'current-menu-ancestor', 'current-menu-parent', 'current_page_parent');
+    if (array_intersect($active_classes, $classes)) {
+        return true;
     }
-    $url = trim((string) ($item['url'] ?? ''));
-    return $url !== '' ? $url : home_url('/');
-}
 
-function computech_is_header_menu_active(array $item): bool {
-    if (($item['type'] ?? '') === 'page' && !empty($item['page_id'])) {
-        return is_page((int) $item['page_id']);
+    $url = trim((string) ($item->url ?? ''));
+    if ($url === '') {
+        return false;
     }
-    $url = computech_resolve_header_menu_url($item);
-    $target_path = trim((string) parse_url($url, PHP_URL_PATH), '/');
-    $current_path = trim((string) parse_url($_SERVER['REQUEST_URI'] ?? '/', PHP_URL_PATH), '/');
+
+    $target_path = trim((string) wp_parse_url($url, PHP_URL_PATH), '/');
+    $current_path = trim((string) wp_parse_url($_SERVER['REQUEST_URI'] ?? '/', PHP_URL_PATH), '/');
+
     if ($target_path === '') {
         return is_front_page() || $current_path === '';
     }
+
     return $current_path === $target_path || strpos($current_path, $target_path . '/') === 0;
 }
 
-function computech_visible_header_menu_items(): array {
-    return array_values(array_filter(computech_get_header_menu_items(), static function ($item): bool {
-        return !empty($item['show']);
-    }));
-}
+function computech_render_wp_nav_menu_link($item, string $class = 'nav-link', string $li_class = ''): void {
+    $title = trim((string) ($item->title ?? ''));
+    $url = trim((string) ($item->url ?? ''));
+    if ($title === '' || $url === '') {
+        return;
+    }
 
-function computech_render_header_menu_link(array $item, string $class = 'nav-link', string $li_class = ''): void {
-    $active = computech_is_header_menu_active($item) ? ' active' : '';
-    $target = !empty($item['new_tab']) ? ' target="_blank" rel="noopener"' : '';
+    $active = computech_is_wp_nav_item_active($item) ? ' active' : '';
+    $target = !empty($item->target) ? ' target="' . esc_attr($item->target) . '"' : '';
+    $rel = !empty($item->xfn) ? ' rel="' . esc_attr($item->xfn) . '"' : '';
     $li_class_attr = $li_class !== '' ? ' class="' . esc_attr($li_class) . '"' : '';
+
     printf(
-        '<li%s><a href="%s" class="%s%s"%s>%s</a></li>',
+        '<li%s><a href="%s" class="%s%s"%s%s>%s</a></li>',
         $li_class_attr,
-        esc_url(computech_resolve_header_menu_url($item)),
+        esc_url($url),
         esc_attr($class),
         esc_attr($active),
         $target,
-        esc_html($item['label'])
+        $rel,
+        esc_html($title)
     );
 }
 
 function computech_render_primary_links(string $class = 'nav-link'): void {
-    $items = computech_visible_header_menu_items();
+    $items = computech_get_primary_nav_menu_items();
+    if (!$items) {
+        if (current_user_can('edit_theme_options')) {
+            echo '<li><a class="' . esc_attr($class) . '" href="' . esc_url(admin_url('nav-menus.php')) . '">اربط القائمة الرئيسية من المظهر ← القوائم</a></li>';
+        }
+        return;
+    }
+
     $is_mobile = strpos($class, 'mobile') !== false;
     if (!$is_mobile && count($items) > 6) {
         $main = array_slice($items, 0, 6);
         $extra = array_slice($items, 6);
+
         foreach ($main as $item) {
-            computech_render_header_menu_link($item, $class);
+            computech_render_wp_nav_menu_link($item, $class);
         }
+
         $extra_active = false;
         foreach ($extra as $item) {
-            if (computech_is_header_menu_active($item)) {
+            if (computech_is_wp_nav_item_active($item)) {
                 $extra_active = true;
                 break;
             }
         }
-        $more_label = computech_header_label('more_menu_label', '');
-        if ($more_label === '') {
-            $more_label = '...';
-        }
+
+        $more_label = computech_header_label('more_menu_label', 'المزيد');
         echo '<li class="nav-more"><button class="' . esc_attr($class . ($extra_active ? ' active' : '')) . ' nav-more-toggle" type="button">' . esc_html($more_label) . ' <svg class="dropdown-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg></button><ul class="nav-more-menu">';
         foreach ($extra as $item) {
-            computech_render_header_menu_link($item, 'nav-more-link');
+            computech_render_wp_nav_menu_link($item, 'nav-more-link');
         }
         echo '</ul></li>';
         return;
     }
+
     foreach ($items as $item) {
-        computech_render_header_menu_link($item, $class);
+        computech_render_wp_nav_menu_link($item, $class);
     }
 }
 
@@ -606,34 +613,6 @@ function computech_sanitize_topbar_items_from_post(array $rows): array {
     return $items;
 }
 
-function computech_sanitize_menu_items_from_post(array $rows): array {
-    $items = array();
-    foreach ($rows as $row) {
-        if (!is_array($row)) { continue; }
-        $label = sanitize_text_field(wp_unslash($row['label'] ?? ''));
-        if ($label === '') { continue; }
-        $type = sanitize_key(wp_unslash($row['type'] ?? 'page'));
-        $type = in_array($type, array('page', 'custom'), true) ? $type : 'page';
-        $items[] = array(
-            'show' => !empty($row['show']) ? '1' : '0',
-            'label' => $label,
-            'type' => $type,
-            'page_id' => absint($row['page_id'] ?? 0),
-            'url' => esc_url_raw(wp_unslash($row['url'] ?? '')),
-            'new_tab' => !empty($row['new_tab']) ? '1' : '0',
-        );
-    }
-    return $items;
-}
-
-function computech_header_menu_has_visible_item(array $items): bool {
-    foreach ($items as $item) {
-        if (!empty($item['show']) && trim((string) ($item['label'] ?? '')) !== '') {
-            return true;
-        }
-    }
-    return false;
-}
 
 function computech_handle_settings_save(): void {
     if (!isset($_POST['computech_header_settings_nonce'])) {
@@ -666,9 +645,6 @@ function computech_handle_settings_save(): void {
         'mobile_menu_close_label' => sanitize_text_field(wp_unslash($_POST['mobile_menu_close_label'] ?? '')),
     );
 
-    $menu_items = computech_sanitize_menu_items_from_post(isset($_POST['header_menu']) && is_array($_POST['header_menu']) ? $_POST['header_menu'] : array());
-    update_option('computech_header_menu_items', $menu_items);
-
     update_option('computech_header_settings', $settings);
     update_option('computech_header_logo_id', absint($_POST['header_logo_id'] ?? 0));
     update_option('computech_header_topbar_items', computech_sanitize_topbar_items_from_post(isset($_POST['topbar']) && is_array($_POST['topbar']) ? $_POST['topbar'] : array()));
@@ -695,14 +671,12 @@ function computech_settings_page(): void {
     $logo_id = absint(get_option('computech_header_logo_id', 0));
     $logo_url = $logo_id ? wp_get_attachment_image_url($logo_id, 'thumbnail') : '';
     $topbar_items = computech_get_topbar_items();
-    $menu_items = computech_get_header_menu_items();
-    $page_options = computech_admin_header_pages_options();
     $icons = computech_header_icon_choices();
     settings_errors('computech_messages');
     ?>
     <div class="wrap computech-admin-wrap" dir="rtl">
         <h1>إعدادات كمبيوتك - الهيدر</h1>
-        <p>من هنا الأدمن يقدر يعدل الشريط العلوي، اللوجو، القائمة، البحث، السلة، والواتساب بدون تعديل أي كود.</p>
+        <p>من هنا الأدمن يقدر يعدل الشريط العلوي، اللوجو، البحث، السلة، والواتساب. روابط الـ Main Header يتم تعديلها من المظهر ← القوائم وليس من هذه الصفحة.</p>
         <form method="post">
             <?php wp_nonce_field('computech_save_header_settings', 'computech_header_settings_nonce'); ?>
 
@@ -734,34 +708,6 @@ function computech_settings_page(): void {
                     <?php endforeach; ?>
                 </div>
                 <button type="button" class="button button-secondary" id="ct-add-topbar">+ إضافة عنصر Top Bar</button>
-            </div>
-
-            <div class="ct-panel">
-                <h2>Main Header - القائمة الرئيسية</h2>
-                <p>الأدمن يقدر يظهر/يخفي أي عنصر، يغير اسمه، يختار صفحة داخلية أو رابط خارجي. لو حاول يخفي كل العناصر، النظام يمنع حفظ القائمة الفارغة ويحتفظ بآخر قائمة سليمة.</p>
-                <div id="ct-menu-list">
-                    <?php foreach ($menu_items as $i => $item) : ?>
-                        <div class="ct-row ct-menu-row">
-                            <div class="ct-row-head"><strong>عنصر قائمة</strong><button type="button" class="button-link-delete ct-remove-row">حذف</button></div>
-                            <label><input type="checkbox" name="header_menu[<?php echo esc_attr((string) $i); ?>][show]" value="1" <?php checked(!empty($item['show'])); ?>> إظهار العنصر</label>
-                            <label>اسم العنصر<input type="text" name="header_menu[<?php echo esc_attr((string) $i); ?>][label]" value="<?php echo esc_attr($item['label']); ?>" placeholder="مثال: الرئيسية"></label>
-                            <label>نوع الرابط
-                                <select name="header_menu[<?php echo esc_attr((string) $i); ?>][type]" class="ct-link-type">
-                                    <option value="page" <?php selected($item['type'], 'page'); ?>>صفحة داخل الموقع</option>
-                                    <option value="custom" <?php selected($item['type'], 'custom'); ?>>رابط خارجي / عام</option>
-                                </select>
-                            </label>
-                            <label class="ct-page-field">اختر الصفحة
-                                <select name="header_menu[<?php echo esc_attr((string) $i); ?>][page_id]" data-selected="<?php echo esc_attr((string) $item['page_id']); ?>">
-                                    <?php echo str_replace('value="' . esc_attr((string) $item['page_id']) . '"', 'value="' . esc_attr((string) $item['page_id']) . '" selected', $page_options); ?>
-                                </select>
-                            </label>
-                            <label class="ct-url-field">الرابط<input type="url" name="header_menu[<?php echo esc_attr((string) $i); ?>][url]" value="<?php echo esc_attr($item['url']); ?>" placeholder="https://example.com أو /products/"></label>
-                            <label><input type="checkbox" name="header_menu[<?php echo esc_attr((string) $i); ?>][new_tab]" value="1" <?php checked(!empty($item['new_tab'])); ?>> فتح في تبويب جديد</label>
-                        </div>
-                    <?php endforeach; ?>
-                </div>
-                <button type="button" class="button button-secondary" id="ct-add-menu-item">+ إضافة عنصر قائمة</button>
             </div>
 
             <div class="ct-panel">
@@ -807,17 +753,6 @@ function computech_settings_page(): void {
             <button type="button" class="button ct-remove-icon">إزالة الأيقونة المرفوعة</button>
         </div>
     </template>
-    <template id="ct-menu-template">
-        <div class="ct-row ct-menu-row">
-            <div class="ct-row-head"><strong>عنصر قائمة</strong><button type="button" class="button-link-delete ct-remove-row">حذف</button></div>
-            <label><input type="checkbox" name="header_menu[__i__][show]" value="1" checked> إظهار العنصر</label>
-            <label>اسم العنصر<input type="text" name="header_menu[__i__][label]" value="" placeholder="مثال: الرئيسية"></label>
-            <label>نوع الرابط<select name="header_menu[__i__][type]" class="ct-link-type"><option value="page">صفحة داخل الموقع</option><option value="custom">رابط خارجي / عام</option></select></label>
-            <label class="ct-page-field">اختر الصفحة<select name="header_menu[__i__][page_id]"><?php echo $page_options; ?></select></label>
-            <label class="ct-url-field">الرابط<input type="url" name="header_menu[__i__][url]" value="" placeholder="https://example.com أو /products/"></label>
-            <label><input type="checkbox" name="header_menu[__i__][new_tab]" value="1"> فتح في تبويب جديد</label>
-        </div>
-    </template>
 
     <style>
         .computech-admin-wrap { max-width: 1120px; }
@@ -834,24 +769,9 @@ function computech_settings_page(): void {
     <script>
     (function($){
         var topIndex = <?php echo (int) count($topbar_items); ?>;
-        var menuIndex = <?php echo (int) count($menu_items); ?>;
-        function refreshLinkFields(scope){
-            $(scope).find('.ct-menu-row').each(function(){
-                var type = $(this).find('.ct-link-type').val();
-                $(this).find('.ct-page-field').toggle(type === 'page');
-                $(this).find('.ct-url-field').toggle(type === 'custom');
-            });
-        }
-        refreshLinkFields(document);
-        $(document).on('change', '.ct-link-type', function(){ refreshLinkFields($(this).closest('.ct-menu-row')); });
         $('#ct-add-topbar').on('click', function(){
             var html = $('#ct-topbar-template').html().replaceAll('__i__', topIndex++);
             $('#ct-topbar-list').append(html);
-        });
-        $('#ct-add-menu-item').on('click', function(){
-            var html = $('#ct-menu-template').html().replaceAll('__i__', menuIndex++);
-            $('#ct-menu-list').append(html);
-            refreshLinkFields($('#ct-menu-list').children().last());
         });
         $(document).on('click', '.ct-remove-row', function(){ $(this).closest('.ct-row').remove(); });
         $('[data-ct-media="logo"]').on('click', function(e){

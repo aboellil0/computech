@@ -99,3 +99,13 @@ Applied in this version:
   - Warranty/support
   - Buttons/actions
 - Adding, editing, deleting products and assigning categories is still done from Dashboard > منتجات كمبيوتيك.
+
+MAIN HEADER NAVIGATION UPDATE
+-----------------------------
+Applied in this version:
+- The main header navigation no longer reads links from the custom Computech settings page.
+- The main header navigation now reads only from the native WordPress menu location: primary / القائمة الرئيسية.
+- To edit header links, go to Appearance > Menus, create or edit a menu, then assign it to: القائمة الرئيسية.
+- Menu item add/edit/delete/order is now controlled by WordPress Nav Menus and saved in the WordPress database.
+- The same WordPress menu is used for desktop and mobile navigation.
+- The custom Computech settings page still controls top bar, logo, search, cart, and WhatsApp only.
