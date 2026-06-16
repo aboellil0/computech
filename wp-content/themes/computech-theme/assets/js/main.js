@@ -779,5 +779,18 @@
         startHeroAuto();
     }
 
+    /* Sticky breadcrumb offset - match actual header height */
+    function updateBreadcrumbTop() {
+        var header = document.querySelector('.main-header');
+        var breadcrumbs = document.querySelectorAll('.site-breadcrumb, .about-breadcrumb, .services-breadcrumb, .cat-breadcrumb, .prod-breadcrumb, .pd-breadcrumb, .contact-breadcrumb');
+        if (!header || !breadcrumbs.length) return;
+        var h = header.offsetHeight;
+        var adminBar = document.getElementById('wpadminbar');
+        if (adminBar) { h += adminBar.offsetHeight; }
+        breadcrumbs.forEach(function (el) { el.style.top = h + 'px'; });
+    }
+    updateBreadcrumbTop();
+    window.addEventListener('resize', updateBreadcrumbTop);
+
 
 })();
