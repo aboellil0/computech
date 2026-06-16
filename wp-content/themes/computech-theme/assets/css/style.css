@@ -12615,3 +12615,22 @@ body.home .computech-dynamic-shop-row > .shop-card {
         max-width: min(100%, 520px) !important;
     }
 }
+
+/* Dashboard-driven footer contact links keep the same footer design */
+.footer-contact a {
+    color: inherit;
+    text-decoration: none;
+    transition: color 0.25s ease;
+}
+
+.footer-contact li:hover a {
+    color: #3b82f6;
+}
+
+/* Restored editable home CTA section spacing */
+.contact-cta-only-section {
+    padding-top: 0;
+}
+.contact-card-value[href] {
+    text-decoration: none;
+}
