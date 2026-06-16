@@ -12626,3 +12626,11 @@ body.home .computech-dynamic-shop-row > .shop-card {
 .footer-contact li:hover a {
     color: #3b82f6;
 }
+
+/* Restored editable home CTA section spacing */
+.contact-cta-only-section {
+    padding-top: 0;
+}
+.contact-card-value[href] {
+    text-decoration: none;
+}

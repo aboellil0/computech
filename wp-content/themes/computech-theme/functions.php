@@ -3403,5 +3403,372 @@ function computech_footer_settings_page(): void {
     <?php
 }
 
+
+/* ============================================
+   Restored editable home sections
+   عروض خاصة / طرق الدفع / تواصل معنا / CTA
+   Content is editable from Dashboard. Design remains locked in PHP markup + CSS classes.
+   ============================================ */
+
+function computech_home_extra_asset(string $file): string {
+    return get_template_directory_uri() . '/assets/images/' . ltrim($file, '/');
+}
+
+function computech_home_extra_default_settings(): array {
+    return array(
+        'offers_show' => '1',
+        'offers_title_before' => 'عروض خاصة',
+        'offers_title_highlight' => 'وبنرات ترويجية',
+        'offers_subtitle' => 'اكتشف أفضل العروض على أجهزة الكمبيوتر المستوردة والإكسسوارات الأصلية',
+        'offers_ribbon_image' => computech_home_extra_asset('offers-featured-ribbon.png'),
+        'offers_value_badge_image' => computech_home_extra_asset('offers-best-value-badge.png'),
+        'offers_main_title' => 'أجهزة استيراد',
+        'offers_main_title_highlight' => 'بحالة ممتازة',
+        'offers_main_desc' => 'أجهزة مستوردة عالية الجودة تم فحصها واختبارها بدقة، تقدم لك أداءً ممتازًا وقيمة لا تضاهى.',
+        'offers_main_button_label' => 'تصفح الآن ←',
+        'offers_main_button_url' => computech_page_url('products'),
+        'offers_main_image' => computech_home_extra_asset('offers-hero-imported-computers.png'),
+        'payment_show' => '1',
+        'payment_title' => 'طرق الدفع المتاحة',
+        'contact_show' => '1',
+        'contact_title_highlight' => 'تواصل معنا',
+        'contact_title_after' => 'نحن هنا لخدمتك',
+        'contact_subtitle' => 'لديك استفسار أو تحتاج لمساعدة؟ فريق كمبيوتيك جاهز للرد عليك بأسرع وقت وتقديم أفضل الحلول.',
+        'contact_social_label' => 'تابعنا على',
+        'contact_map_show' => '1',
+        'contact_map_title' => 'موقعنا على الخريطة',
+        'contact_map_subtitle' => 'يمكنك الوصول إلينا بسهولة عبر الخريطة',
+        'contact_map_iframe_src' => 'https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3453.4!2d31.33!3d30.06!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x0%3A0x0!2zMzDCsDAzJzM2LjAiTiAzMcKwMTknNDguMCJF!5e0!3m2!1sen!2seg!4v1',
+        'contact_map_business_name' => 'كمبيوتيك - Computech',
+        'contact_map_rating' => '4.8 ★★★★★ (126)',
+        'contact_map_address' => "شارع عباس العقاد، مدينة نصر\nالقاهرة، مصر",
+        'contact_map_link_label' => 'عرض في خرائط Google',
+        'contact_map_link_url' => 'https://maps.google.com/',
+        'cta_show' => '1',
+        'cta_title_before' => 'جاهز',
+        'cta_title_highlight' => 'لتجربة',
+        'cta_title_after' => 'أداء أفضل؟',
+        'cta_desc' => 'تصفح أحدث أجهزة الكمبيوتر والإكسسوارات بأفضل تنافسية وضمان حقيقي.',
+        'cta_button_label' => 'تسوق الآن',
+        'cta_button_url' => computech_page_url('products'),
+        'cta_image' => computech_home_extra_asset('hero-computer-setup.png'),
+    );
+}
+
+function computech_home_extra_default_offer_pills(): array {
+    return array(
+        array('show' => '1', 'icon' => 'search', 'text' => 'فحص شامل'),
+        array('show' => '1', 'icon' => 'shield', 'text' => 'أداء موثوق'),
+        array('show' => '1', 'icon' => 'price', 'text' => 'أسعار أفضل'),
+    );
+}
+
+function computech_home_extra_default_offer_cards(): array {
+    return array(
+        array('show' => '1', 'title' => "اختر جهازك\nحسب ميزانيتك", 'subtitle' => 'استشارة مجانية قبل الشراء', 'desc' => 'لا تتردد في اختيارك، فريقنا يساعدك في اختيار الجهاز الأنسب لاحتياجاتك وميزانيتك.', 'button_label' => 'اعرف المزيد ←', 'button_url' => computech_page_url('contact'), 'image' => computech_home_extra_asset('offers-device-consultation.png'), 'float_image' => computech_home_extra_asset('offers-chat-icon.png'), 'alt' => 'اختر جهازك حسب ميزانيتك'),
+        array('show' => '1', 'title' => "عروض\nالإكسسوارات", 'subtitle' => 'خصومات حتى 30%', 'desc' => 'إكسسوارات أصلية لأداء أفضل وتجربة مثالية', 'button_label' => 'تسوق الآن ←', 'button_url' => computech_page_url('products'), 'image' => computech_home_extra_asset('offers-accessories-bundle.png'), 'float_image' => computech_home_extra_asset('offers-discount-icon.png'), 'alt' => 'عروض الإكسسوارات'),
+    );
+}
+
+function computech_home_extra_default_payment_methods(): array {
+    return array(
+        array('show' => '1', 'icon' => 'credit_card', 'name' => 'بطاقة ائتمان'),
+        array('show' => '1', 'icon' => 'card', 'name' => 'مدى'),
+        array('show' => '1', 'icon' => 'bank_transfer', 'name' => 'تحويل بنكي'),
+        array('show' => '1', 'icon' => 'whatsapp', 'name' => 'الدفع عند الاستلام'),
+        array('show' => '1', 'icon' => 'installment', 'name' => 'تقسيط بدون فوائد'),
+    );
+}
+
+function computech_home_extra_default_contact_cards(): array {
+    return array(
+        array('show' => '1', 'icon' => 'phone', 'label' => 'الهاتف', 'value' => '0100 123 4567', 'note_1' => 'من 9 صباحًا - 9 مساءً', 'note_2' => 'السبت - الخميس', 'url' => 'tel:01001234567'),
+        array('show' => '1', 'icon' => 'whatsapp', 'label' => 'واتساب', 'value' => '0100 123 4567', 'note_1' => 'متاح 24/7', 'note_2' => 'للرد السريع', 'url' => 'https://wa.me/201001234567'),
+        array('show' => '1', 'icon' => 'email', 'label' => 'البريد الإلكتروني', 'value' => 'info@computech.com', 'note_1' => 'نرد خلال 24 ساعة', 'note_2' => 'في أيام العمل', 'url' => 'mailto:info@computech.com'),
+        array('show' => '1', 'icon' => 'location', 'label' => 'العنوان', 'value' => 'القاهرة، مصر، مدينة نصر، شارع عباس العقاد - برج 242', 'note_1' => 'زورنا في المعرض', 'note_2' => '7 أيام في الأسبوع', 'url' => ''),
+    );
+}
+
+function computech_home_extra_default_contact_social_links(): array {
+    return array(
+        array('show' => '1', 'platform' => 'facebook', 'url' => 'https://www.facebook.com/'),
+        array('show' => '1', 'platform' => 'instagram', 'url' => 'https://www.instagram.com/'),
+        array('show' => '1', 'platform' => 'youtube', 'url' => 'https://www.youtube.com/'),
+        array('show' => '1', 'platform' => 'tiktok', 'url' => 'https://www.tiktok.com/'),
+        array('show' => '1', 'platform' => 'linkedin', 'url' => 'https://www.linkedin.com/'),
+    );
+}
+
+function computech_home_extra_default_cta_features(): array {
+    return array(
+        array('show' => '1', 'icon' => 'shield', 'title' => 'ضمان حقيقي', 'subtitle' => 'على جميع الأجهزة'),
+        array('show' => '1', 'icon' => 'delivery', 'title' => 'توصيل سريع', 'subtitle' => 'إلى باب بيتك'),
+        array('show' => '1', 'icon' => 'support', 'title' => 'دعم فني متخصص', 'subtitle' => 'قبل وبعد الشراء'),
+    );
+}
+
+function computech_seed_home_extra_sections(): void {
+    if (get_option('computech_home_extra_settings', null) === null) {
+        add_option('computech_home_extra_settings', computech_home_extra_default_settings(), '', false);
+    }
+    $lists = array(
+        'computech_home_offer_pills' => 'computech_home_extra_default_offer_pills',
+        'computech_home_offer_cards' => 'computech_home_extra_default_offer_cards',
+        'computech_home_payment_methods' => 'computech_home_extra_default_payment_methods',
+        'computech_home_contact_cards' => 'computech_home_extra_default_contact_cards',
+        'computech_home_contact_social_links' => 'computech_home_extra_default_contact_social_links',
+        'computech_home_cta_features' => 'computech_home_extra_default_cta_features',
+    );
+    foreach ($lists as $option => $callback) {
+        if (get_option($option, null) === null) {
+            add_option($option, call_user_func($callback), '', false);
+        }
+    }
+}
+add_action('init', 'computech_seed_home_extra_sections', 38);
+add_action('admin_init', 'computech_seed_home_extra_sections', 38);
+
+function computech_home_extra_settings(): array {
+    $settings = get_option('computech_home_extra_settings');
+    return array_merge(computech_home_extra_default_settings(), is_array($settings) ? $settings : array());
+}
+
+function computech_home_extra_rows(string $option, callable $default_callback): array {
+    $items = get_option($option);
+    return is_array($items) ? array_values($items) : call_user_func($default_callback);
+}
+
+function computech_home_extra_visible_rows(string $option, callable $default_callback): array {
+    return array_values(array_filter(computech_home_extra_rows($option, $default_callback), static function($row) {
+        return is_array($row) && !empty($row['show']);
+    }));
+}
+
+function computech_home_extra_url(string $url, string $fallback = '#'): string {
+    $url = trim($url);
+    return $url !== '' ? $url : $fallback;
+}
+
+function computech_home_extra_text_lines(string $text): array {
+    return array_values(array_filter(array_map('trim', preg_split('/\r\n|\r|\n/', $text)), static fn($line) => $line !== ''));
+}
+
+function computech_home_extra_icon_choices(): array {
+    return array(
+        'credit_card' => array('label' => 'بطاقة ائتمان', 'svg' => '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="4" width="22" height="16" rx="2" ry="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>'),
+        'card' => array('label' => 'كارت', 'svg' => '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20"/></svg>'),
+        'bank_transfer' => array('label' => 'تحويل بنكي', 'svg' => '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>'),
+        'installment' => array('label' => 'تقسيط', 'svg' => '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>'),
+        'phone' => array('label' => 'هاتف', 'svg' => '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg>'),
+        'whatsapp' => array('label' => 'واتساب / استلام', 'svg' => '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>'),
+        'email' => array('label' => 'بريد', 'svg' => '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="16" rx="2"/><polyline points="22,4 12,13 2,4"/></svg>'),
+        'location' => array('label' => 'عنوان', 'svg' => '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>'),
+        'shield' => array('label' => 'ضمان', 'svg' => '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><polyline points="9 12 11 14 15 10"/></svg>'),
+        'delivery' => array('label' => 'توصيل', 'svg' => '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="3" width="15" height="13" rx="2"/><polygon points="16 8 20 8 23 11 23 16 16 16 16 8"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg>'),
+        'support' => array('label' => 'دعم', 'svg' => '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 18v-6a9 9 0 0 1 18 0v6"/><path d="M21 19a2 2 0 0 1-2 2h-1a2 2 0 0 1-2-2v-3a2 2 0 0 1 2-2h3zM3 19a2 2 0 0 0 2 2h1a2 2 0 0 0 2-2v-3a2 2 0 0 0-2-2H3z"/></svg>'),
+        'search' => array('label' => 'فحص', 'svg' => '<svg viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="8" cy="8" r="6"/><path d="M13 13l3.5 3.5"/></svg>'),
+        'price' => array('label' => 'أسعار', 'svg' => '<svg viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M9 2v14M5 6l4-4 4 4"/><path d="M14 10v4a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1v-4"/></svg>'),
+    );
+}
+
+function computech_home_extra_icon_svg(string $icon): string {
+    $icons = computech_home_extra_icon_choices();
+    return $icons[$icon]['svg'] ?? $icons['shield']['svg'];
+}
+
+function computech_home_extra_icon_select(string $name, string $selected): string {
+    $html = '<select name="' . esc_attr($name) . '">';
+    foreach (computech_home_extra_icon_choices() as $key => $icon) {
+        $html .= '<option value="' . esc_attr($key) . '" ' . selected($selected, $key, false) . '>' . esc_html($icon['label']) . '</option>';
+    }
+    return $html . '</select>';
+}
+
+function computech_home_extra_sanitize_settings(array $data): array {
+    $defaults = computech_home_extra_default_settings();
+    $out = array();
+    foreach ($defaults as $key => $default) {
+        if (substr($key, -5) === '_show') {
+            $out[$key] = !empty($data[$key]) ? '1' : '0';
+        } elseif (strpos($key, 'iframe_src') !== false || substr($key, -4) === '_url' || substr($key, -6) === '_image') {
+            $out[$key] = esc_url_raw(wp_unslash($data[$key] ?? ''));
+        } elseif (strpos($key, 'address') !== false) {
+            $out[$key] = sanitize_textarea_field(wp_unslash($data[$key] ?? ''));
+        } elseif (strpos($key, 'desc') !== false || strpos($key, 'subtitle') !== false) {
+            $out[$key] = sanitize_textarea_field(wp_unslash($data[$key] ?? ''));
+        } else {
+            $out[$key] = sanitize_text_field(wp_unslash($data[$key] ?? ''));
+        }
+    }
+    return $out;
+}
+
+function computech_home_extra_sanitize_simple_rows($rows, array $fields): array {
+    $clean = array();
+    if (!is_array($rows)) {
+        return $clean;
+    }
+    foreach ($rows as $row) {
+        if (!is_array($row)) { continue; }
+        $item = array('show' => !empty($row['show']) ? '1' : '0');
+        foreach ($fields as $field => $type) {
+            $value = wp_unslash($row[$field] ?? '');
+            if ($type === 'url') {
+                $item[$field] = esc_url_raw($value);
+            } elseif ($type === 'textarea') {
+                $item[$field] = sanitize_textarea_field($value);
+            } elseif ($type === 'icon') {
+                $key = sanitize_key($value);
+                $item[$field] = array_key_exists($key, computech_home_extra_icon_choices()) ? $key : 'shield';
+            } elseif ($type === 'platform') {
+                $platforms = function_exists('computech_footer_social_platforms') ? computech_footer_social_platforms() : array('facebook' => array());
+                $key = sanitize_key($value);
+                $item[$field] = array_key_exists($key, $platforms) ? $key : 'facebook';
+            } else {
+                $item[$field] = sanitize_text_field($value);
+            }
+        }
+        $has_content = false;
+        foreach ($item as $k => $v) {
+            if ($k !== 'show' && trim((string) $v) !== '') { $has_content = true; break; }
+        }
+        if ($has_content) {
+            $clean[] = $item;
+        }
+    }
+    return $clean;
+}
+
+function computech_home_extra_admin_menu(): void {
+    add_submenu_page('computech-settings', 'السكشنات المسترجعة', 'السكشنات المسترجعة', computech_admin_capability(), 'computech-restored-home-sections', 'computech_home_extra_settings_page');
+}
+add_action('admin_menu', 'computech_home_extra_admin_menu');
+
+function computech_home_extra_settings_page(): void {
+    if (!current_user_can(computech_admin_capability())) {
+        wp_die('غير مصرح لك بتعديل هذه الإعدادات.');
+    }
+    $settings = computech_home_extra_settings();
+    $offer_pills = computech_home_extra_rows('computech_home_offer_pills', 'computech_home_extra_default_offer_pills');
+    $offer_cards = computech_home_extra_rows('computech_home_offer_cards', 'computech_home_extra_default_offer_cards');
+    $payment_methods = computech_home_extra_rows('computech_home_payment_methods', 'computech_home_extra_default_payment_methods');
+    $contact_cards = computech_home_extra_rows('computech_home_contact_cards', 'computech_home_extra_default_contact_cards');
+    $social_links = computech_home_extra_rows('computech_home_contact_social_links', 'computech_home_extra_default_contact_social_links');
+    $cta_features = computech_home_extra_rows('computech_home_cta_features', 'computech_home_extra_default_cta_features');
+
+    if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+        check_admin_referer('computech_save_home_extra_sections', 'computech_home_extra_sections_nonce');
+        $settings = computech_home_extra_sanitize_settings($_POST);
+        $offer_pills = computech_home_extra_sanitize_simple_rows($_POST['offer_pills'] ?? array(), array('icon' => 'icon', 'text' => 'text'));
+        $offer_cards = computech_home_extra_sanitize_simple_rows($_POST['offer_cards'] ?? array(), array('title' => 'textarea', 'subtitle' => 'text', 'desc' => 'textarea', 'button_label' => 'text', 'button_url' => 'url', 'image' => 'url', 'float_image' => 'url', 'alt' => 'text'));
+        $payment_methods = computech_home_extra_sanitize_simple_rows($_POST['payment_methods'] ?? array(), array('icon' => 'icon', 'name' => 'text'));
+        $contact_cards = computech_home_extra_sanitize_simple_rows($_POST['contact_cards'] ?? array(), array('icon' => 'icon', 'label' => 'text', 'value' => 'text', 'note_1' => 'text', 'note_2' => 'text', 'url' => 'url'));
+        $social_links = computech_home_extra_sanitize_simple_rows($_POST['contact_social'] ?? array(), array('platform' => 'platform', 'url' => 'url'));
+        $cta_features = computech_home_extra_sanitize_simple_rows($_POST['cta_features'] ?? array(), array('icon' => 'icon', 'title' => 'text', 'subtitle' => 'text'));
+        update_option('computech_home_extra_settings', $settings, false);
+        update_option('computech_home_offer_pills', $offer_pills, false);
+        update_option('computech_home_offer_cards', $offer_cards, false);
+        update_option('computech_home_payment_methods', $payment_methods, false);
+        update_option('computech_home_contact_cards', $contact_cards, false);
+        update_option('computech_home_contact_social_links', $social_links, false);
+        update_option('computech_home_cta_features', $cta_features, false);
+        echo '<div class="notice notice-success is-dismissible"><p>تم حفظ السكشنات المسترجعة بنجاح.</p></div>';
+    }
+    ?>
+    <div class="wrap computech-admin-wrap" dir="rtl">
+        <h1>السكشنات المسترجعة في الصفحة الرئيسية</h1>
+        <p>هذه الصفحة لتعديل المحتوى فقط. التصميم، الألوان، التوزيع، الحركات، وأسماء الكلاسات ثابتة داخل الثيم حتى لا يفسد شكل الموقع.</p>
+        <form method="post">
+            <?php wp_nonce_field('computech_save_home_extra_sections', 'computech_home_extra_sections_nonce'); ?>
+
+            <div class="ct-panel"><h2>1. عروض خاصة وبنرات ترويجية</h2>
+                <label><input type="checkbox" name="offers_show" value="1" <?php checked($settings['offers_show'], '1'); ?>> إظهار السكشن</label>
+                <div class="ct-grid"><label>نص العنوان<input type="text" name="offers_title_before" value="<?php echo esc_attr($settings['offers_title_before']); ?>"></label><label>الكلمة المميزة<input type="text" name="offers_title_highlight" value="<?php echo esc_attr($settings['offers_title_highlight']); ?>"></label></div>
+                <label>الوصف<textarea name="offers_subtitle" rows="2"><?php echo esc_textarea($settings['offers_subtitle']); ?></textarea></label>
+                <h3>البانر الكبير</h3>
+                <div class="ct-grid"><label>عنوان البانر<input type="text" name="offers_main_title" value="<?php echo esc_attr($settings['offers_main_title']); ?>"></label><label>الكلمة المميزة داخل البانر<input type="text" name="offers_main_title_highlight" value="<?php echo esc_attr($settings['offers_main_title_highlight']); ?>"></label></div>
+                <label>وصف البانر<textarea name="offers_main_desc" rows="3"><?php echo esc_textarea($settings['offers_main_desc']); ?></textarea></label>
+                <div class="ct-grid"><label>نص الزر<input type="text" name="offers_main_button_label" value="<?php echo esc_attr($settings['offers_main_button_label']); ?>"></label><label>رابط الزر<input type="text" name="offers_main_button_url" value="<?php echo esc_attr($settings['offers_main_button_url']); ?>"></label></div>
+                <div class="ct-grid"><label>صورة البانر<input type="text" name="offers_main_image" value="<?php echo esc_attr($settings['offers_main_image']); ?>"></label><label>صورة الرييبون<input type="text" name="offers_ribbon_image" value="<?php echo esc_attr($settings['offers_ribbon_image']); ?>"></label></div>
+                <label>صورة Badge أفضل قيمة<input type="text" name="offers_value_badge_image" value="<?php echo esc_attr($settings['offers_value_badge_image']); ?>"></label>
+                <h3>نقاط البانر الكبير</h3><div id="che-pills-list"><?php foreach ($offer_pills as $i => $row) : ?><div class="ct-row"><div class="ct-row-head"><strong>نقطة</strong><button type="button" class="button-link-delete che-remove-row">حذف</button></div><label><input type="checkbox" name="offer_pills[<?php echo esc_attr((string)$i); ?>][show]" value="1" <?php checked(!empty($row['show'])); ?>> إظهار</label><label>الأيقونة<?php echo computech_home_extra_icon_select('offer_pills[' . esc_attr((string)$i) . '][icon]', $row['icon'] ?? 'search'); ?></label><label>النص<input type="text" name="offer_pills[<?php echo esc_attr((string)$i); ?>][text]" value="<?php echo esc_attr($row['text'] ?? ''); ?>"></label></div><?php endforeach; ?></div><button type="button" class="button che-add-row" data-target="che-pills-list" data-template="che-pill-template" data-name="offer_pills">+ إضافة نقطة</button>
+                <h3>البنرات الصغيرة</h3><div id="che-offer-cards-list"><?php foreach ($offer_cards as $i => $row) : ?><div class="ct-row"><div class="ct-row-head"><strong>بنر صغير</strong><button type="button" class="button-link-delete che-remove-row">حذف</button></div><label><input type="checkbox" name="offer_cards[<?php echo esc_attr((string)$i); ?>][show]" value="1" <?php checked(!empty($row['show'])); ?>> إظهار</label><label>العنوان <small>كل سطر يظهر منفصل</small><textarea name="offer_cards[<?php echo esc_attr((string)$i); ?>][title]" rows="2"><?php echo esc_textarea($row['title'] ?? ''); ?></textarea></label><label>العنوان الفرعي<input type="text" name="offer_cards[<?php echo esc_attr((string)$i); ?>][subtitle]" value="<?php echo esc_attr($row['subtitle'] ?? ''); ?>"></label><label>الوصف<textarea name="offer_cards[<?php echo esc_attr((string)$i); ?>][desc]" rows="2"><?php echo esc_textarea($row['desc'] ?? ''); ?></textarea></label><label>نص الزر<input type="text" name="offer_cards[<?php echo esc_attr((string)$i); ?>][button_label]" value="<?php echo esc_attr($row['button_label'] ?? ''); ?>"></label><label>رابط الزر<input type="text" name="offer_cards[<?php echo esc_attr((string)$i); ?>][button_url]" value="<?php echo esc_attr($row['button_url'] ?? ''); ?>"></label><label>الصورة<input type="text" name="offer_cards[<?php echo esc_attr((string)$i); ?>][image]" value="<?php echo esc_attr($row['image'] ?? ''); ?>"></label><label>الصورة العائمة<input type="text" name="offer_cards[<?php echo esc_attr((string)$i); ?>][float_image]" value="<?php echo esc_attr($row['float_image'] ?? ''); ?>"></label><label>Alt الصورة<input type="text" name="offer_cards[<?php echo esc_attr((string)$i); ?>][alt]" value="<?php echo esc_attr($row['alt'] ?? ''); ?>"></label></div><?php endforeach; ?></div><button type="button" class="button che-add-row" data-target="che-offer-cards-list" data-template="che-offer-card-template" data-name="offer_cards">+ إضافة بنر صغير</button>
+            </div>
+
+            <div class="ct-panel"><h2>2. طرق الدفع المتاحة</h2><label><input type="checkbox" name="payment_show" value="1" <?php checked($settings['payment_show'], '1'); ?>> إظهار السكشن</label><label>العنوان<input type="text" name="payment_title" value="<?php echo esc_attr($settings['payment_title']); ?>"></label><div id="che-payment-list"><?php foreach ($payment_methods as $i => $row) : ?><div class="ct-row"><div class="ct-row-head"><strong>طريقة دفع</strong><button type="button" class="button-link-delete che-remove-row">حذف</button></div><label><input type="checkbox" name="payment_methods[<?php echo esc_attr((string)$i); ?>][show]" value="1" <?php checked(!empty($row['show'])); ?>> إظهار</label><label>الأيقونة<?php echo computech_home_extra_icon_select('payment_methods[' . esc_attr((string)$i) . '][icon]', $row['icon'] ?? 'credit_card'); ?></label><label>الاسم<input type="text" name="payment_methods[<?php echo esc_attr((string)$i); ?>][name]" value="<?php echo esc_attr($row['name'] ?? ''); ?>"></label></div><?php endforeach; ?></div><button type="button" class="button che-add-row" data-target="che-payment-list" data-template="che-payment-template" data-name="payment_methods">+ إضافة طريقة دفع</button></div>
+
+            <div class="ct-panel"><h2>3. تواصل معنا — نحن هنا لخدمتك</h2><label><input type="checkbox" name="contact_show" value="1" <?php checked($settings['contact_show'], '1'); ?>> إظهار السكشن</label><div class="ct-grid"><label>الكلمة المميزة<input type="text" name="contact_title_highlight" value="<?php echo esc_attr($settings['contact_title_highlight']); ?>"></label><label>باقي العنوان<input type="text" name="contact_title_after" value="<?php echo esc_attr($settings['contact_title_after']); ?>"></label></div><label>الوصف<textarea name="contact_subtitle" rows="3"><?php echo esc_textarea($settings['contact_subtitle']); ?></textarea></label><h3>كروت التواصل</h3><div id="che-contact-list"><?php foreach ($contact_cards as $i => $row) : ?><div class="ct-row"><div class="ct-row-head"><strong>كارت تواصل</strong><button type="button" class="button-link-delete che-remove-row">حذف</button></div><label><input type="checkbox" name="contact_cards[<?php echo esc_attr((string)$i); ?>][show]" value="1" <?php checked(!empty($row['show'])); ?>> إظهار</label><label>الأيقونة<?php echo computech_home_extra_icon_select('contact_cards[' . esc_attr((string)$i) . '][icon]', $row['icon'] ?? 'phone'); ?></label><label>العنوان<input type="text" name="contact_cards[<?php echo esc_attr((string)$i); ?>][label]" value="<?php echo esc_attr($row['label'] ?? ''); ?>"></label><label>القيمة<input type="text" name="contact_cards[<?php echo esc_attr((string)$i); ?>][value]" value="<?php echo esc_attr($row['value'] ?? ''); ?>"></label><label>ملاحظة 1<input type="text" name="contact_cards[<?php echo esc_attr((string)$i); ?>][note_1]" value="<?php echo esc_attr($row['note_1'] ?? ''); ?>"></label><label>ملاحظة 2<input type="text" name="contact_cards[<?php echo esc_attr((string)$i); ?>][note_2]" value="<?php echo esc_attr($row['note_2'] ?? ''); ?>"></label><label>رابط اختياري<input type="text" name="contact_cards[<?php echo esc_attr((string)$i); ?>][url]" value="<?php echo esc_attr($row['url'] ?? ''); ?>"></label></div><?php endforeach; ?></div><button type="button" class="button che-add-row" data-target="che-contact-list" data-template="che-contact-template" data-name="contact_cards">+ إضافة كارت تواصل</button><h3>السوشيال</h3><label>عنوان السوشيال<input type="text" name="contact_social_label" value="<?php echo esc_attr($settings['contact_social_label']); ?>"></label><div id="che-social-list"><?php foreach ($social_links as $i => $row) : ?><div class="ct-row"><div class="ct-row-head"><strong>رابط سوشيال</strong><button type="button" class="button-link-delete che-remove-row">حذف</button></div><label><input type="checkbox" name="contact_social[<?php echo esc_attr((string)$i); ?>][show]" value="1" <?php checked(!empty($row['show'])); ?>> إظهار</label><label>المنصة<?php echo function_exists('computech_admin_footer_platform_select') ? computech_admin_footer_platform_select('contact_social[' . esc_attr((string)$i) . '][platform]', $row['platform'] ?? 'facebook') : '<input type="text" name="contact_social[' . esc_attr((string)$i) . '][platform]" value="facebook">'; ?></label><label>الرابط<input type="text" name="contact_social[<?php echo esc_attr((string)$i); ?>][url]" value="<?php echo esc_attr($row['url'] ?? ''); ?>"></label></div><?php endforeach; ?></div><button type="button" class="button che-add-row" data-target="che-social-list" data-template="che-social-template" data-name="contact_social">+ إضافة رابط سوشيال</button><h3>الخريطة</h3><label><input type="checkbox" name="contact_map_show" value="1" <?php checked($settings['contact_map_show'], '1'); ?>> إظهار الخريطة</label><div class="ct-grid"><label>عنوان الخريطة<input type="text" name="contact_map_title" value="<?php echo esc_attr($settings['contact_map_title']); ?>"></label><label>وصف الخريطة<input type="text" name="contact_map_subtitle" value="<?php echo esc_attr($settings['contact_map_subtitle']); ?>"></label></div><label>رابط iframe للخريطة<textarea name="contact_map_iframe_src" rows="2"><?php echo esc_textarea($settings['contact_map_iframe_src']); ?></textarea></label><div class="ct-grid"><label>اسم النشاط<input type="text" name="contact_map_business_name" value="<?php echo esc_attr($settings['contact_map_business_name']); ?>"></label><label>التقييم<input type="text" name="contact_map_rating" value="<?php echo esc_attr($settings['contact_map_rating']); ?>"></label></div><label>عنوان النشاط<textarea name="contact_map_address" rows="2"><?php echo esc_textarea($settings['contact_map_address']); ?></textarea></label><div class="ct-grid"><label>نص رابط Google Maps<input type="text" name="contact_map_link_label" value="<?php echo esc_attr($settings['contact_map_link_label']); ?>"></label><label>رابط Google Maps<input type="text" name="contact_map_link_url" value="<?php echo esc_attr($settings['contact_map_link_url']); ?>"></label></div></div>
+
+            <div class="ct-panel"><h2>4. جاهز لتجربة أداء أفضل؟</h2><label><input type="checkbox" name="cta_show" value="1" <?php checked($settings['cta_show'], '1'); ?>> إظهار السكشن</label><div class="ct-grid"><label>بداية العنوان<input type="text" name="cta_title_before" value="<?php echo esc_attr($settings['cta_title_before']); ?>"></label><label>الكلمة المميزة<input type="text" name="cta_title_highlight" value="<?php echo esc_attr($settings['cta_title_highlight']); ?>"></label></div><label>نهاية العنوان<input type="text" name="cta_title_after" value="<?php echo esc_attr($settings['cta_title_after']); ?>"></label><label>الوصف<textarea name="cta_desc" rows="2"><?php echo esc_textarea($settings['cta_desc']); ?></textarea></label><div class="ct-grid"><label>نص الزر<input type="text" name="cta_button_label" value="<?php echo esc_attr($settings['cta_button_label']); ?>"></label><label>رابط الزر<input type="text" name="cta_button_url" value="<?php echo esc_attr($settings['cta_button_url']); ?>"></label></div><label>الصورة<input type="text" name="cta_image" value="<?php echo esc_attr($settings['cta_image']); ?>"></label><h3>مميزات CTA</h3><div id="che-cta-features-list"><?php foreach ($cta_features as $i => $row) : ?><div class="ct-row"><div class="ct-row-head"><strong>ميزة</strong><button type="button" class="button-link-delete che-remove-row">حذف</button></div><label><input type="checkbox" name="cta_features[<?php echo esc_attr((string)$i); ?>][show]" value="1" <?php checked(!empty($row['show'])); ?>> إظهار</label><label>الأيقونة<?php echo computech_home_extra_icon_select('cta_features[' . esc_attr((string)$i) . '][icon]', $row['icon'] ?? 'shield'); ?></label><label>العنوان<input type="text" name="cta_features[<?php echo esc_attr((string)$i); ?>][title]" value="<?php echo esc_attr($row['title'] ?? ''); ?>"></label><label>الوصف الصغير<input type="text" name="cta_features[<?php echo esc_attr((string)$i); ?>][subtitle]" value="<?php echo esc_attr($row['subtitle'] ?? ''); ?>"></label></div><?php endforeach; ?></div><button type="button" class="button che-add-row" data-target="che-cta-features-list" data-template="che-cta-feature-template" data-name="cta_features">+ إضافة ميزة</button></div>
+
+            <?php submit_button('حفظ السكشنات المسترجعة'); ?>
+        </form>
+    </div>
+
+    <template id="che-pill-template"><div class="ct-row"><div class="ct-row-head"><strong>نقطة</strong><button type="button" class="button-link-delete che-remove-row">حذف</button></div><label><input type="checkbox" name="offer_pills[__i__][show]" value="1" checked> إظهار</label><label>الأيقونة<?php echo computech_home_extra_icon_select('offer_pills[__i__][icon]', 'search'); ?></label><label>النص<input type="text" name="offer_pills[__i__][text]" value=""></label></div></template>
+    <template id="che-offer-card-template"><div class="ct-row"><div class="ct-row-head"><strong>بنر صغير</strong><button type="button" class="button-link-delete che-remove-row">حذف</button></div><label><input type="checkbox" name="offer_cards[__i__][show]" value="1" checked> إظهار</label><label>العنوان<textarea name="offer_cards[__i__][title]" rows="2"></textarea></label><label>العنوان الفرعي<input type="text" name="offer_cards[__i__][subtitle]" value=""></label><label>الوصف<textarea name="offer_cards[__i__][desc]" rows="2"></textarea></label><label>نص الزر<input type="text" name="offer_cards[__i__][button_label]" value=""></label><label>رابط الزر<input type="text" name="offer_cards[__i__][button_url]" value=""></label><label>الصورة<input type="text" name="offer_cards[__i__][image]" value=""></label><label>الصورة العائمة<input type="text" name="offer_cards[__i__][float_image]" value=""></label><label>Alt الصورة<input type="text" name="offer_cards[__i__][alt]" value=""></label></div></template>
+    <template id="che-payment-template"><div class="ct-row"><div class="ct-row-head"><strong>طريقة دفع</strong><button type="button" class="button-link-delete che-remove-row">حذف</button></div><label><input type="checkbox" name="payment_methods[__i__][show]" value="1" checked> إظهار</label><label>الأيقونة<?php echo computech_home_extra_icon_select('payment_methods[__i__][icon]', 'credit_card'); ?></label><label>الاسم<input type="text" name="payment_methods[__i__][name]" value=""></label></div></template>
+    <template id="che-contact-template"><div class="ct-row"><div class="ct-row-head"><strong>كارت تواصل</strong><button type="button" class="button-link-delete che-remove-row">حذف</button></div><label><input type="checkbox" name="contact_cards[__i__][show]" value="1" checked> إظهار</label><label>الأيقونة<?php echo computech_home_extra_icon_select('contact_cards[__i__][icon]', 'phone'); ?></label><label>العنوان<input type="text" name="contact_cards[__i__][label]" value=""></label><label>القيمة<input type="text" name="contact_cards[__i__][value]" value=""></label><label>ملاحظة 1<input type="text" name="contact_cards[__i__][note_1]" value=""></label><label>ملاحظة 2<input type="text" name="contact_cards[__i__][note_2]" value=""></label><label>رابط اختياري<input type="text" name="contact_cards[__i__][url]" value=""></label></div></template>
+    <template id="che-social-template"><div class="ct-row"><div class="ct-row-head"><strong>رابط سوشيال</strong><button type="button" class="button-link-delete che-remove-row">حذف</button></div><label><input type="checkbox" name="contact_social[__i__][show]" value="1" checked> إظهار</label><label>المنصة<?php echo function_exists('computech_admin_footer_platform_select') ? computech_admin_footer_platform_select('contact_social[__i__][platform]', 'facebook') : '<input type="text" name="contact_social[__i__][platform]" value="facebook">'; ?></label><label>الرابط<input type="text" name="contact_social[__i__][url]" value=""></label></div></template>
+    <template id="che-cta-feature-template"><div class="ct-row"><div class="ct-row-head"><strong>ميزة</strong><button type="button" class="button-link-delete che-remove-row">حذف</button></div><label><input type="checkbox" name="cta_features[__i__][show]" value="1" checked> إظهار</label><label>الأيقونة<?php echo computech_home_extra_icon_select('cta_features[__i__][icon]', 'shield'); ?></label><label>العنوان<input type="text" name="cta_features[__i__][title]" value=""></label><label>الوصف الصغير<input type="text" name="cta_features[__i__][subtitle]" value=""></label></div></template>
+    <style>.computech-admin-wrap{max-width:1160px}.ct-panel{background:#fff;border:1px solid #dcdcde;border-radius:14px;padding:18px;margin:18px 0;box-shadow:0 6px 20px rgba(0,0,0,.03)}.ct-panel h2{margin-top:0}.ct-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}.ct-row{border:1px solid #e5e7eb;border-radius:12px;padding:14px;margin:12px 0;background:#f9fafb;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;align-items:end}.ct-row-head{grid-column:1/-1;display:flex;align-items:center;justify-content:space-between}.ct-row label,.ct-panel label{display:block;font-weight:700;margin:8px 0}.ct-row input[type=text],.ct-row select,.ct-row textarea,.ct-panel input[type=text],.ct-panel textarea,.ct-panel select{width:100%;margin-top:6px}@media(max-width:782px){.ct-grid,.ct-row{grid-template-columns:1fr}}</style>
+    <script>(function(){var indexes={offer_pills:<?php echo (int)count($offer_pills); ?>,offer_cards:<?php echo (int)count($offer_cards); ?>,payment_methods:<?php echo (int)count($payment_methods); ?>,contact_cards:<?php echo (int)count($contact_cards); ?>,contact_social:<?php echo (int)count($social_links); ?>,cta_features:<?php echo (int)count($cta_features); ?>};document.addEventListener('click',function(e){var remove=e.target.closest('.che-remove-row');if(remove){e.preventDefault();remove.closest('.ct-row').remove();return;}var add=e.target.closest('.che-add-row');if(add){e.preventDefault();var target=document.getElementById(add.dataset.target);var tpl=document.getElementById(add.dataset.template);var name=add.dataset.name;var i=indexes[name]||0;indexes[name]=i+1;target.insertAdjacentHTML('beforeend',tpl.innerHTML.replaceAll('__i__',i));}});})();</script>
+    <?php
+}
+
+function computech_render_home_offers_section(): void {
+    $s = computech_home_extra_settings();
+    if ($s['offers_show'] !== '1') { return; }
+    $pills = computech_home_extra_visible_rows('computech_home_offer_pills', 'computech_home_extra_default_offer_pills');
+    $cards = computech_home_extra_visible_rows('computech_home_offer_cards', 'computech_home_extra_default_offer_cards');
+    ?>
+    <section class="offers-section">
+        <div class="offers-bg-decor"><div class="obg-circuit obg-circuit-right"></div><div class="obg-circuit obg-circuit-left"></div><div class="obg-dots obg-dots-right"></div><div class="obg-dots obg-dots-left"></div><div class="obg-circle obg-circle-right"></div><div class="obg-circle obg-circle-left"></div></div>
+        <div class="offers-container">
+            <div class="offers-header"><div class="offers-header-dots"><span class="ohd blue"></span><span class="ohd cyan"></span><span class="ohd pill"></span><span class="ohd green"></span></div><h2 class="offers-heading"><?php echo esc_html($s['offers_title_before']); ?> <span class="offers-heading-blue"><?php echo esc_html($s['offers_title_highlight']); ?></span></h2><?php if ($s['offers_subtitle'] !== '') : ?><p class="offers-heading-sub"><?php echo esc_html($s['offers_subtitle']); ?></p><?php endif; ?></div>
+            <div class="offer-main-banner">
+                <?php if ($s['offers_ribbon_image'] !== '') : ?><div class="offer-ribbon"><img src="<?php echo esc_url($s['offers_ribbon_image']); ?>" alt="عرض مميز"></div><?php endif; ?>
+                <?php if ($s['offers_value_badge_image'] !== '') : ?><div class="offer-value-badge"><img src="<?php echo esc_url($s['offers_value_badge_image']); ?>" alt="أفضل قيمة"></div><?php endif; ?>
+                <div class="offer-main-inner"><div class="offer-main-text"><h3 class="offer-main-title"><?php echo esc_html($s['offers_main_title']); ?><br><span><?php echo esc_html($s['offers_main_title_highlight']); ?></span></h3><?php if ($s['offers_main_desc'] !== '') : ?><p class="offer-main-desc"><?php echo esc_html($s['offers_main_desc']); ?></p><?php endif; ?><div class="offer-main-pills"><?php foreach ($pills as $pill) : ?><span class="omp"><?php echo computech_home_extra_icon_svg((string)($pill['icon'] ?? 'shield')); ?><?php echo esc_html($pill['text'] ?? ''); ?></span><?php endforeach; ?></div><?php if ($s['offers_main_button_label'] !== '') : ?><a href="<?php echo esc_url(computech_home_extra_url($s['offers_main_button_url'], computech_page_url('products'))); ?>" class="offer-main-btn"><?php echo esc_html($s['offers_main_button_label']); ?></a><?php endif; ?></div><?php if ($s['offers_main_image'] !== '') : ?><div class="offer-main-image"><img src="<?php echo esc_url($s['offers_main_image']); ?>" alt="<?php echo esc_attr($s['offers_main_title']); ?>"></div><?php endif; ?></div>
+            </div>
+            <?php if ($cards) : ?><div class="offer-dual-row"><?php foreach ($cards as $i => $card) : $is_green = $i % 2 === 1; $title_lines = computech_home_extra_text_lines((string)($card['title'] ?? '')); ?><div class="offer-sub-card <?php echo $is_green ? 'offer-sub-green' : 'offer-sub-blue'; ?>"><?php if (!empty($card['float_image'])) : ?><div class="<?php echo $is_green ? 'offer-sub-float-badge' : 'offer-sub-float-icon'; ?>"><img src="<?php echo esc_url($card['float_image']); ?>" alt=""></div><?php endif; ?><?php if (!empty($card['image'])) : ?><div class="offer-sub-image"><img src="<?php echo esc_url($card['image']); ?>" alt="<?php echo esc_attr($card['alt'] ?? ($card['title'] ?? '')); ?>"></div><?php endif; ?><div class="offer-sub-text"><?php if ($title_lines) : ?><h3 class="offer-sub-title"><?php echo implode('<br>', array_map('esc_html', $title_lines)); ?></h3><?php endif; ?><?php if (!empty($card['subtitle'])) : ?><p class="offer-sub-subtitle <?php echo $is_green ? 'offer-sub-subtitle-green' : ''; ?>"><?php echo esc_html($card['subtitle']); ?></p><?php endif; ?><?php if (!empty($card['desc'])) : ?><p class="offer-sub-desc"><?php echo esc_html($card['desc']); ?></p><?php endif; ?><?php if (!empty($card['button_label'])) : ?><a href="<?php echo esc_url(computech_home_extra_url((string)($card['button_url'] ?? ''), computech_page_url('products'))); ?>" class="offer-sub-btn <?php echo $is_green ? 'offer-sub-btn-green' : 'offer-sub-btn-blue'; ?>"><?php echo esc_html($card['button_label']); ?></a><?php endif; ?></div></div><?php endforeach; ?></div><?php endif; ?>
+        </div>
+    </section>
+    <?php
+}
+
+function computech_render_home_payment_section(): void {
+    $s = computech_home_extra_settings();
+    if ($s['payment_show'] !== '1') { return; }
+    $methods = computech_home_extra_visible_rows('computech_home_payment_methods', 'computech_home_extra_default_payment_methods');
+    if (!$methods) { return; }
+    ?><section class="payment-section"><div class="payment-container"><?php if ($s['payment_title'] !== '') : ?><h3 class="payment-title"><?php echo esc_html($s['payment_title']); ?></h3><?php endif; ?><div class="payment-methods"><?php foreach ($methods as $i => $m) : if ($i > 0) : ?><div class="payment-divider"></div><?php endif; ?><div class="payment-method"><div class="payment-icon"><?php echo computech_home_extra_icon_svg((string)($m['icon'] ?? 'credit_card')); ?></div><span class="payment-name"><?php echo esc_html($m['name'] ?? ''); ?></span></div><?php endforeach; ?></div></div></section><?php
+}
+
+function computech_home_contact_icon_class(string $icon): string {
+    if ($icon === 'whatsapp') { return 'contact-icon-green'; }
+    if ($icon === 'location') { return 'contact-icon-orange'; }
+    return 'contact-icon-blue';
+}
+
+function computech_render_home_contact_section(): void {
+    $s = computech_home_extra_settings();
+    if ($s['contact_show'] !== '1') { return; }
+    $cards = computech_home_extra_visible_rows('computech_home_contact_cards', 'computech_home_extra_default_contact_cards');
+    $socials = computech_home_extra_visible_rows('computech_home_contact_social_links', 'computech_home_extra_default_contact_social_links');
+    ?>
+    <section class="contact-section">
+        <div class="contact-container"><div class="contact-top-card"><div class="contact-panel"><div class="contact-panel-header"><h2 class="contact-heading"><span class="contact-heading-blue"><?php echo esc_html($s['contact_title_highlight']); ?></span><br><?php echo esc_html($s['contact_title_after']); ?></h2><?php if ($s['contact_subtitle'] !== '') : ?><p class="contact-subtitle"><?php echo esc_html($s['contact_subtitle']); ?></p><?php endif; ?></div><div class="contact-cards"><?php foreach ($cards as $card) : $icon = sanitize_key((string)($card['icon'] ?? 'phone')); $value = trim((string)($card['value'] ?? '')); ?><div class="contact-card"><div class="contact-card-icon <?php echo esc_attr(computech_home_contact_icon_class($icon)); ?>"><?php echo computech_home_extra_icon_svg($icon); ?></div><div class="contact-card-body"><span class="contact-card-label"><?php echo esc_html($card['label'] ?? ''); ?></span><?php if (!empty($card['url'])) : ?><a class="contact-card-value <?php echo $icon === 'location' ? 'contact-card-value-sm' : ''; ?>" href="<?php echo esc_url($card['url']); ?>"><?php echo esc_html($value); ?></a><?php else : ?><span class="contact-card-value <?php echo $icon === 'location' ? 'contact-card-value-sm' : ''; ?>"><?php echo esc_html($value); ?></span><?php endif; ?></div><div class="contact-card-note"><?php if (!empty($card['note_1'])) : ?><span><?php echo esc_html($card['note_1']); ?></span><?php endif; ?><?php if (!empty($card['note_2'])) : ?><span><?php echo esc_html($card['note_2']); ?></span><?php endif; ?></div></div><?php endforeach; ?></div><?php if ($socials) : ?><div class="contact-social"><span class="contact-social-label"><?php echo esc_html($s['contact_social_label']); ?></span><div class="contact-social-icons"><?php foreach ($socials as $social) : $platform = sanitize_key((string)($social['platform'] ?? 'facebook')); $platforms = function_exists('computech_footer_social_platforms') ? computech_footer_social_platforms() : array(); $label = $platforms[$platform]['label'] ?? ucfirst($platform); ?><a href="<?php echo esc_url(computech_home_extra_url((string)($social['url'] ?? ''), '#')); ?>" class="contact-social-btn" aria-label="<?php echo esc_attr($label); ?>" target="_blank" rel="noopener"><?php echo function_exists('computech_footer_social_svg') ? computech_footer_social_svg($platform) : computech_home_extra_icon_svg('phone'); ?></a><?php endforeach; ?></div></div><?php endif; ?></div><?php if ($s['contact_map_show'] === '1') : ?><div class="contact-divider"></div><div class="map-panel"><div class="map-panel-header"><h3 class="map-title"><?php echo esc_html($s['contact_map_title']); ?></h3><?php if ($s['contact_map_subtitle'] !== '') : ?><p class="map-subtitle"><?php echo esc_html($s['contact_map_subtitle']); ?></p><?php endif; ?></div><div class="map-wrapper"><?php if ($s['contact_map_iframe_src'] !== '') : ?><iframe src="<?php echo esc_url($s['contact_map_iframe_src']); ?>" allowfullscreen="" loading="lazy" referrerpolicy="no-referrer-when-downgrade" title="موقع كمبيوتيك"></iframe><?php endif; ?><div class="map-biz-card"><div class="map-biz-header"><div class="map-biz-logo"><svg viewBox="0 0 28 28" fill="none"><rect x="2" y="6" width="24" height="16" rx="3" fill="#2563eb" opacity="0.9"/><rect x="5" y="9" width="18" height="10" rx="2" fill="#0f172a"/><circle cx="14" cy="14" r="3" fill="#2563eb"/></svg></div><div class="map-biz-info"><strong><?php echo esc_html($s['contact_map_business_name']); ?></strong><span class="map-biz-rating"><?php echo esc_html($s['contact_map_rating']); ?></span></div></div><p class="map-biz-address"><?php echo nl2br(esc_html($s['contact_map_address'])); ?></p><?php if ($s['contact_map_link_label'] !== '') : ?><a href="<?php echo esc_url(computech_home_extra_url($s['contact_map_link_url'], '#')); ?>" class="map-biz-link" target="_blank" rel="noopener"><?php echo esc_html($s['contact_map_link_label']); ?></a><?php endif; ?></div><div class="map-zoom"><button class="map-zoom-btn" aria-label="تكبير" type="button">+</button><button class="map-zoom-btn" aria-label="تصغير" type="button">−</button></div></div></div><?php endif; ?></div></div>
+    </section>
+    <?php
+}
+
+function computech_render_home_final_cta_section(): void {
+    $s = computech_home_extra_settings();
+    if ($s['cta_show'] !== '1') { return; }
+    $features = computech_home_extra_visible_rows('computech_home_cta_features', 'computech_home_extra_default_cta_features');
+    ?><section class="contact-section contact-cta-only-section"><div class="contact-container"><div class="contact-cta-strip"><div class="contact-cta-text"><h3 class="contact-cta-title"><?php echo esc_html($s['cta_title_before']); ?> <span class="contact-cta-blue"><?php echo esc_html($s['cta_title_highlight']); ?></span> <?php echo esc_html($s['cta_title_after']); ?></h3><?php if ($s['cta_desc'] !== '') : ?><p class="contact-cta-desc"><?php echo esc_html($s['cta_desc']); ?></p><?php endif; ?><?php if ($s['cta_button_label'] !== '') : ?><a href="<?php echo esc_url(computech_home_extra_url($s['cta_button_url'], computech_page_url('products'))); ?>" class="contact-cta-btn"><?php echo esc_html($s['cta_button_label']); ?></a><?php endif; ?></div><?php if ($s['cta_image'] !== '') : ?><div class="contact-cta-image"><img src="<?php echo esc_url($s['cta_image']); ?>" alt="<?php echo esc_attr($s['cta_title_after']); ?>"></div><?php endif; ?><?php if ($features) : ?><div class="contact-cta-features"><?php foreach ($features as $i => $feature) : if ($i > 0) : ?><div class="contact-cta-sep"></div><?php endif; ?><div class="contact-cta-feature"><div class="contact-cta-feature-icon"><?php echo computech_home_extra_icon_svg((string)($feature['icon'] ?? 'shield')); ?></div><div class="contact-cta-feature-text"><strong><?php echo esc_html($feature['title'] ?? ''); ?></strong><span><?php echo esc_html($feature['subtitle'] ?? ''); ?></span></div></div><?php endforeach; ?></div><?php endif; ?></div></div></section><?php
+}
+
 // Computech categories/products architecture layer.
 require_once get_template_directory() . '/inc/computech-architecture.php';
