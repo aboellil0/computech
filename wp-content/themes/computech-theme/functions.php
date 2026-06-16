@@ -117,6 +117,7 @@ function computech_activate(): void {
     computech_register_home_category_cards_cpt();
     computech_ensure_theme_pages();
     computech_seed_header_database_options();
+    if (function_exists('computech_seed_footer_database_options')) { computech_seed_footer_database_options(); }
     computech_seed_default_home_section_options();
     flush_rewrite_rules();
 }
@@ -128,6 +129,7 @@ function computech_admin_ensure_pages(): void {
     }
 
     computech_seed_header_database_options();
+    if (function_exists('computech_seed_footer_database_options')) { computech_seed_footer_database_options(); }
     $version_key = '2026-06-16-routes-v3';
     if (get_option('computech_theme_pages_version') === $version_key) {
         return;
@@ -2622,6 +2624,782 @@ function computech_render_shop_categories_section(): void {
             </div>
         </div>
     </section>
+    <?php
+}
+
+
+/* ============================================
+   Computech Dashboard Editable Footer
+   Content is editable from Dashboard. Layout/design stays locked in footer.php + CSS.
+   ============================================ */
+
+function computech_footer_default_page_link(string $label, string $slug): array {
+    $slug = trim($slug, '/');
+    if ($slug === '') {
+        return computech_footer_custom_link($label, home_url('/'), '0');
+    }
+    $page = computech_find_page_by_slug($slug);
+    return array(
+        'show' => '1',
+        'label' => $label,
+        'type' => $page ? 'page' : 'custom',
+        'page_id' => $page ? (int) $page->ID : 0,
+        'url' => $page ? '' : home_url('/' . $slug . '/'),
+        'new_tab' => '0',
+    );
+}
+
+function computech_footer_custom_link(string $label, string $url = '', string $new_tab = '0'): array {
+    return array(
+        'show' => '1',
+        'label' => $label,
+        'type' => 'custom',
+        'page_id' => 0,
+        'url' => $url,
+        'new_tab' => $new_tab === '1' ? '1' : '0',
+    );
+}
+
+function computech_footer_default_settings(): array {
+    return array(
+        'show_newsletter' => '1',
+        'newsletter_title' => 'اشترك ليصلك الجديد',
+        'newsletter_subtitle' => 'اشترك في نشرتنا البريدية لتصلك أحدث المنتجات والعروض والأخبار',
+        'newsletter_placeholder' => 'أدخل بريدك الإلكتروني',
+        'newsletter_button_label' => 'اشترك الآن',
+        'newsletter_action_type' => 'page',
+        'newsletter_action_page_id' => (computech_find_page_by_slug('contact') ? (int) computech_find_page_by_slug('contact')->ID : 0),
+        'newsletter_action_url' => '',
+        'footer_logo_text' => 'كمبيوتيك',
+        'footer_logo_alt' => 'كمبيوتيك',
+        'brand_description' => 'كمبيوتيك هي وجهتك الموثوقة لحلول الكمبيوتر والإلكترونيات. نقدم أحدث المنتجات، ملحقات عالية الجودة، دعم فني متخصص، وخدمة ما بعد البيع لضمان رضاك وثقتك.',
+        'quick_links_title' => 'روابط سريعة',
+        'category_links_title' => 'التصنيفات',
+        'service_links_title' => 'خدماتنا',
+        'contact_title' => 'تواصل معنا',
+        'show_feature_strip' => '1',
+        'show_social_links' => '1',
+        'show_bottom_links' => '1',
+        'copyright_text' => 'كمبيوتيك. جميع الحقوق محفوظة.',
+    );
+}
+
+function computech_footer_default_quick_links(): array {
+    return array(
+        computech_footer_default_page_link('الرئيسية', ''),
+        computech_footer_default_page_link('من نحن', 'about'),
+        computech_footer_default_page_link('المنتجات', 'products'),
+        computech_footer_default_page_link('الخدمات', 'services'),
+        computech_footer_default_page_link('تواصل معنا', 'contact'),
+    );
+}
+
+function computech_footer_default_category_links(): array {
+    return array(
+        computech_footer_default_page_link('أجهزة كمبيوتر', 'categories'),
+        computech_footer_default_page_link('لابتوبات', 'categories'),
+        computech_footer_default_page_link('شاشات', 'categories'),
+        computech_footer_default_page_link('ملحقات', 'categories'),
+        computech_footer_default_page_link('مكونات الكمبيوتر', 'categories'),
+        computech_footer_default_page_link('استيراد خارج', 'categories'),
+    );
+}
+
+function computech_footer_default_service_links(): array {
+    return array(
+        computech_footer_default_page_link('صيانة ودعم فني', 'services'),
+        computech_footer_default_page_link('استشارة قبل الشراء', 'services'),
+        computech_footer_default_page_link('خدمة ما بعد البيع', 'services'),
+        computech_footer_default_page_link('توصيل', 'services'),
+        computech_footer_default_page_link('فحص قبل البيع', 'services'),
+    );
+}
+
+function computech_footer_default_contact_items(): array {
+    return array(
+        array('show' => '1', 'icon' => 'phone', 'text' => '+966 11 123 4567', 'url' => 'tel:+966111234567', 'new_tab' => '0'),
+        array('show' => '1', 'icon' => 'whatsapp', 'text' => '+966 50 123 4567', 'url' => 'https://wa.me/966501234567', 'new_tab' => '1'),
+        array('show' => '1', 'icon' => 'email', 'text' => 'info@computech.com.sa', 'url' => 'mailto:info@computech.com.sa', 'new_tab' => '0'),
+        array('show' => '1', 'icon' => 'location', 'text' => 'الرياض، طريق الملك فهد، حي العليا، المملكة العربية السعودية', 'url' => '', 'new_tab' => '0'),
+        array('show' => '1', 'icon' => 'clock', 'text' => 'السبت - الخميس، 9:00 ص - 9:00 م', 'url' => '', 'new_tab' => '0'),
+    );
+}
+
+function computech_footer_default_feature_items(): array {
+    return array(
+        array('show' => '1', 'icon' => 'check', 'text' => 'فحص قبل البيع'),
+        array('show' => '1', 'icon' => 'warranty', 'text' => 'ضمان حسب المنتج'),
+        array('show' => '1', 'icon' => 'delivery', 'text' => 'توصيل سريع'),
+        array('show' => '1', 'icon' => 'support', 'text' => 'دعم فني'),
+    );
+}
+
+function computech_footer_default_social_links(): array {
+    return array(
+        array('show' => '1', 'platform' => 'youtube', 'url' => 'https://www.youtube.com/'),
+        array('show' => '1', 'platform' => 'instagram', 'url' => 'https://www.instagram.com/'),
+        array('show' => '1', 'platform' => 'twitter', 'url' => 'https://x.com/'),
+        array('show' => '1', 'platform' => 'linkedin', 'url' => 'https://www.linkedin.com/'),
+    );
+}
+
+function computech_footer_default_bottom_links(): array {
+    return array(
+        computech_footer_default_page_link('خريطة الموقع', 'sitemap'),
+        computech_footer_default_page_link('الشروط والأحكام', 'terms'),
+        computech_footer_default_page_link('سياسة الخصوصية', 'privacy-policy'),
+    );
+}
+
+function computech_seed_footer_database_options(): void {
+    if (get_option('computech_footer_settings', null) === null) {
+        add_option('computech_footer_settings', computech_footer_default_settings(), '', false);
+    }
+    if (get_option('computech_footer_logo_id', null) === null) {
+        add_option('computech_footer_logo_id', 0, '', false);
+    }
+    $row_options = array(
+        'computech_footer_quick_links' => 'computech_footer_default_quick_links',
+        'computech_footer_category_links' => 'computech_footer_default_category_links',
+        'computech_footer_service_links' => 'computech_footer_default_service_links',
+        'computech_footer_contact_items' => 'computech_footer_default_contact_items',
+        'computech_footer_feature_items' => 'computech_footer_default_feature_items',
+        'computech_footer_social_links' => 'computech_footer_default_social_links',
+        'computech_footer_bottom_links' => 'computech_footer_default_bottom_links',
+    );
+    foreach ($row_options as $option_name => $callback) {
+        if (get_option($option_name, null) === null && is_callable($callback)) {
+            add_option($option_name, call_user_func($callback), '', false);
+        }
+    }
+}
+add_action('init', 'computech_seed_footer_database_options', 24);
+add_action('admin_init', 'computech_seed_footer_database_options', 24);
+
+function computech_footer_settings(): array {
+    $saved = get_option('computech_footer_settings', array());
+    return wp_parse_args(is_array($saved) ? $saved : array(), computech_footer_default_settings());
+}
+
+function computech_footer_setting(string $key, string $default = ''): string {
+    $settings = computech_footer_settings();
+    return array_key_exists($key, $settings) ? (string) $settings[$key] : $default;
+}
+
+function computech_footer_bool(string $key, bool $default = false): bool {
+    $settings = computech_footer_settings();
+    if (!array_key_exists($key, $settings)) {
+        return $default;
+    }
+    return (string) $settings[$key] === '1';
+}
+
+function computech_footer_rows(string $option_name): array {
+    $rows = get_option($option_name, array());
+    return is_array($rows) ? array_values($rows) : array();
+}
+
+function computech_footer_visible_rows(string $option_name): array {
+    return array_values(array_filter(computech_footer_rows($option_name), static function ($item): bool {
+        return !empty($item['show']);
+    }));
+}
+
+function computech_footer_link_url(array $item): string {
+    if (($item['type'] ?? '') === 'page' && !empty($item['page_id'])) {
+        $url = get_permalink((int) $item['page_id']);
+        return $url ?: home_url('/');
+    }
+    $url = trim((string) ($item['url'] ?? ''));
+    return $url !== '' ? $url : home_url('/');
+}
+
+function computech_footer_link_target(array $item): string {
+    return !empty($item['new_tab']) ? ' target="_blank" rel="noopener"' : '';
+}
+
+function computech_footer_newsletter_action_url(): string {
+    $settings = computech_footer_settings();
+    if (($settings['newsletter_action_type'] ?? '') === 'page' && !empty($settings['newsletter_action_page_id'])) {
+        $url = get_permalink((int) $settings['newsletter_action_page_id']);
+        return $url ?: computech_page_url('contact');
+    }
+    $url = trim((string) ($settings['newsletter_action_url'] ?? ''));
+    return $url !== '' ? $url : computech_page_url('contact');
+}
+
+function computech_footer_logo_html(): string {
+    $logo_id = absint(get_option('computech_footer_logo_id', 0));
+    if (!$logo_id) {
+        $logo_id = absint(get_option('computech_header_logo_id', 0));
+    }
+    if (!$logo_id) {
+        $logo_id = absint(get_theme_mod('custom_logo'));
+    }
+    $src = $logo_id ? wp_get_attachment_image_url($logo_id, 'full') : '';
+    $alt = trim(computech_footer_setting('footer_logo_alt', ''));
+    if ($alt === '') {
+        $alt = get_bloginfo('name');
+    }
+    if ($src) {
+        return '<img src="' . esc_url($src) . '" alt="' . esc_attr($alt) . '" class="logo-img computech-footer-logo-img">';
+    }
+    $default_asset = get_template_directory_uri() . '/assets/images/icon.jpeg';
+    return '<img src="' . esc_url($default_asset) . '" alt="' . esc_attr($alt) . '" class="logo-img computech-footer-logo-img">';
+}
+
+function computech_footer_icon_choices(): array {
+    return array(
+        'phone' => array('label' => 'هاتف', 'svg' => '<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6.3 2.8l2 3.8-1.6 1.5c.9 1.9 2.4 3.4 4.3 4.3l1.5-1.6 3.8 2c.4.2.6.6.5 1l-.7 3.1c-.1.5-.5.8-1 .8C7.9 17.7 2.3 12.1 2.3 4.9c0-.5.3-.9.8-1l3.1-.7c.4-.1.8.1 1.1.5z"/></svg>'),
+        'whatsapp' => array('label' => 'واتساب', 'svg' => '<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M16.8 9.6a6.7 6.7 0 0 1-9.9 5.9L3 16.7l1.2-3.7A6.7 6.7 0 1 1 16.8 9.6z"/><path d="M7.5 6.7c.2-.4.4-.4.7-.4h.5c.2 0 .4.1.5.4l.5 1.1c.1.2.1.4-.1.6l-.4.5c.6 1 1.3 1.7 2.4 2.3l.5-.5c.2-.2.4-.2.6-.1l1.1.5c.3.1.4.3.4.6v.5c0 .3-.1.5-.4.7-.5.3-1 .4-1.6.3-2.5-.5-4.7-2.4-5.4-4.8-.1-.6 0-1.2.3-1.7z"/></svg>'),
+        'email' => array('label' => 'بريد إلكتروني', 'svg' => '<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="16" height="12" rx="2"/><polyline points="2,5 10,11 18,5"/></svg>'),
+        'location' => array('label' => 'عنوان', 'svg' => '<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M10 2C6.7 2 4 4.7 4 8c0 4.5 6 10 6 10s6-5.5 6-10c0-3.3-2.7-6-6-6z"/><circle cx="10" cy="8" r="2"/></svg>'),
+        'clock' => array('label' => 'مواعيد العمل', 'svg' => '<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="10" cy="10" r="8"/><polyline points="10,5 10,10 13,12"/></svg>'),
+        'check' => array('label' => 'فحص / تحقق', 'svg' => '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>'),
+        'warranty' => array('label' => 'ضمان', 'svg' => '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><polyline points="9 12 11 14 15 10"/></svg>'),
+        'delivery' => array('label' => 'توصيل', 'svg' => '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="3" width="15" height="13" rx="2"/><polygon points="16 8 20 8 23 11 23 16 16 16 16 8"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg>'),
+        'support' => array('label' => 'دعم فني', 'svg' => '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 18v-6a9 9 0 0 1 18 0v6"/><path d="M21 19a2 2 0 0 1-2 2h-1a2 2 0 0 1-2-2v-3a2 2 0 0 1 2-2h3zM3 19a2 2 0 0 0 2 2h1a2 2 0 0 0 2-2v-3a2 2 0 0 0-2-2H3z"/></svg>'),
+        'link' => array('label' => 'رابط', 'svg' => '<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M8.5 11.5a3 3 0 0 0 4.2 0l2.8-2.8a3 3 0 0 0-4.2-4.2l-1 1"/><path d="M11.5 8.5a3 3 0 0 0-4.2 0l-2.8 2.8a3 3 0 0 0 4.2 4.2l1-1"/></svg>'),
+    );
+}
+
+function computech_footer_icon_svg(string $icon): string {
+    $choices = computech_footer_icon_choices();
+    return $choices[$icon]['svg'] ?? $choices['link']['svg'];
+}
+
+function computech_footer_social_platforms(): array {
+    return array(
+        'facebook' => array('label' => 'Facebook', 'svg' => '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M22 12.06C22 6.5 17.52 2 12 2S2 6.5 2 12.06c0 5.02 3.66 9.18 8.44 9.94v-7.03H7.9v-2.9h2.54V9.85c0-2.52 1.49-3.91 3.77-3.91 1.09 0 2.24.2 2.24.2v2.47h-1.26c-1.24 0-1.63.78-1.63 1.57v1.89h2.78l-.44 2.9h-2.34V22C18.34 21.24 22 17.08 22 12.06z"/></svg>'),
+        'instagram' => array('label' => 'Instagram', 'svg' => '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2.16c3.2 0 3.58.02 4.85.08 3.25.14 4.77 1.69 4.92 4.92.06 1.26.07 1.64.07 4.84s-.01 3.59-.07 4.85c-.15 3.23-1.67 4.77-4.92 4.92-1.27.06-1.65.07-4.85.07s-3.58-.01-4.85-.07c-3.25-.15-4.77-1.69-4.92-4.92-.06-1.26-.07-1.65-.07-4.85s.01-3.58.07-4.84c.15-3.23 1.67-4.78 4.92-4.92 1.27-.06 1.65-.08 4.85-.08zm0 1.78c-3.15 0-3.52.01-4.77.07-2.34.1-3.12 1.22-3.23 3.23-.06 1.25-.07 1.62-.07 4.76s.01 3.52.07 4.77c.11 2.01.89 3.13 3.23 3.23 1.25.06 1.62.07 4.77.07s3.52-.01 4.77-.07c2.34-.1 3.12-1.22 3.23-3.23.06-1.25.07-1.62.07-4.77s-.01-3.51-.07-4.76c-.11-2.01-.89-3.13-3.23-3.23-1.25-.06-1.62-.07-4.77-.07zm0 3.9a4.16 4.16 0 1 1 0 8.32 4.16 4.16 0 0 1 0-8.32zm0 6.86a2.7 2.7 0 1 0 0-5.4 2.7 2.7 0 0 0 0 5.4zm4.36-7.93a.97.97 0 1 1 0-1.94.97.97 0 0 1 0 1.94z"/></svg>'),
+        'youtube' => array('label' => 'YouTube', 'svg' => '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M23.5 6.19a3.02 3.02 0 0 0-2.12-2.14C19.5 3.55 12 3.55 12 3.55s-7.5 0-9.38.5A3.02 3.02 0 0 0 .5 6.19C0 8.07 0 12 0 12s0 3.93.5 5.81a3.02 3.02 0 0 0 2.12 2.14c1.88.5 9.38.5 9.38.5s7.5 0 9.38-.5a3.02 3.02 0 0 0 2.12-2.14C24 15.93 24 12 24 12s0-3.93-.5-5.81zM9.55 15.57V8.43L15.82 12l-6.27 3.57z"/></svg>'),
+        'twitter' => array('label' => 'X / Twitter', 'svg' => '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M18.24 2.25h3.31l-7.23 8.26 8.5 11.24h-6.66l-5.21-6.82-5.97 6.82H1.67l7.73-8.84L1.25 2.25h6.83l4.71 6.23 5.45-6.23zm-1.16 17.52h1.83L7.08 4.13H5.12l11.96 15.64z"/></svg>'),
+        'linkedin' => array('label' => 'LinkedIn', 'svg' => '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M20.45 20.45h-3.55v-5.57c0-1.33-.03-3.04-1.85-3.04-1.85 0-2.14 1.45-2.14 2.94v5.67H9.35V9h3.42v1.56h.05c.48-.9 1.64-1.85 3.37-1.85 3.6 0 4.27 2.37 4.27 5.45v6.29zM5.34 7.43a2.06 2.06 0 1 1 0-4.12 2.06 2.06 0 0 1 0 4.12zM7.12 20.45H3.56V9h3.56v11.45z"/></svg>'),
+        'tiktok' => array('label' => 'TikTok', 'svg' => '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M16.7 2c.35 3.02 2.04 4.82 5.03 5.01v3.4c-1.73.17-3.25-.4-4.93-1.45v6.36c0 8.08-8.8 10.6-12.35 4.81-2.28-3.72-.88-10.25 6.42-10.51v3.58c-.57.09-1.18.24-1.73.43-1.66.56-2.6 1.6-2.34 3.43.5 3.51 6.94 4.55 6.4-2.31V2h3.5z"/></svg>'),
+    );
+}
+
+function computech_footer_social_svg(string $platform): string {
+    $platforms = computech_footer_social_platforms();
+    return $platforms[$platform]['svg'] ?? $platforms['facebook']['svg'];
+}
+
+function computech_render_footer_link_list(string $option_name): void {
+    $items = computech_footer_visible_rows($option_name);
+    if (empty($items)) {
+        return;
+    }
+    echo '<ul class="footer-links">';
+    foreach ($items as $item) {
+        $label = trim((string) ($item['label'] ?? ''));
+        if ($label === '') {
+            continue;
+        }
+        echo '<li><a href="' . esc_url(computech_footer_link_url($item)) . '"' . computech_footer_link_target($item) . '>' . esc_html($label) . '</a></li>';
+    }
+    echo '</ul>';
+}
+
+function computech_render_footer_contact_items(): void {
+    $items = computech_footer_visible_rows('computech_footer_contact_items');
+    if (empty($items)) {
+        return;
+    }
+    echo '<ul class="footer-contact">';
+    foreach ($items as $item) {
+        $text = trim((string) ($item['text'] ?? ''));
+        if ($text === '') {
+            continue;
+        }
+        $icon = sanitize_key((string) ($item['icon'] ?? 'link'));
+        $url = trim((string) ($item['url'] ?? ''));
+        $target = !empty($item['new_tab']) ? ' target="_blank" rel="noopener"' : '';
+        echo '<li>' . computech_footer_icon_svg($icon);
+        if ($url !== '') {
+            echo '<a href="' . esc_url($url) . '"' . $target . '>' . esc_html($text) . '</a>';
+        } else {
+            echo '<span>' . esc_html($text) . '</span>';
+        }
+        echo '</li>';
+    }
+    echo '</ul>';
+}
+
+function computech_render_footer_feature_strip(): void {
+    if (!computech_footer_bool('show_feature_strip', true)) {
+        return;
+    }
+    $items = computech_footer_visible_rows('computech_footer_feature_items');
+    if (empty($items)) {
+        return;
+    }
+    echo '<div class="footer-services">';
+    $last_index = count($items) - 1;
+    foreach ($items as $index => $item) {
+        $text = trim((string) ($item['text'] ?? ''));
+        if ($text === '') {
+            continue;
+        }
+        $icon = sanitize_key((string) ($item['icon'] ?? 'check'));
+        echo '<div class="footer-service-item"><div class="footer-service-icon">' . computech_footer_icon_svg($icon) . '</div><span>' . esc_html($text) . '</span></div>';
+        if ($index < $last_index) {
+            echo '<div class="footer-service-sep"></div>';
+        }
+    }
+    echo '</div>';
+}
+
+function computech_render_footer_social_links(): void {
+    if (!computech_footer_bool('show_social_links', true)) {
+        return;
+    }
+    $items = computech_footer_visible_rows('computech_footer_social_links');
+    if (empty($items)) {
+        return;
+    }
+    echo '<div class="footer-social">';
+    $platforms = computech_footer_social_platforms();
+    foreach ($items as $item) {
+        $platform = sanitize_key((string) ($item['platform'] ?? 'facebook'));
+        $url = trim((string) ($item['url'] ?? ''));
+        if ($url === '') {
+            continue;
+        }
+        $label = $platforms[$platform]['label'] ?? ucfirst($platform);
+        echo '<a href="' . esc_url($url) . '" class="footer-social-icon" aria-label="' . esc_attr($label) . '" target="_blank" rel="noopener">' . computech_footer_social_svg($platform) . '</a>';
+    }
+    echo '</div>';
+}
+
+function computech_render_footer_bottom_links(): void {
+    if (!computech_footer_bool('show_bottom_links', true)) {
+        return;
+    }
+    $items = computech_footer_visible_rows('computech_footer_bottom_links');
+    if (empty($items)) {
+        return;
+    }
+    echo '<div class="footer-bottom-links">';
+    foreach ($items as $item) {
+        $label = trim((string) ($item['label'] ?? ''));
+        if ($label === '') {
+            continue;
+        }
+        echo '<a href="' . esc_url(computech_footer_link_url($item)) . '"' . computech_footer_link_target($item) . '>' . esc_html($label) . '</a>';
+    }
+    echo '</div>';
+}
+
+function computech_footer_columns_has_rows(string $option_name): bool {
+    foreach (computech_footer_visible_rows($option_name) as $item) {
+        if (trim((string) ($item['label'] ?? '')) !== '') {
+            return true;
+        }
+    }
+    return false;
+}
+
+function computech_footer_contact_has_rows(): bool {
+    foreach (computech_footer_visible_rows('computech_footer_contact_items') as $item) {
+        if (trim((string) ($item['text'] ?? '')) !== '') {
+            return true;
+        }
+    }
+    return false;
+}
+
+function computech_admin_footer_pages_options(int $selected = 0): string {
+    $pages = get_pages(array('sort_column' => 'menu_order,post_title', 'post_status' => 'publish'));
+    $html = '<option value="0">اختر صفحة</option>';
+    foreach ($pages as $page) {
+        $html .= '<option value="' . esc_attr((string) $page->ID) . '" ' . selected($selected, (int) $page->ID, false) . '>' . esc_html($page->post_title) . '</option>';
+    }
+    return $html;
+}
+
+function computech_footer_sanitize_link_rows($rows): array {
+    $items = array();
+    if (!is_array($rows)) {
+        return $items;
+    }
+    foreach ($rows as $row) {
+        if (!is_array($row)) { continue; }
+        $label = sanitize_text_field(wp_unslash($row['label'] ?? ''));
+        if ($label === '') { continue; }
+        $type = sanitize_key(wp_unslash($row['type'] ?? 'page'));
+        $type = in_array($type, array('page', 'custom'), true) ? $type : 'page';
+        $items[] = array(
+            'show' => !empty($row['show']) ? '1' : '0',
+            'label' => $label,
+            'type' => $type,
+            'page_id' => absint($row['page_id'] ?? 0),
+            'url' => esc_url_raw(wp_unslash($row['url'] ?? '')),
+            'new_tab' => !empty($row['new_tab']) ? '1' : '0',
+        );
+    }
+    return $items;
+}
+
+function computech_footer_sanitize_contact_rows($rows): array {
+    $items = array();
+    if (!is_array($rows)) {
+        return $items;
+    }
+    foreach ($rows as $row) {
+        if (!is_array($row)) { continue; }
+        $text = sanitize_text_field(wp_unslash($row['text'] ?? ''));
+        if ($text === '') { continue; }
+        $items[] = array(
+            'show' => !empty($row['show']) ? '1' : '0',
+            'icon' => sanitize_key(wp_unslash($row['icon'] ?? 'link')),
+            'text' => $text,
+            'url' => esc_url_raw(wp_unslash($row['url'] ?? '')),
+            'new_tab' => !empty($row['new_tab']) ? '1' : '0',
+        );
+    }
+    return $items;
+}
+
+function computech_footer_sanitize_feature_rows($rows): array {
+    $items = array();
+    if (!is_array($rows)) {
+        return $items;
+    }
+    foreach ($rows as $row) {
+        if (!is_array($row)) { continue; }
+        $text = sanitize_text_field(wp_unslash($row['text'] ?? ''));
+        if ($text === '') { continue; }
+        $items[] = array(
+            'show' => !empty($row['show']) ? '1' : '0',
+            'icon' => sanitize_key(wp_unslash($row['icon'] ?? 'check')),
+            'text' => $text,
+        );
+    }
+    return $items;
+}
+
+function computech_footer_sanitize_social_rows($rows): array {
+    $items = array();
+    $platforms = array_keys(computech_footer_social_platforms());
+    if (!is_array($rows)) {
+        return $items;
+    }
+    foreach ($rows as $row) {
+        if (!is_array($row)) { continue; }
+        $platform = sanitize_key(wp_unslash($row['platform'] ?? 'facebook'));
+        if (!in_array($platform, $platforms, true)) {
+            $platform = 'facebook';
+        }
+        $url = esc_url_raw(wp_unslash($row['url'] ?? ''));
+        if ($url === '') { continue; }
+        $items[] = array(
+            'show' => !empty($row['show']) ? '1' : '0',
+            'platform' => $platform,
+            'url' => $url,
+        );
+    }
+    return $items;
+}
+
+function computech_admin_menu_footer(): void {
+    add_submenu_page('computech-settings', 'إعدادات الفوتر', 'إعدادات الفوتر', computech_admin_capability(), 'computech-footer-settings', 'computech_footer_settings_page');
+}
+add_action('admin_menu', 'computech_admin_menu_footer', 20);
+
+function computech_footer_admin_assets(string $hook): void {
+    if (strpos($hook, 'computech-footer-settings') === false) {
+        return;
+    }
+    wp_enqueue_media();
+}
+add_action('admin_enqueue_scripts', 'computech_footer_admin_assets');
+
+function computech_handle_footer_settings_save(): void {
+    if (!isset($_POST['computech_footer_settings_nonce'])) {
+        return;
+    }
+    if (!wp_verify_nonce(sanitize_text_field(wp_unslash($_POST['computech_footer_settings_nonce'])), 'computech_save_footer_settings')) {
+        wp_die(esc_html__('طلب غير آمن. برجاء إعادة تحميل الصفحة والمحاولة مرة أخرى.', 'computech'));
+    }
+    if (!current_user_can(computech_admin_capability())) {
+        wp_die(esc_html__('غير مسموح لك بتعديل إعدادات الفوتر.', 'computech'));
+    }
+
+    $settings = array(
+        'show_newsletter' => !empty($_POST['show_newsletter']) ? '1' : '0',
+        'newsletter_title' => sanitize_text_field(wp_unslash($_POST['newsletter_title'] ?? '')),
+        'newsletter_subtitle' => sanitize_textarea_field(wp_unslash($_POST['newsletter_subtitle'] ?? '')),
+        'newsletter_placeholder' => sanitize_text_field(wp_unslash($_POST['newsletter_placeholder'] ?? '')),
+        'newsletter_button_label' => sanitize_text_field(wp_unslash($_POST['newsletter_button_label'] ?? '')),
+        'newsletter_action_type' => in_array(sanitize_key(wp_unslash($_POST['newsletter_action_type'] ?? 'page')), array('page', 'custom'), true) ? sanitize_key(wp_unslash($_POST['newsletter_action_type'] ?? 'page')) : 'page',
+        'newsletter_action_page_id' => absint($_POST['newsletter_action_page_id'] ?? 0),
+        'newsletter_action_url' => esc_url_raw(wp_unslash($_POST['newsletter_action_url'] ?? '')),
+        'footer_logo_text' => sanitize_text_field(wp_unslash($_POST['footer_logo_text'] ?? '')),
+        'footer_logo_alt' => sanitize_text_field(wp_unslash($_POST['footer_logo_alt'] ?? '')),
+        'brand_description' => sanitize_textarea_field(wp_unslash($_POST['brand_description'] ?? '')),
+        'quick_links_title' => sanitize_text_field(wp_unslash($_POST['quick_links_title'] ?? '')),
+        'category_links_title' => sanitize_text_field(wp_unslash($_POST['category_links_title'] ?? '')),
+        'service_links_title' => sanitize_text_field(wp_unslash($_POST['service_links_title'] ?? '')),
+        'contact_title' => sanitize_text_field(wp_unslash($_POST['contact_title'] ?? '')),
+        'show_feature_strip' => !empty($_POST['show_feature_strip']) ? '1' : '0',
+        'show_social_links' => !empty($_POST['show_social_links']) ? '1' : '0',
+        'show_bottom_links' => !empty($_POST['show_bottom_links']) ? '1' : '0',
+        'copyright_text' => sanitize_text_field(wp_unslash($_POST['copyright_text'] ?? '')),
+    );
+
+    update_option('computech_footer_settings', $settings, false);
+    update_option('computech_footer_logo_id', absint($_POST['footer_logo_id'] ?? 0), false);
+    update_option('computech_footer_quick_links', computech_footer_sanitize_link_rows($_POST['footer_quick'] ?? array()), false);
+    update_option('computech_footer_category_links', computech_footer_sanitize_link_rows($_POST['footer_categories'] ?? array()), false);
+    update_option('computech_footer_service_links', computech_footer_sanitize_link_rows($_POST['footer_services'] ?? array()), false);
+    update_option('computech_footer_bottom_links', computech_footer_sanitize_link_rows($_POST['footer_bottom'] ?? array()), false);
+    update_option('computech_footer_contact_items', computech_footer_sanitize_contact_rows($_POST['footer_contact'] ?? array()), false);
+    update_option('computech_footer_feature_items', computech_footer_sanitize_feature_rows($_POST['footer_features'] ?? array()), false);
+    update_option('computech_footer_social_links', computech_footer_sanitize_social_rows($_POST['footer_social'] ?? array()), false);
+
+    add_settings_error('computech_footer_messages', 'computech_footer_saved', 'تم حفظ إعدادات الفوتر بنجاح.', 'updated');
+}
+add_action('admin_init', 'computech_handle_footer_settings_save');
+
+function computech_admin_footer_icon_select(string $name, string $selected): string {
+    $html = '<select name="' . esc_attr($name) . '">';
+    foreach (computech_footer_icon_choices() as $key => $icon) {
+        $html .= '<option value="' . esc_attr($key) . '" ' . selected($selected, $key, false) . '>' . esc_html($icon['label']) . '</option>';
+    }
+    $html .= '</select>';
+    return $html;
+}
+
+function computech_admin_footer_platform_select(string $name, string $selected): string {
+    $html = '<select name="' . esc_attr($name) . '">';
+    foreach (computech_footer_social_platforms() as $key => $platform) {
+        $html .= '<option value="' . esc_attr($key) . '" ' . selected($selected, $key, false) . '>' . esc_html($platform['label']) . '</option>';
+    }
+    $html .= '</select>';
+    return $html;
+}
+
+function computech_admin_footer_render_link_rows(string $field_name, array $items): void {
+    foreach ($items as $i => $item) : ?>
+        <div class="ct-row cf-link-row">
+            <div class="ct-row-head"><strong>رابط</strong><button type="button" class="button-link-delete cf-remove-row">حذف</button></div>
+            <label><input type="checkbox" name="<?php echo esc_attr($field_name); ?>[<?php echo esc_attr((string) $i); ?>][show]" value="1" <?php checked(!empty($item['show'])); ?>> إظهار الرابط</label>
+            <label>النص<input type="text" name="<?php echo esc_attr($field_name); ?>[<?php echo esc_attr((string) $i); ?>][label]" value="<?php echo esc_attr($item['label'] ?? ''); ?>"></label>
+            <label>نوع الرابط<select name="<?php echo esc_attr($field_name); ?>[<?php echo esc_attr((string) $i); ?>][type]" class="cf-link-type"><option value="page" <?php selected($item['type'] ?? 'page', 'page'); ?>>صفحة داخل الموقع</option><option value="custom" <?php selected($item['type'] ?? 'page', 'custom'); ?>>رابط مخصص</option></select></label>
+            <label class="cf-page-field">اختر الصفحة<select name="<?php echo esc_attr($field_name); ?>[<?php echo esc_attr((string) $i); ?>][page_id]"><?php echo computech_admin_footer_pages_options(absint($item['page_id'] ?? 0)); ?></select></label>
+            <label class="cf-url-field">الرابط المخصص<input type="text" name="<?php echo esc_attr($field_name); ?>[<?php echo esc_attr((string) $i); ?>][url]" value="<?php echo esc_attr($item['url'] ?? ''); ?>" placeholder="https://example.com"></label>
+            <label><input type="checkbox" name="<?php echo esc_attr($field_name); ?>[<?php echo esc_attr((string) $i); ?>][new_tab]" value="1" <?php checked(!empty($item['new_tab'])); ?>> فتح في تبويب جديد</label>
+        </div>
+    <?php endforeach;
+}
+
+function computech_footer_settings_page(): void {
+    if (!current_user_can(computech_admin_capability())) {
+        wp_die(esc_html__('غير مسموح لك بالدخول إلى إعدادات الفوتر.', 'computech'));
+    }
+    computech_seed_footer_database_options();
+    $settings = computech_footer_settings();
+    $logo_id = absint(get_option('computech_footer_logo_id', 0));
+    $logo_url = $logo_id ? wp_get_attachment_image_url($logo_id, 'thumbnail') : '';
+    $quick_links = computech_footer_rows('computech_footer_quick_links');
+    $category_links = computech_footer_rows('computech_footer_category_links');
+    $service_links = computech_footer_rows('computech_footer_service_links');
+    $bottom_links = computech_footer_rows('computech_footer_bottom_links');
+    $contact_items = computech_footer_rows('computech_footer_contact_items');
+    $feature_items = computech_footer_rows('computech_footer_feature_items');
+    $social_links = computech_footer_rows('computech_footer_social_links');
+    settings_errors('computech_footer_messages');
+    ?>
+    <div class="wrap computech-admin-wrap" dir="rtl">
+        <h1>إعدادات كمبيوتك - الفوتر</h1>
+        <p>هذه الصفحة لتعديل محتوى الفوتر فقط. التصميم، الألوان، المسافات، الأعمدة، والـ hover effects ثابتة داخل ملفات الثيم حتى لا يكسر الأدمن شكل الموقع.</p>
+        <form method="post">
+            <?php wp_nonce_field('computech_save_footer_settings', 'computech_footer_settings_nonce'); ?>
+
+            <div class="ct-panel">
+                <h2>الهوية والوصف</h2>
+                <input type="hidden" name="footer_logo_id" id="ct-footer-logo-id" value="<?php echo esc_attr((string) $logo_id); ?>">
+                <div class="ct-logo-preview" id="ct-footer-logo-preview"><?php if ($logo_url) : ?><img src="<?php echo esc_url($logo_url); ?>" alt=""><?php else : ?><span>سيتم استخدام لوجو الهيدر أو اللوجو الافتراضي</span><?php endif; ?></div>
+                <button type="button" class="button" id="ct-footer-upload-logo">اختيار / تغيير لوجو الفوتر</button>
+                <button type="button" class="button" id="ct-footer-remove-logo">إزالة لوجو الفوتر</button>
+                <label>نص اللوجو بجانب الصورة<input type="text" name="footer_logo_text" value="<?php echo esc_attr($settings['footer_logo_text']); ?>"></label>
+                <label>Alt اللوجو<input type="text" name="footer_logo_alt" value="<?php echo esc_attr($settings['footer_logo_alt']); ?>"></label>
+                <label>وصف الشركة<textarea name="brand_description" rows="4"><?php echo esc_textarea($settings['brand_description']); ?></textarea></label>
+            </div>
+
+            <div class="ct-panel">
+                <h2>Newsletter - الاشتراك بالبريد</h2>
+                <label><input type="checkbox" name="show_newsletter" value="1" <?php checked($settings['show_newsletter'], '1'); ?>> إظهار جزء الاشتراك</label>
+                <label>العنوان<input type="text" name="newsletter_title" value="<?php echo esc_attr($settings['newsletter_title']); ?>"></label>
+                <label>الوصف<textarea name="newsletter_subtitle" rows="3"><?php echo esc_textarea($settings['newsletter_subtitle']); ?></textarea></label>
+                <label>Placeholder البريد<input type="text" name="newsletter_placeholder" value="<?php echo esc_attr($settings['newsletter_placeholder']); ?>"></label>
+                <label>نص الزر<input type="text" name="newsletter_button_label" value="<?php echo esc_attr($settings['newsletter_button_label']); ?>"></label>
+                <label>إرسال الفورم إلى<select name="newsletter_action_type" class="cf-link-type"><option value="page" <?php selected($settings['newsletter_action_type'], 'page'); ?>>صفحة داخل الموقع</option><option value="custom" <?php selected($settings['newsletter_action_type'], 'custom'); ?>>رابط مخصص</option></select></label>
+                <label class="cf-page-field">صفحة الفورم<select name="newsletter_action_page_id"><?php echo computech_admin_footer_pages_options(absint($settings['newsletter_action_page_id'])); ?></select></label>
+                <label class="cf-url-field">رابط مخصص للفورم<input type="text" name="newsletter_action_url" value="<?php echo esc_attr($settings['newsletter_action_url']); ?>"></label>
+            </div>
+
+            <div class="ct-panel">
+                <h2>عناوين الأعمدة</h2>
+                <label>عنوان عمود الروابط السريعة<input type="text" name="quick_links_title" value="<?php echo esc_attr($settings['quick_links_title']); ?>"></label>
+                <label>عنوان عمود التصنيفات<input type="text" name="category_links_title" value="<?php echo esc_attr($settings['category_links_title']); ?>"></label>
+                <label>عنوان عمود الخدمات<input type="text" name="service_links_title" value="<?php echo esc_attr($settings['service_links_title']); ?>"></label>
+                <label>عنوان عمود التواصل<input type="text" name="contact_title" value="<?php echo esc_attr($settings['contact_title']); ?>"></label>
+            </div>
+
+            <div class="ct-panel"><h2>روابط سريعة</h2><div id="cf-quick-list"><?php computech_admin_footer_render_link_rows('footer_quick', $quick_links); ?></div><button type="button" class="button button-secondary cf-add-link" data-target="cf-quick-list" data-name="footer_quick">+ إضافة رابط</button></div>
+            <div class="ct-panel"><h2>التصنيفات</h2><div id="cf-category-list"><?php computech_admin_footer_render_link_rows('footer_categories', $category_links); ?></div><button type="button" class="button button-secondary cf-add-link" data-target="cf-category-list" data-name="footer_categories">+ إضافة تصنيف</button></div>
+            <div class="ct-panel"><h2>الخدمات</h2><div id="cf-service-list"><?php computech_admin_footer_render_link_rows('footer_services', $service_links); ?></div><button type="button" class="button button-secondary cf-add-link" data-target="cf-service-list" data-name="footer_services">+ إضافة خدمة</button></div>
+
+            <div class="ct-panel">
+                <h2>بيانات التواصل</h2>
+                <div id="cf-contact-list">
+                    <?php foreach ($contact_items as $i => $item) : ?>
+                        <div class="ct-row cf-contact-row">
+                            <div class="ct-row-head"><strong>بيان تواصل</strong><button type="button" class="button-link-delete cf-remove-row">حذف</button></div>
+                            <label><input type="checkbox" name="footer_contact[<?php echo esc_attr((string) $i); ?>][show]" value="1" <?php checked(!empty($item['show'])); ?>> إظهار البيان</label>
+                            <label>الأيقونة<?php echo computech_admin_footer_icon_select('footer_contact[' . esc_attr((string) $i) . '][icon]', $item['icon'] ?? 'link'); ?></label>
+                            <label>النص<input type="text" name="footer_contact[<?php echo esc_attr((string) $i); ?>][text]" value="<?php echo esc_attr($item['text'] ?? ''); ?>"></label>
+                            <label>رابط اختياري<input type="text" name="footer_contact[<?php echo esc_attr((string) $i); ?>][url]" value="<?php echo esc_attr($item['url'] ?? ''); ?>" placeholder="tel: / mailto: / https://"></label>
+                            <label><input type="checkbox" name="footer_contact[<?php echo esc_attr((string) $i); ?>][new_tab]" value="1" <?php checked(!empty($item['new_tab'])); ?>> فتح في تبويب جديد</label>
+                        </div>
+                    <?php endforeach; ?>
+                </div>
+                <button type="button" class="button button-secondary" id="cf-add-contact">+ إضافة بيان تواصل</button>
+            </div>
+
+            <div class="ct-panel">
+                <h2>شريط المميزات داخل الفوتر</h2>
+                <label><input type="checkbox" name="show_feature_strip" value="1" <?php checked($settings['show_feature_strip'], '1'); ?>> إظهار الشريط</label>
+                <div id="cf-feature-list">
+                    <?php foreach ($feature_items as $i => $item) : ?>
+                        <div class="ct-row cf-feature-row">
+                            <div class="ct-row-head"><strong>ميزة</strong><button type="button" class="button-link-delete cf-remove-row">حذف</button></div>
+                            <label><input type="checkbox" name="footer_features[<?php echo esc_attr((string) $i); ?>][show]" value="1" <?php checked(!empty($item['show'])); ?>> إظهار الميزة</label>
+                            <label>الأيقونة<?php echo computech_admin_footer_icon_select('footer_features[' . esc_attr((string) $i) . '][icon]', $item['icon'] ?? 'check'); ?></label>
+                            <label>النص<input type="text" name="footer_features[<?php echo esc_attr((string) $i); ?>][text]" value="<?php echo esc_attr($item['text'] ?? ''); ?>"></label>
+                        </div>
+                    <?php endforeach; ?>
+                </div>
+                <button type="button" class="button button-secondary" id="cf-add-feature">+ إضافة ميزة</button>
+            </div>
+
+            <div class="ct-panel">
+                <h2>روابط السوشيال ميديا</h2>
+                <label><input type="checkbox" name="show_social_links" value="1" <?php checked($settings['show_social_links'], '1'); ?>> إظهار أيقونات السوشيال</label>
+                <div id="cf-social-list">
+                    <?php foreach ($social_links as $i => $item) : ?>
+                        <div class="ct-row cf-social-row">
+                            <div class="ct-row-head"><strong>رابط سوشيال</strong><button type="button" class="button-link-delete cf-remove-row">حذف</button></div>
+                            <label><input type="checkbox" name="footer_social[<?php echo esc_attr((string) $i); ?>][show]" value="1" <?php checked(!empty($item['show'])); ?>> إظهار الرابط</label>
+                            <label>المنصة<?php echo computech_admin_footer_platform_select('footer_social[' . esc_attr((string) $i) . '][platform]', $item['platform'] ?? 'facebook'); ?></label>
+                            <label>الرابط<input type="text" name="footer_social[<?php echo esc_attr((string) $i); ?>][url]" value="<?php echo esc_attr($item['url'] ?? ''); ?>" placeholder="https://"></label>
+                        </div>
+                    <?php endforeach; ?>
+                </div>
+                <button type="button" class="button button-secondary" id="cf-add-social">+ إضافة رابط سوشيال</button>
+            </div>
+
+            <div class="ct-panel">
+                <h2>أسفل الفوتر</h2>
+                <label><input type="checkbox" name="show_bottom_links" value="1" <?php checked($settings['show_bottom_links'], '1'); ?>> إظهار روابط أسفل الفوتر</label>
+                <label>نص الحقوق بعد السنة الحالية<input type="text" name="copyright_text" value="<?php echo esc_attr($settings['copyright_text']); ?>"></label>
+                <div id="cf-bottom-list"><?php computech_admin_footer_render_link_rows('footer_bottom', $bottom_links); ?></div>
+                <button type="button" class="button button-secondary cf-add-link" data-target="cf-bottom-list" data-name="footer_bottom">+ إضافة رابط سفلي</button>
+            </div>
+
+            <?php submit_button('حفظ إعدادات الفوتر'); ?>
+        </form>
+    </div>
+
+    <template id="cf-link-template">
+        <div class="ct-row cf-link-row">
+            <div class="ct-row-head"><strong>رابط</strong><button type="button" class="button-link-delete cf-remove-row">حذف</button></div>
+            <label><input type="checkbox" name="__name__[__i__][show]" value="1" checked> إظهار الرابط</label>
+            <label>النص<input type="text" name="__name__[__i__][label]" value=""></label>
+            <label>نوع الرابط<select name="__name__[__i__][type]" class="cf-link-type"><option value="page">صفحة داخل الموقع</option><option value="custom">رابط مخصص</option></select></label>
+            <label class="cf-page-field">اختر الصفحة<select name="__name__[__i__][page_id]"><?php echo computech_admin_footer_pages_options(0); ?></select></label>
+            <label class="cf-url-field">الرابط المخصص<input type="text" name="__name__[__i__][url]" value="" placeholder="https://example.com"></label>
+            <label><input type="checkbox" name="__name__[__i__][new_tab]" value="1"> فتح في تبويب جديد</label>
+        </div>
+    </template>
+    <template id="cf-contact-template">
+        <div class="ct-row cf-contact-row"><div class="ct-row-head"><strong>بيان تواصل</strong><button type="button" class="button-link-delete cf-remove-row">حذف</button></div><label><input type="checkbox" name="footer_contact[__i__][show]" value="1" checked> إظهار البيان</label><label>الأيقونة<?php echo computech_admin_footer_icon_select('footer_contact[__i__][icon]', 'phone'); ?></label><label>النص<input type="text" name="footer_contact[__i__][text]" value=""></label><label>رابط اختياري<input type="text" name="footer_contact[__i__][url]" value="" placeholder="tel: / mailto: / https://"></label><label><input type="checkbox" name="footer_contact[__i__][new_tab]" value="1"> فتح في تبويب جديد</label></div>
+    </template>
+    <template id="cf-feature-template">
+        <div class="ct-row cf-feature-row"><div class="ct-row-head"><strong>ميزة</strong><button type="button" class="button-link-delete cf-remove-row">حذف</button></div><label><input type="checkbox" name="footer_features[__i__][show]" value="1" checked> إظهار الميزة</label><label>الأيقونة<?php echo computech_admin_footer_icon_select('footer_features[__i__][icon]', 'check'); ?></label><label>النص<input type="text" name="footer_features[__i__][text]" value=""></label></div>
+    </template>
+    <template id="cf-social-template">
+        <div class="ct-row cf-social-row"><div class="ct-row-head"><strong>رابط سوشيال</strong><button type="button" class="button-link-delete cf-remove-row">حذف</button></div><label><input type="checkbox" name="footer_social[__i__][show]" value="1" checked> إظهار الرابط</label><label>المنصة<?php echo computech_admin_footer_platform_select('footer_social[__i__][platform]', 'facebook'); ?></label><label>الرابط<input type="text" name="footer_social[__i__][url]" value="" placeholder="https://"></label></div>
+    </template>
+
+    <style>
+        .computech-admin-wrap { max-width: 1120px; }
+        .ct-panel { background:#fff; border:1px solid #dcdcde; border-radius:14px; padding:18px; margin:18px 0; box-shadow:0 6px 20px rgba(0,0,0,.03); }
+        .ct-panel h2 { margin-top:0; }
+        .ct-row { border:1px solid #e5e7eb; border-radius:12px; padding:14px; margin:12px 0; background:#f9fafb; display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:12px; align-items:end; }
+        .ct-row-head { grid-column:1 / -1; display:flex; justify-content:space-between; align-items:center; }
+        .ct-row label, .ct-panel label { display:block; font-weight:700; margin:8px 0; }
+        .ct-row input[type=text], .ct-row input[type=url], .ct-row select, .ct-panel input[type=text], .ct-panel textarea, .ct-panel select { width:100%; margin-top:6px; }
+        .ct-logo-preview { width:120px; height:70px; display:flex; align-items:center; justify-content:center; background:#fff; border:1px dashed #ccd0d4; border-radius:10px; margin:10px 0; overflow:hidden; color:#64748b; font-size:12px; text-align:center; }
+        .ct-logo-preview img { max-width:100%; max-height:100%; object-fit:contain; }
+        @media (max-width: 782px) { .ct-row { grid-template-columns:1fr; } }
+    </style>
+    <script>
+    (function(){
+        var indexes = {
+            footer_quick: <?php echo (int) count($quick_links); ?>,
+            footer_categories: <?php echo (int) count($category_links); ?>,
+            footer_services: <?php echo (int) count($service_links); ?>,
+            footer_bottom: <?php echo (int) count($bottom_links); ?>,
+            footer_contact: <?php echo (int) count($contact_items); ?>,
+            footer_features: <?php echo (int) count($feature_items); ?>,
+            footer_social: <?php echo (int) count($social_links); ?>
+        };
+        function refreshLinkFields(scope){
+            (scope || document).querySelectorAll('.cf-link-row, .ct-panel').forEach(function(row){
+                row.querySelectorAll('.cf-link-type').forEach(function(select){
+                    var container = select.closest('.cf-link-row') || select.closest('.ct-panel');
+                    if (!container) { return; }
+                    container.querySelectorAll('.cf-page-field').forEach(function(el){ el.style.display = select.value === 'page' ? '' : 'none'; });
+                    container.querySelectorAll('.cf-url-field').forEach(function(el){ el.style.display = select.value === 'custom' ? '' : 'none'; });
+                });
+            });
+        }
+        refreshLinkFields(document);
+        document.addEventListener('change', function(e){ if (e.target.classList.contains('cf-link-type')) { refreshLinkFields(e.target.closest('.cf-link-row') || e.target.closest('.ct-panel')); } });
+        document.addEventListener('click', function(e){
+            var remove = e.target.closest('.cf-remove-row');
+            if (remove) { e.preventDefault(); remove.closest('.ct-row').remove(); return; }
+            var addLink = e.target.closest('.cf-add-link');
+            if (addLink) {
+                e.preventDefault();
+                var target = document.getElementById(addLink.dataset.target);
+                var name = addLink.dataset.name;
+                var index = indexes[name] || 0;
+                indexes[name] = index + 1;
+                target.insertAdjacentHTML('beforeend', document.getElementById('cf-link-template').innerHTML.replaceAll('__name__', name).replaceAll('__i__', index));
+                refreshLinkFields(target.lastElementChild);
+                return;
+            }
+            if (e.target.id === 'cf-add-contact') { e.preventDefault(); var c = indexes.footer_contact++; document.getElementById('cf-contact-list').insertAdjacentHTML('beforeend', document.getElementById('cf-contact-template').innerHTML.replaceAll('__i__', c)); return; }
+            if (e.target.id === 'cf-add-feature') { e.preventDefault(); var f = indexes.footer_features++; document.getElementById('cf-feature-list').insertAdjacentHTML('beforeend', document.getElementById('cf-feature-template').innerHTML.replaceAll('__i__', f)); return; }
+            if (e.target.id === 'cf-add-social') { e.preventDefault(); var s = indexes.footer_social++; document.getElementById('cf-social-list').insertAdjacentHTML('beforeend', document.getElementById('cf-social-template').innerHTML.replaceAll('__i__', s)); return; }
+            if (e.target.id === 'ct-footer-remove-logo') { e.preventDefault(); document.getElementById('ct-footer-logo-id').value = '0'; document.getElementById('ct-footer-logo-preview').innerHTML = '<span>سيتم استخدام لوجو الهيدر أو اللوجو الافتراضي</span>'; return; }
+            if (e.target.id === 'ct-footer-upload-logo') {
+                e.preventDefault();
+                if (!window.wp || !wp.media) { return; }
+                var frame = wp.media({ title:'اختر لوجو الفوتر', button:{ text:'استخدام اللوجو' }, multiple:false });
+                frame.on('select', function(){
+                    var file = frame.state().get('selection').first().toJSON();
+                    document.getElementById('ct-footer-logo-id').value = file.id;
+                    document.getElementById('ct-footer-logo-preview').innerHTML = '<img src="' + ((file.sizes && file.sizes.thumbnail) ? file.sizes.thumbnail.url : file.url) + '" alt="">';
+                });
+                frame.open();
+            }
+        });
+    })();
+    </script>
     <?php
 }
 
