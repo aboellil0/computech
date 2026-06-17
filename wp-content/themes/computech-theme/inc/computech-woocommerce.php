@@ -244,7 +244,7 @@ function computech_wc_render_shop_categories_section(): void {
     if (!$items) {
         return;
     }
-    $title = function_exists('computech_home_section_option') ? computech_home_section_option('shop_title', 'تسوق حسب القسم') : 'تسوق حسب القسم';
+    $title = function_exists('computech_home_section_option') ? computech_home_section_option('shop_title', '') : '';
     $subtitle = function_exists('computech_home_section_option') ? computech_home_section_option('shop_subtitle', '') : '';
     $top_items = array_slice($items, 0, 3);
     $bottom_items = array_slice($items, 3, 2);
@@ -357,16 +357,34 @@ function computech_wc_product_price_number(WC_Product $product): int {
     return (int) preg_replace('/[^0-9]/', '', (string) $price);
 }
 
-function computech_wc_product_specs(WC_Product $product, int $limit = 12): array {
+function computech_wc_product_specs(WC_Product $product, int $limit = 0): array {
+    $product_id = $product->get_id();
     $specs = array();
-    for ($i = 1; $i <= 12; $i++) {
-        $label = trim((string) get_post_meta($product->get_id(), '_computech_wc_spec_label_' . $i, true));
-        $value = trim((string) get_post_meta($product->get_id(), '_computech_wc_spec_value_' . $i, true));
-        if ($label !== '' && $value !== '') {
-            $specs[] = array('label' => $label, 'value' => $value);
+
+    $stored_specs = get_post_meta($product_id, '_computech_wc_specs', true);
+    if (is_array($stored_specs)) {
+        foreach ($stored_specs as $row) {
+            $label = trim((string) ($row['label'] ?? ''));
+            $value = trim((string) ($row['value'] ?? ''));
+            if ($label !== '' && $value !== '') {
+                $specs[] = array('label' => $label, 'value' => $value);
+            }
+            if ($limit > 0 && count($specs) >= $limit) {
+                return $specs;
+            }
         }
-        if (count($specs) >= $limit) {
-            return $specs;
+    }
+
+    if (empty($specs)) {
+        for ($i = 1; $i <= 200; $i++) {
+            $label = trim((string) get_post_meta($product_id, '_computech_wc_spec_label_' . $i, true));
+            $value = trim((string) get_post_meta($product_id, '_computech_wc_spec_value_' . $i, true));
+            if ($label !== '' && $value !== '') {
+                $specs[] = array('label' => $label, 'value' => $value);
+            }
+            if ($limit > 0 && count($specs) >= $limit) {
+                return $specs;
+            }
         }
     }
 
@@ -377,7 +395,7 @@ function computech_wc_product_specs(WC_Product $product, int $limit = 12): array
         $name = wc_attribute_label($attribute->get_name());
         $values = array();
         if ($attribute->is_taxonomy()) {
-            $terms = wc_get_product_terms($product->get_id(), $attribute->get_name(), array('fields' => 'names'));
+            $terms = wc_get_product_terms($product_id, $attribute->get_name(), array('fields' => 'names'));
             if (!is_wp_error($terms)) {
                 $values = $terms;
             }
@@ -388,7 +406,7 @@ function computech_wc_product_specs(WC_Product $product, int $limit = 12): array
         if ($name !== '' && $value !== '') {
             $specs[] = array('label' => $name, 'value' => $value);
         }
-        if (count($specs) >= $limit) {
+        if ($limit > 0 && count($specs) >= $limit) {
             break;
         }
     }
@@ -520,9 +538,9 @@ function computech_wc_render_featured_products_section(): void {
     if (!$products) {
         return;
     }
-    $title = function_exists('computech_home_section_option') ? computech_home_section_option('featured_title', 'منتجات مميزة') : 'منتجات مميزة';
+    $title = function_exists('computech_home_section_option') ? computech_home_section_option('featured_title', '') : '';
     $subtitle = function_exists('computech_home_section_option') ? computech_home_section_option('featured_subtitle', '') : '';
-    $view_all_label = function_exists('computech_home_section_option') ? computech_home_section_option('featured_view_all_label', 'عرض كل المنتجات') : 'عرض كل المنتجات';
+    $view_all_label = function_exists('computech_home_section_option') ? computech_home_section_option('featured_view_all_label', '') : '';
     ?>
     <section class="featured-section computech-wc-featured-products">
         <div class="featured-bg-pattern"><div class="feat-glow feat-glow-tr"></div><div class="feat-glow feat-glow-bl"></div><div class="feat-dots feat-dots-tr"></div><div class="feat-dots feat-dots-bl"></div></div>
@@ -819,17 +837,52 @@ function computech_wc_product_metabox_html(WP_Post $post): void {
             <p><label style="display:block;font-weight:700;margin-bottom:6px">Featured Order</label><input type="number" name="_computech_wc_featured_order" value="<?php echo esc_attr($featured_order); ?>" class="widefat" min="0" step="1"></p>
             <p><label style="display:block;font-weight:700;margin-bottom:6px">Status</label><select name="_computech_wc_condition" class="widefat"><option value="new" <?php selected($condition, 'new'); ?>>جديد</option><option value="imported" <?php selected($condition, 'imported'); ?>>استيراد</option></select></p>
         </div>
-        <div>
+        <div class="computech-specs-editor">
             <h3 style="margin:0 0 8px">مواصفات المنتج</h3>
-            <p class="description">اكتب كل مواصفة كسطر: الاسم والقيمة. مثال: المعالج / Intel Core i9-14900K.</p>
-            <div style="display:grid;gap:8px">
-                <?php for ($i = 1; $i <= 12; $i++) : ?>
-                    <div style="display:grid;grid-template-columns:1fr 2fr;gap:8px">
-                        <input type="text" name="_computech_wc_spec_label_<?php echo esc_attr((string) $i); ?>" value="<?php echo esc_attr(get_post_meta($post->ID, '_computech_wc_spec_label_' . $i, true)); ?>" class="widefat" placeholder="اسم المواصفة">
-                        <input type="text" name="_computech_wc_spec_value_<?php echo esc_attr((string) $i); ?>" value="<?php echo esc_attr(get_post_meta($post->ID, '_computech_wc_spec_value_' . $i, true)); ?>" class="widefat" placeholder="القيمة">
+            <p class="description">أضف أي عدد من المواصفات. مثال: المعالج / Intel Core i9-14900K.</p>
+            <?php
+            $saved_specs = get_post_meta($post->ID, '_computech_wc_specs', true);
+            if (!is_array($saved_specs)) {
+                $saved_specs = array();
+                for ($i = 1; $i <= 200; $i++) {
+                    $legacy_label = trim((string) get_post_meta($post->ID, '_computech_wc_spec_label_' . $i, true));
+                    $legacy_value = trim((string) get_post_meta($post->ID, '_computech_wc_spec_value_' . $i, true));
+                    if ($legacy_label !== '' || $legacy_value !== '') {
+                        $saved_specs[] = array('label' => $legacy_label, 'value' => $legacy_value);
+                    }
+                }
+            }
+            if (!$saved_specs) {
+                $saved_specs = array(array('label' => '', 'value' => ''));
+            }
+            ?>
+            <div id="computech-wc-specs-rows" style="display:grid;gap:10px">
+                <?php foreach ($saved_specs as $row) : ?>
+                    <div class="computech-wc-spec-row" style="display:grid;grid-template-columns:1fr 2fr auto;gap:8px;align-items:center">
+                        <input type="text" name="_computech_wc_spec_label[]" value="<?php echo esc_attr((string) ($row['label'] ?? '')); ?>" class="widefat" placeholder="اسم المواصفة">
+                        <input type="text" name="_computech_wc_spec_value[]" value="<?php echo esc_attr((string) ($row['value'] ?? '')); ?>" class="widefat" placeholder="القيمة">
+                        <button type="button" class="button computech-remove-spec">حذف</button>
                     </div>
-                <?php endfor; ?>
+                <?php endforeach; ?>
             </div>
+            <p><button type="button" class="button button-primary" id="computech-add-spec-row">+ إضافة مواصفة</button></p>
+            <script>
+            jQuery(function($){
+                var $rows = $('#computech-wc-specs-rows');
+                $('#computech-add-spec-row').on('click', function(e){
+                    e.preventDefault();
+                    $rows.append('<div class="computech-wc-spec-row" style="display:grid;grid-template-columns:1fr 2fr auto;gap:8px;align-items:center"><input type="text" name="_computech_wc_spec_label[]" value="" class="widefat" placeholder="اسم المواصفة"><input type="text" name="_computech_wc_spec_value[]" value="" class="widefat" placeholder="القيمة"><button type="button" class="button computech-remove-spec">حذف</button></div>');
+                });
+                $rows.on('click', '.computech-remove-spec', function(e){
+                    e.preventDefault();
+                    if ($rows.find('.computech-wc-spec-row').length > 1) {
+                        $(this).closest('.computech-wc-spec-row').remove();
+                    } else {
+                        $(this).closest('.computech-wc-spec-row').find('input').val('');
+                    }
+                });
+            });
+            </script>
         </div>
     </div>
     <?php
@@ -845,9 +898,21 @@ function computech_wc_save_product_fields(int $post_id): void {
     $condition = sanitize_key(wp_unslash($_POST['_computech_wc_condition'] ?? 'new'));
     update_post_meta($post_id, '_computech_wc_condition', in_array($condition, array('new', 'imported'), true) ? $condition : 'new');
 
-    for ($i = 1; $i <= 12; $i++) {
-        update_post_meta($post_id, '_computech_wc_spec_label_' . $i, isset($_POST['_computech_wc_spec_label_' . $i]) ? sanitize_text_field(wp_unslash($_POST['_computech_wc_spec_label_' . $i])) : '');
-        update_post_meta($post_id, '_computech_wc_spec_value_' . $i, isset($_POST['_computech_wc_spec_value_' . $i]) ? sanitize_text_field(wp_unslash($_POST['_computech_wc_spec_value_' . $i])) : '');
+    $spec_labels = isset($_POST['_computech_wc_spec_label']) && is_array($_POST['_computech_wc_spec_label']) ? wp_unslash($_POST['_computech_wc_spec_label']) : array();
+    $spec_values = isset($_POST['_computech_wc_spec_value']) && is_array($_POST['_computech_wc_spec_value']) ? wp_unslash($_POST['_computech_wc_spec_value']) : array();
+    $clean_specs = array();
+    $max_specs = max(count($spec_labels), count($spec_values));
+    for ($i = 0; $i < $max_specs; $i++) {
+        $label = sanitize_text_field((string) ($spec_labels[$i] ?? ''));
+        $value = sanitize_text_field((string) ($spec_values[$i] ?? ''));
+        if ($label !== '' || $value !== '') {
+            $clean_specs[] = array('label' => $label, 'value' => $value);
+        }
+    }
+    update_post_meta($post_id, '_computech_wc_specs', $clean_specs);
+    for ($i = 1; $i <= 200; $i++) {
+        delete_post_meta($post_id, '_computech_wc_spec_label_' . $i);
+        delete_post_meta($post_id, '_computech_wc_spec_value_' . $i);
     }
 
     foreach (array(

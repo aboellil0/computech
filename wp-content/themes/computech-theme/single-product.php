@@ -46,7 +46,8 @@ while (have_posts()) : the_post();
         }
     }
     $badge = function_exists('computech_wc_product_condition_label') ? computech_wc_product_condition_label($product) : '';
-    $specs = function_exists('computech_wc_product_specs') ? computech_wc_product_specs($product, 12) : array();
+    $specs = function_exists('computech_wc_product_specs') ? computech_wc_product_specs($product, 0) : array();
+    $product_description = trim((string) $product->get_description());
     ?>
 
     <section class="pd-page">
@@ -79,11 +80,41 @@ while (have_posts()) : the_post();
     </section>
 
     <?php if ($specs) : ?>
-    <section class="pd-specs" id="product-specs"><div class="pd-container"><div class="pd-section-header"><div class="pd-section-dots"><span class="sdot blue"></span><span class="sdot cyan"></span><span class="sdot bar"></span><span class="sdot green"></span></div><h2 class="pd-section-title">مواصفات <span class="pd-highlight">المنتج</span></h2></div><div class="pd-specs-card"><table class="pd-specs-table"><tbody>
-        <?php foreach ($specs as $spec) : ?>
-            <tr><td><?php echo esc_html((string) ($spec['label'] ?? '')); ?></td><td><?php echo esc_html((string) ($spec['value'] ?? '')); ?></td></tr>
-        <?php endforeach; ?>
-    </tbody></table></div></div></section>
+    <section class="pd-specs" id="product-specs">
+        <div class="pd-container">
+            <div class="pd-section-header">
+                <div class="pd-section-dots"><span class="sdot blue"></span><span class="sdot cyan"></span><span class="sdot bar"></span><span class="sdot green"></span></div>
+                <h2 class="pd-section-title">مواصفات <span class="pd-highlight">المنتج</span></h2>
+            </div>
+            <div class="pd-specs-card">
+                <table class="pd-specs-table"><tbody>
+                    <?php foreach ($specs as $spec) :
+                        $spec_label = trim((string) ($spec['label'] ?? ''));
+                        $spec_value = trim((string) ($spec['value'] ?? ''));
+                        if ($spec_label === '' && $spec_value === '') { continue; }
+                    ?>
+                        <tr><th scope="row"><?php echo esc_html($spec_label); ?></th><td><?php echo esc_html($spec_value); ?></td></tr>
+                    <?php endforeach; ?>
+                </tbody></table>
+            </div>
+        </div>
+    </section>
+    <?php endif; ?>
+
+    <?php if ($product_description !== '') : ?>
+    <section class="pd-description" id="product-description">
+        <div class="pd-container">
+            <div class="pd-section-header">
+                <div class="pd-section-dots"><span class="sdot blue"></span><span class="sdot cyan"></span><span class="sdot bar"></span><span class="sdot green"></span></div>
+                <h2 class="pd-section-title">تفاصيل <span class="pd-highlight">المنتج</span></h2>
+            </div>
+            <div class="pd-description-card">
+                <div class="pd-description-content">
+                    <?php echo apply_filters('the_content', $product_description); ?>
+                </div>
+            </div>
+        </div>
+    </section>
     <?php endif; ?>
 
     <?php
