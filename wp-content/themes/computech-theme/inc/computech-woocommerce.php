@@ -244,8 +244,18 @@ function computech_wc_render_shop_categories_section(): void {
     if (!$items) {
         return;
     }
-    $title = function_exists('computech_home_section_option') ? computech_home_section_option('shop_title', '') : '';
-    $subtitle = function_exists('computech_home_section_option') ? computech_home_section_option('shop_subtitle', '') : '';
+    $title_before = function_exists('computech_home_section_option') ? trim(computech_home_section_option('shop_title_before', '')) : '';
+    $title_highlight = function_exists('computech_home_section_option') ? trim(computech_home_section_option('shop_title_highlight', '')) : '';
+    $subtitle = function_exists('computech_home_section_option') ? trim(computech_home_section_option('shop_subtitle', '')) : '';
+
+    if ($title_before === '' && $title_highlight === '') {
+        $title_before = 'تسوق حسب';
+        $title_highlight = 'القسم';
+    }
+    if ($subtitle === '') {
+        $subtitle = 'اختر القسم المناسب واستعرض أفضل الأجهزة والملحقات والخدمات بسهولة وسرعة.';
+    }
+
     $top_items = array_slice($items, 0, 3);
     $bottom_items = array_slice($items, 3, 2);
     ?>
@@ -262,7 +272,7 @@ function computech_wc_render_shop_categories_section(): void {
         <div class="shop-container">
             <div class="shop-header">
                 <div class="shop-decorative-dots"><span class="sdot blue"></span><span class="sdot cyan"></span><span class="sdot bar"></span><span class="sdot green"></span></div>
-                <?php if ($title !== '') : ?><h2 class="shop-title"><?php echo esc_html($title); ?></h2><?php endif; ?>
+                <h2 class="shop-title"><?php echo esc_html($title_before); ?> <span class="shop-title-highlight"><?php echo esc_html($title_highlight); ?></span></h2>
                 <?php if ($subtitle !== '') : ?><p class="shop-subtitle"><?php echo esc_html($subtitle); ?></p><?php endif; ?>
             </div>
             <div class="shop-cards-layout">
