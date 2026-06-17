@@ -109,17 +109,22 @@ function computech_wc_category_product_count(int $term_id): int {
     return $count;
 }
 
+function computech_wc_category_count_badge(int $count): string {
+    if ($count > 250) {
+        return '+250';
+    }
+    if ($count > 50) {
+        return '+50';
+    }
+    return $count > 0 ? '+' . $count : '';
+}
+
 function computech_wc_term_card_item(WP_Term $term, string $context = 'shop'): array {
     $image = computech_wc_term_image((int) $term->term_id, 'large');
     $icon = computech_wc_term_icon((int) $term->term_id, 'thumbnail');
     $count = computech_wc_category_product_count((int) $term->term_id);
-    $badge_key = $context === 'featured' ? '_computech_wc_featured_badge_text' : '_computech_wc_shop_badge_text';
-    $button_key = $context === 'featured' ? '_computech_wc_featured_button_text' : '_computech_wc_shop_button_text';
-    $badge = computech_wc_term_meta((int) $term->term_id, $badge_key, '');
-    if ($badge === '') {
-        $badge = $count > 0 ? sprintf('+%d منتج', $count) : '';
-    }
-    $button = computech_wc_term_meta((int) $term->term_id, $button_key, 'استكشف القسم');
+    $badge = computech_wc_category_count_badge($count);
+    $button = 'استكشف القسم ←';
     return array(
         'term_id' => (int) $term->term_id,
         'title' => $term->name,
@@ -217,18 +222,37 @@ function computech_wc_render_shop_categories_section(): void {
     }
     $title = function_exists('computech_home_section_option') ? computech_home_section_option('shop_title', 'تسوق حسب القسم') : 'تسوق حسب القسم';
     $subtitle = function_exists('computech_home_section_option') ? computech_home_section_option('shop_subtitle', '') : '';
-    $top_items = array_slice($items, 0, 2);
-    $bottom_items = array_slice($items, 2, 6);
+    $items = array_slice($items, 0, 5);
+    $top_items = array_slice($items, 0, 3);
+    $bottom_items = array_slice($items, 3, 2);
     ?>
     <section class="shop-section computech-wc-shop-categories">
+        <div class="shop-bg-pattern">
+            <div class="shop-circuit-pattern shop-circuit-top-right"></div>
+            <div class="shop-circuit-pattern shop-circuit-bottom-left"></div>
+            <div class="shop-dot-cluster shop-dots-tr"></div>
+            <div class="shop-dot-cluster shop-dots-bl"></div>
+            <div class="shop-glow-orb shop-glow-tr"></div>
+            <div class="shop-glow-orb shop-glow-bl"></div>
+            <div class="shop-glow-orb shop-glow-center"></div>
+        </div>
         <div class="shop-container">
             <div class="shop-header">
+                <div class="shop-decorative-dots"><span class="sdot blue"></span><span class="sdot cyan"></span><span class="sdot bar"></span><span class="sdot green"></span></div>
                 <?php if ($title !== '') : ?><h2 class="shop-title"><?php echo esc_html($title); ?></h2><?php endif; ?>
                 <?php if ($subtitle !== '') : ?><p class="shop-subtitle"><?php echo esc_html($subtitle); ?></p><?php endif; ?>
             </div>
-            <div class="shop-grid">
-                <?php foreach ($top_items as $item) { computech_wc_render_shop_category_card($item, 'shop-card-lg'); } ?>
-                <?php foreach ($bottom_items as $item) { computech_wc_render_shop_category_card($item, count($bottom_items) <= 2 ? 'shop-card-xl' : 'shop-card-lg'); } ?>
+            <div class="shop-cards-layout">
+                <?php if ($top_items) : ?>
+                    <div class="shop-grid shop-grid-top">
+                        <?php foreach ($top_items as $item) { computech_wc_render_shop_category_card($item, 'shop-card-lg'); } ?>
+                    </div>
+                <?php endif; ?>
+                <?php if ($bottom_items) : ?>
+                    <div class="shop-grid shop-grid-bottom">
+                        <?php foreach ($bottom_items as $item) { computech_wc_render_shop_category_card($item, 'shop-card-xl'); } ?>
+                    </div>
+                <?php endif; ?>
             </div>
         </div>
     </section>
@@ -636,8 +660,6 @@ function computech_wc_render_category_archive(WP_Term $term): void {
 function computech_wc_category_fields_markup(?WP_Term $term = null): void {
     $term_id = $term ? (int) $term->term_id : 0;
     $visibility = $term_id ? computech_wc_term_meta($term_id, '_computech_wc_category_visibility', 'visible') : 'visible';
-    $icon_id = $term_id ? absint(get_term_meta($term_id, '_computech_wc_category_icon_id', true)) : 0;
-    $icon_url = $icon_id ? wp_get_attachment_image_url($icon_id, 'thumbnail') : '';
     $fields = array(
         '_computech_wc_show_shop_section' => 'Show in Shop Section',
         '_computech_wc_show_featured_categories' => 'Show in Featured Categories',
@@ -646,27 +668,17 @@ function computech_wc_category_fields_markup(?WP_Term $term = null): void {
         '_computech_wc_shop_order' => 'Shop Section Order',
         '_computech_wc_featured_order' => 'Featured Categories Order',
     );
-    $texts = array(
-        '_computech_wc_shop_badge_text' => 'Shop Badge Text',
-        '_computech_wc_shop_button_text' => 'Shop Button Text',
-        '_computech_wc_featured_badge_text' => 'Featured Badge Text',
-        '_computech_wc_featured_button_text' => 'Featured Button Text',
-    );
     if ($term) {
         ?>
         <tr class="form-field"><th scope="row">Computech Visibility</th><td><select name="_computech_wc_category_visibility"><option value="visible" <?php selected($visibility, 'visible'); ?>>Visible</option><option value="hidden" <?php selected($visibility, 'hidden'); ?>>Hidden</option></select></td></tr>
-        <tr class="form-field"><th scope="row">Card Icon</th><td><input type="hidden" name="_computech_wc_category_icon_id" value="<?php echo esc_attr((string) $icon_id); ?>" class="computech-wc-icon-id"><div class="computech-wc-icon-preview"><?php if ($icon_url) : ?><img src="<?php echo esc_url($icon_url); ?>" style="max-width:72px;height:auto;border:1px solid #ddd;border-radius:8px"><?php endif; ?></div><button type="button" class="button computech-wc-icon-upload">اختيار أيقونة</button> <button type="button" class="button computech-wc-icon-remove">حذف</button><p class="description">لو فارغة، يستخدم صورة القسم WooCommerce thumbnail.</p></td></tr>
         <?php foreach ($fields as $key => $label) : ?><tr class="form-field"><th scope="row"><?php echo esc_html($label); ?></th><td><label><input type="checkbox" name="<?php echo esc_attr($key); ?>" value="1" <?php checked(computech_wc_bool_term_meta($term_id, $key)); ?>> Yes</label></td></tr><?php endforeach; ?>
         <?php foreach ($orders as $key => $label) : ?><tr class="form-field"><th scope="row"><?php echo esc_html($label); ?></th><td><input type="number" name="<?php echo esc_attr($key); ?>" value="<?php echo esc_attr(computech_wc_term_meta($term_id, $key, '0')); ?>"></td></tr><?php endforeach; ?>
-        <?php foreach ($texts as $key => $label) : ?><tr class="form-field"><th scope="row"><?php echo esc_html($label); ?></th><td><input type="text" name="<?php echo esc_attr($key); ?>" value="<?php echo esc_attr(computech_wc_term_meta($term_id, $key, '')); ?>" class="regular-text"></td></tr><?php endforeach; ?>
         <?php
     } else {
         ?>
         <div class="form-field"><label>Computech Visibility</label><select name="_computech_wc_category_visibility"><option value="visible">Visible</option><option value="hidden">Hidden</option></select></div>
-        <div class="form-field"><label>Card Icon</label><input type="hidden" name="_computech_wc_category_icon_id" value="" class="computech-wc-icon-id"><div class="computech-wc-icon-preview"></div><button type="button" class="button computech-wc-icon-upload">اختيار أيقونة</button> <button type="button" class="button computech-wc-icon-remove">حذف</button></div>
         <?php foreach ($fields as $key => $label) : ?><div class="form-field"><label><input type="checkbox" name="<?php echo esc_attr($key); ?>" value="1"> <?php echo esc_html($label); ?></label></div><?php endforeach; ?>
         <?php foreach ($orders as $key => $label) : ?><div class="form-field"><label><?php echo esc_html($label); ?></label><input type="number" name="<?php echo esc_attr($key); ?>" value="0"></div><?php endforeach; ?>
-        <?php foreach ($texts as $key => $label) : ?><div class="form-field"><label><?php echo esc_html($label); ?></label><input type="text" name="<?php echo esc_attr($key); ?>" value=""></div><?php endforeach; ?>
         <?php
     }
 }
@@ -674,13 +686,17 @@ add_action('product_cat_add_form_fields', static function(): void { computech_wc
 add_action('product_cat_edit_form_fields', static function(WP_Term $term): void { computech_wc_category_fields_markup($term); });
 
 function computech_wc_save_category_fields(int $term_id): void {
-    $keys = array('_computech_wc_category_visibility','_computech_wc_category_icon_id','_computech_wc_shop_order','_computech_wc_featured_order','_computech_wc_shop_badge_text','_computech_wc_shop_button_text','_computech_wc_featured_badge_text','_computech_wc_featured_button_text');
+    $keys = array('_computech_wc_category_visibility','_computech_wc_shop_order','_computech_wc_featured_order');
     update_term_meta($term_id, '_computech_wc_show_shop_section', !empty($_POST['_computech_wc_show_shop_section']) ? '1' : '0');
     update_term_meta($term_id, '_computech_wc_show_featured_categories', !empty($_POST['_computech_wc_show_featured_categories']) ? '1' : '0');
+    update_term_meta($term_id, 'display_type', '');
+    foreach (array('_computech_wc_shop_badge_text','_computech_wc_shop_button_text','_computech_wc_featured_badge_text','_computech_wc_featured_button_text','_computech_wc_category_icon_id') as $removed_key) {
+        delete_term_meta($term_id, $removed_key);
+    }
     foreach ($keys as $key) {
         if (!isset($_POST[$key])) { continue; }
         $raw = wp_unslash($_POST[$key]);
-        if (strpos($key, 'order') !== false || strpos($key, 'icon_id') !== false) {
+        if (strpos($key, 'order') !== false) {
             update_term_meta($term_id, $key, (string) absint($raw));
         } else {
             update_term_meta($term_id, $key, sanitize_text_field($raw));
@@ -694,32 +710,25 @@ function computech_wc_admin_media_script(string $hook): void {
     if (!is_admin()) { return; }
     $screen = function_exists('get_current_screen') ? get_current_screen() : null;
     if (!$screen || $screen->taxonomy !== 'product_cat') { return; }
-    wp_enqueue_media();
+
     $script = <<<'JS'
 jQuery(function($){
-    $(document).on('click','.computech-wc-icon-upload',function(e){
-        e.preventDefault();
-        var wrap=$(this).closest('td,.form-field');
-        var frame=wp.media({title:'اختيار أيقونة القسم',button:{text:'استخدام'},multiple:false});
-        frame.on('select',function(){
-            var a=frame.state().get('selection').first().toJSON();
-            var src=(a.sizes&&a.sizes.thumbnail)?a.sizes.thumbnail.url:a.url;
-            wrap.find('.computech-wc-icon-id').val(a.id);
-            wrap.find('.computech-wc-icon-preview').html('<img src="'+src+'" style="max-width:72px;height:auto;border:1px solid #ddd;border-radius:8px">');
-        });
-        frame.open();
-    });
-    $(document).on('click','.computech-wc-icon-remove',function(e){
-        e.preventDefault();
-        var wrap=$(this).closest('td,.form-field');
-        wrap.find('.computech-wc-icon-id').val('');
-        wrap.find('.computech-wc-icon-preview').html('');
-    });
+    $('#display_type').val('');
+    $('#display_type').closest('tr,.form-field').hide();
+    $('#product_cat_thumbnail_id').closest('tr,.form-field').hide();
+    $('.upload_image_button,.remove_image_button').closest('tr,.form-field').hide();
 });
 JS;
     wp_add_inline_script('jquery-core', $script);
 }
 add_action('admin_enqueue_scripts', 'computech_wc_admin_media_script');
+
+function computech_wc_hide_default_category_admin_fields(): void {
+    $screen = function_exists('get_current_screen') ? get_current_screen() : null;
+    if (!$screen || $screen->taxonomy !== 'product_cat') { return; }
+    echo '<style>.term-display-type-wrap,.term-thumbnail-wrap{display:none!important}</style>';
+}
+add_action('admin_head', 'computech_wc_hide_default_category_admin_fields');
 
 /* WooCommerce product extra card fields */
 function computech_wc_product_metabox(): void {

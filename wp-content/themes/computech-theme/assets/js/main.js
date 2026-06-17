@@ -268,19 +268,32 @@
     /* WordPress dropdown menu support */
     const parentMenuLinks = document.querySelectorAll('.main-header .menu-item-has-children > a');
 
+    function closeSiblingSubmenus(item) {
+        if (!item || !item.parentElement) return;
+        Array.prototype.forEach.call(item.parentElement.children, function (sibling) {
+            if (sibling !== item && sibling.classList && sibling.classList.contains('submenu-open')) {
+                sibling.classList.remove('submenu-open');
+                sibling.querySelectorAll('.submenu-open').forEach(function (openChild) {
+                    openChild.classList.remove('submenu-open');
+                });
+            }
+        });
+    }
+
     parentMenuLinks.forEach(function (link) {
         link.addEventListener('click', function (e) {
             var href = this.getAttribute('href');
             var item = this.parentElement;
             if (href === '#') {
                 e.preventDefault();
+                closeSiblingSubmenus(item);
                 item.classList.toggle('submenu-open');
             }
         });
     });
 
     document.addEventListener('click', function (e) {
-        if (!e.target.closest('.main-header .menu-item-has-children')) {
+        if (!e.target.closest('.main-header .menu-item-has-children, .main-header .nav-more')) {
             document.querySelectorAll('.main-header .submenu-open').forEach(function (item) {
                 item.classList.remove('submenu-open');
             });

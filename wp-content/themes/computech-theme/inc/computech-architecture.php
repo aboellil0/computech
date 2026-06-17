@@ -204,12 +204,8 @@ function computech_arch_category_fields_markup(?WP_Term $term = null): void {
     $term_order = computech_arch_term_meta($term_id, '_computech_term_order', '0');
     $show_shop = computech_arch_term_meta($term_id, '_computech_shop_show', '0');
     $shop_order = computech_arch_term_meta($term_id, '_computech_shop_order', '0');
-    $shop_badge = computech_arch_term_meta($term_id, '_computech_shop_badge', '');
-    $shop_button = computech_arch_term_meta($term_id, '_computech_shop_button', '');
     $show_featured = computech_arch_term_meta($term_id, '_computech_featured_cat_show', '0');
     $featured_order = computech_arch_term_meta($term_id, '_computech_featured_cat_order', '0');
-    $featured_badge = computech_arch_term_meta($term_id, '_computech_featured_cat_badge', '');
-    $featured_button = computech_arch_term_meta($term_id, '_computech_featured_cat_button', '');
     $full_description = computech_arch_term_meta($term_id, '_computech_cat_full_description', '');
     $is_edit = $term instanceof WP_Term;
     $wrap_start = $is_edit ? '<tr class="form-field term-computech-arch-wrap"><th scope="row">%s</th><td>' : '<div class="form-field term-computech-arch-wrap"><label>%s</label>';
@@ -254,15 +250,11 @@ function computech_arch_category_fields_markup(?WP_Term $term = null): void {
             <legend style="font-weight:700">تسوق حسب القسم</legend>
             <label><input type="checkbox" name="computech_shop_show" value="1" <?php checked($show_shop, '1'); ?>> Show in Shop Section / يظهر في تسوق حسب القسم</label>
             <p><label>Shop Section Order<br><input type="number" name="computech_shop_order" value="<?php echo esc_attr($shop_order); ?>" class="small-text" min="0" step="1"></label></p>
-            <p><label>Shop Badge Text<br><input type="text" name="computech_shop_badge" value="<?php echo esc_attr($shop_badge); ?>" class="widefat" placeholder="+320 منتج أو عروض حصرية"></label></p>
-            <p><label>Shop Button Text<br><input type="text" name="computech_shop_button" value="<?php echo esc_attr($shop_button); ?>" class="widefat" placeholder="استكشف القسم"></label></p>
         </fieldset>
         <fieldset style="border:1px solid #dcdcde;border-radius:10px;padding:12px">
             <legend style="font-weight:700">الأقسام المميزة</legend>
             <label><input type="checkbox" name="computech_featured_cat_show" value="1" <?php checked($show_featured, '1'); ?>> Show in Featured Categories / يظهر في الأقسام المميزة</label>
             <p><label>Featured Categories Order<br><input type="number" name="computech_featured_cat_order" value="<?php echo esc_attr($featured_order); ?>" class="small-text" min="0" step="1"></label></p>
-            <p><label>Featured Badge Text<br><input type="text" name="computech_featured_cat_badge" value="<?php echo esc_attr($featured_badge); ?>" class="widefat" placeholder="+250 منتج"></label></p>
-            <p><label>Featured Button Text<br><input type="text" name="computech_featured_cat_button" value="<?php echo esc_attr($featured_button); ?>" class="widefat" placeholder="عرض المنتجات"></label></p>
         </fieldset>
         <p class="description">لا يوجد حقل عام اسمه Is Featured. كل سكشن له show/order خاص به.</p>
     <?php echo $wrap_end; ?>
@@ -288,16 +280,15 @@ function computech_arch_save_category_fields(int $term_id): void {
         '_computech_term_order' => (string) absint($_POST['computech_term_order'] ?? 0),
         '_computech_shop_show' => !empty($_POST['computech_shop_show']) ? '1' : '0',
         '_computech_shop_order' => (string) absint($_POST['computech_shop_order'] ?? 0),
-        '_computech_shop_badge' => sanitize_text_field(wp_unslash($_POST['computech_shop_badge'] ?? '')),
-        '_computech_shop_button' => sanitize_text_field(wp_unslash($_POST['computech_shop_button'] ?? '')),
         '_computech_featured_cat_show' => !empty($_POST['computech_featured_cat_show']) ? '1' : '0',
         '_computech_featured_cat_order' => (string) absint($_POST['computech_featured_cat_order'] ?? 0),
-        '_computech_featured_cat_badge' => sanitize_text_field(wp_unslash($_POST['computech_featured_cat_badge'] ?? '')),
-        '_computech_featured_cat_button' => sanitize_text_field(wp_unslash($_POST['computech_featured_cat_button'] ?? '')),
     );
 
     foreach ($fields as $key => $value) {
         update_term_meta($term_id, $key, $value);
+    }
+    foreach (array('_computech_shop_badge','_computech_shop_button','_computech_featured_cat_badge','_computech_featured_cat_button') as $removed_key) {
+        delete_term_meta($term_id, $removed_key);
     }
 }
 add_action('created_product_category', 'computech_arch_save_category_fields');
@@ -647,15 +638,19 @@ function computech_arch_product_count_for_term_tree(int $term_id): int {
     return $count;
 }
 
-function computech_arch_term_to_card_item(WP_Term $term, string $mode = 'shop'): array {
-    $is_featured = $mode === 'featured';
-    $badge_key = $is_featured ? '_computech_featured_cat_badge' : '_computech_shop_badge';
-    $button_key = $is_featured ? '_computech_featured_cat_button' : '_computech_shop_button';
-    $badge = computech_arch_term_meta($term->term_id, $badge_key, '');
-    if ($badge === '') {
-        $count = computech_arch_product_count_for_term_tree((int) $term->term_id);
-        $badge = $count > 0 ? '+' . $count . ' منتج' : '';
+function computech_arch_category_count_badge(int $count): string {
+    if ($count > 250) {
+        return '+250';
     }
+    if ($count > 50) {
+        return '+50';
+    }
+    return $count > 0 ? '+' . $count : '';
+}
+
+function computech_arch_term_to_card_item(WP_Term $term, string $mode = 'shop'): array {
+    $count = computech_arch_product_count_for_term_tree((int) $term->term_id);
+    $badge = computech_arch_category_count_badge($count);
     $image = computech_arch_term_image_data((int) $term->term_id);
     $description = trim((string) $term->description);
     if ($description === '') {
@@ -665,7 +660,7 @@ function computech_arch_term_to_card_item(WP_Term $term, string $mode = 'shop'):
         'title' => $term->name,
         'text' => $description,
         'pill' => $badge,
-        'link_text' => computech_arch_term_meta($term->term_id, $button_key, ''),
+        'link_text' => 'استكشف القسم ←',
         'url' => get_term_link($term),
         'target' => '',
         'image' => $image['url'],

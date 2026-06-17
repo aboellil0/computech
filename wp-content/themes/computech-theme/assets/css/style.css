@@ -13598,3 +13598,408 @@ body.home .needs-section.computech-dynamic-needs .need-card-image img {
     position: relative !important;
     z-index: 10090 !important;
 }
+
+/* ============================================
+   HEADER DROPDOWN LAYOUT RESET
+   Fix stacked/shifted submenu boxes after hover stability patch
+   ============================================ */
+@media (min-width: 1101px) {
+    .main-header,
+    .main-header .header-container,
+    .main-header .main-nav,
+    .main-header .nav-list,
+    .main-header .nav-list > li {
+        overflow: visible !important;
+    }
+
+    .main-header .nav-list {
+        display: flex !important;
+        align-items: center !important;
+        gap: 8px !important;
+        flex-wrap: nowrap !important;
+    }
+
+    .main-header .nav-list > .menu-item,
+    .main-header .nav-more {
+        position: relative !important;
+        display: flex !important;
+        align-items: center !important;
+        flex: 0 0 auto !important;
+        width: auto !important;
+    }
+
+    .main-header .nav-list > .menu-item > .nav-sub-menu,
+    .main-header .nav-more > .nav-more-menu {
+        position: absolute !important;
+        top: calc(100% + 10px) !important;
+        right: 0 !important;
+        left: auto !important;
+        display: flex !important;
+        flex-direction: column !important;
+        align-items: stretch !important;
+        gap: 4px !important;
+        min-width: 230px !important;
+        width: max-content !important;
+        max-width: 320px !important;
+        padding: 8px !important;
+        margin: 0 !important;
+        background: var(--color-white) !important;
+        border: 1px solid var(--color-gray-200) !important;
+        border-radius: 16px !important;
+        box-shadow: var(--shadow-lg) !important;
+        opacity: 0 !important;
+        visibility: hidden !important;
+        pointer-events: none !important;
+        transform: translateY(8px) !important;
+        z-index: 10060 !important;
+    }
+
+    .main-header .nav-list > .menu-item:hover > .nav-sub-menu,
+    .main-header .nav-list > .menu-item:focus-within > .nav-sub-menu,
+    .main-header .nav-list > .menu-item.submenu-open > .nav-sub-menu,
+    .main-header .nav-more:hover > .nav-more-menu,
+    .main-header .nav-more:focus-within > .nav-more-menu,
+    .main-header .nav-more.submenu-open > .nav-more-menu {
+        opacity: 1 !important;
+        visibility: visible !important;
+        pointer-events: auto !important;
+        transform: translateY(0) !important;
+    }
+
+    .main-header .nav-sub-menu > .menu-item,
+    .main-header .nav-more-menu > .menu-item {
+        position: relative !important;
+        display: block !important;
+        width: 100% !important;
+        min-width: 0 !important;
+        flex: none !important;
+    }
+
+    .main-header .nav-sub-menu .nav-sub-menu {
+        position: absolute !important;
+        top: -8px !important;
+        right: calc(100% - 2px) !important;
+        left: auto !important;
+        display: flex !important;
+        flex-direction: column !important;
+        align-items: stretch !important;
+        gap: 4px !important;
+        min-width: 220px !important;
+        width: max-content !important;
+        max-width: 320px !important;
+        padding: 8px !important;
+        margin: 0 !important;
+        background: var(--color-white) !important;
+        border: 1px solid var(--color-gray-200) !important;
+        border-radius: 16px !important;
+        box-shadow: var(--shadow-lg) !important;
+        opacity: 0 !important;
+        visibility: hidden !important;
+        pointer-events: none !important;
+        transform: translateX(8px) !important;
+        z-index: 10080 !important;
+    }
+
+    .main-header .nav-sub-menu .menu-item-has-children:hover > .nav-sub-menu,
+    .main-header .nav-sub-menu .menu-item-has-children:focus-within > .nav-sub-menu,
+    .main-header .nav-sub-menu .menu-item-has-children.submenu-open > .nav-sub-menu {
+        opacity: 1 !important;
+        visibility: visible !important;
+        pointer-events: auto !important;
+        transform: translateX(0) !important;
+    }
+
+    .main-header .nav-sub-link,
+    .main-header .nav-more-sub-link,
+    .main-header .nav-more-link {
+        display: flex !important;
+        align-items: center !important;
+        justify-content: space-between !important;
+        gap: 10px !important;
+        width: 100% !important;
+        min-width: 200px !important;
+        white-space: nowrap !important;
+        text-align: right !important;
+    }
+
+    .main-header .nav-sub-menu .menu-item-has-children::after {
+        content: '' !important;
+        position: absolute !important;
+        top: -8px !important;
+        bottom: -8px !important;
+        right: calc(100% - 4px) !important;
+        width: 18px !important;
+        background: transparent !important;
+        pointer-events: auto !important;
+        z-index: 10075 !important;
+    }
+
+    .main-header .nav-list > .menu-item::after,
+    .main-header .nav-more::after {
+        content: '' !important;
+        position: absolute !important;
+        top: 100% !important;
+        right: 0 !important;
+        left: 0 !important;
+        height: 12px !important;
+        background: transparent !important;
+        pointer-events: auto !important;
+    }
+
+    .main-header .nav-more-menu .nav-more-sub-menu {
+        position: static !important;
+        display: flex !important;
+        flex-direction: column !important;
+        width: 100% !important;
+        min-width: 0 !important;
+        max-width: none !important;
+        padding: 0 10px 0 0 !important;
+        margin: 2px 10px 6px 0 !important;
+        background: transparent !important;
+        border: 0 !important;
+        border-right: 1px solid rgba(37, 99, 235, 0.14) !important;
+        border-radius: 0 !important;
+        box-shadow: none !important;
+        opacity: 1 !important;
+        visibility: visible !important;
+        pointer-events: auto !important;
+        transform: none !important;
+    }
+}
+
+/* ============================================
+   WooCommerce Shop Categories UI Fix
+   keep cards like approved design: 3 top + 2 centered bottom
+   ============================================ */
+.computech-wc-shop-categories .shop-container {
+    width: min(100%, 1400px);
+    max-width: 1400px;
+    margin-inline: auto;
+    position: relative;
+    z-index: 1;
+}
+
+.computech-wc-shop-categories .shop-header {
+    text-align: center;
+    margin-bottom: clamp(30px, 4vw, 54px);
+}
+
+.computech-wc-shop-categories .shop-title {
+    font-size: clamp(30px, 4vw, 48px);
+    font-weight: 800;
+    color: var(--color-navy-dark);
+    line-height: 1.25;
+    margin: 0 0 14px;
+}
+
+.computech-wc-shop-categories .shop-subtitle {
+    color: var(--color-gray-500);
+    font-size: clamp(14px, 1.2vw, 17px);
+    line-height: 1.9;
+    max-width: 780px;
+    margin-inline: auto;
+}
+
+.computech-wc-shop-categories .shop-cards-layout {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    gap: clamp(24px, 3vw, 34px);
+}
+
+.computech-wc-shop-categories .shop-grid {
+    display: flex !important;
+    flex-wrap: wrap;
+    justify-content: center;
+    align-items: stretch;
+    gap: clamp(22px, 2.3vw, 28px);
+    width: 100%;
+    margin: 0 auto;
+}
+
+.computech-wc-shop-categories .shop-grid-top > .shop-card {
+    flex: 0 1 calc((100% - 56px) / 3);
+    max-width: calc((100% - 56px) / 3);
+}
+
+.computech-wc-shop-categories .shop-grid-bottom {
+    max-width: 960px;
+}
+
+.computech-wc-shop-categories .shop-grid-bottom > .shop-card {
+    flex: 0 1 calc((100% - 28px) / 2);
+    max-width: calc((100% - 28px) / 2);
+}
+
+.computech-wc-shop-categories .shop-card {
+    min-width: 0;
+    min-height: 246px;
+    height: auto;
+    padding: clamp(22px, 2vw, 30px);
+    border-radius: 20px;
+    background: var(--color-white);
+    border: 1.5px solid rgba(37, 99, 235, 0.08);
+    box-shadow: 0 3px 16px rgba(37, 99, 235, 0.05);
+    display: grid !important;
+    grid-template-columns: minmax(0, 1fr) minmax(150px, 42%);
+    align-items: center;
+    gap: clamp(18px, 2vw, 28px);
+    overflow: hidden;
+    text-decoration: none;
+    color: inherit;
+    position: relative;
+    opacity: 1 !important;
+    transform: none !important;
+}
+
+.computech-wc-shop-categories .shop-card:hover {
+    transform: translateY(-5px) !important;
+    box-shadow: 0 10px 32px rgba(37, 99, 235, 0.10);
+    border-color: rgba(37, 99, 235, 0.15);
+}
+
+.computech-wc-shop-categories .shop-card-content {
+    min-width: 0;
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    justify-content: center;
+    gap: 10px;
+    text-align: start;
+    order: 1;
+}
+
+.computech-wc-shop-categories .shop-card-image {
+    order: 2;
+    width: 100% !important;
+    max-width: 230px !important;
+    height: 176px;
+    margin: 0 auto !important;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex: none;
+}
+
+.computech-wc-shop-categories .shop-card-image img {
+    width: 100%;
+    height: 100%;
+    max-height: none !important;
+    object-fit: contain;
+    transition: transform 0.4s ease;
+}
+
+.computech-wc-shop-categories .shop-card:hover .shop-card-image img {
+    transform: scale(1.05);
+}
+
+.computech-wc-shop-categories .shop-card-icon {
+    width: 44px;
+    height: 44px;
+    border-radius: 12px;
+    background: rgba(37, 99, 235, 0.06);
+    color: var(--color-primary);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex: 0 0 44px;
+    margin-bottom: 2px;
+}
+
+.computech-wc-shop-categories .shop-card-icon svg,
+.computech-wc-shop-categories .shop-card-icon-img {
+    width: 22px;
+    height: 22px;
+    object-fit: contain;
+}
+
+.computech-wc-shop-categories .shop-card-title {
+    font-size: clamp(18px, 1.5vw, 22px);
+    font-weight: 800;
+    line-height: 1.35;
+    color: var(--color-primary);
+    margin: 0;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+
+.computech-wc-shop-categories .shop-card-desc {
+    font-size: clamp(13px, 1vw, 15px);
+    color: var(--color-gray-500);
+    line-height: 1.8;
+    margin: 0;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+
+.computech-wc-shop-categories .shop-card-badge {
+    order: 4;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: fit-content;
+    padding: 4px 14px;
+    border-radius: var(--radius-pill);
+    background: rgba(37, 99, 235, 0.06);
+    color: var(--color-primary);
+    font-size: 12.5px;
+    font-weight: 700;
+}
+
+.computech-wc-shop-categories .shop-card-link {
+    order: 5;
+    display: inline-flex;
+    align-items: center;
+    width: fit-content;
+    margin-top: 4px;
+    color: var(--color-primary);
+    font-size: 14px;
+    font-weight: 700;
+    transition: transform 0.25s ease;
+}
+
+.computech-wc-shop-categories .shop-card:hover .shop-card-link {
+    transform: translateX(-4px);
+}
+
+@media (max-width: 1180px) {
+    .computech-wc-shop-categories .shop-grid-top > .shop-card,
+    .computech-wc-shop-categories .shop-grid-bottom > .shop-card {
+        flex-basis: calc((100% - 28px) / 2);
+        max-width: calc((100% - 28px) / 2);
+    }
+
+    .computech-wc-shop-categories .shop-grid-bottom {
+        max-width: none;
+    }
+}
+
+@media (max-width: 768px) {
+    .computech-wc-shop-categories .shop-grid-top > .shop-card,
+    .computech-wc-shop-categories .shop-grid-bottom > .shop-card {
+        flex-basis: min(100%, 520px);
+        max-width: min(100%, 520px);
+    }
+
+    .computech-wc-shop-categories .shop-card {
+        grid-template-columns: 1fr;
+        min-height: auto;
+        text-align: center;
+    }
+
+    .computech-wc-shop-categories .shop-card-content {
+        align-items: center;
+        text-align: center;
+        order: 2;
+    }
+
+    .computech-wc-shop-categories .shop-card-image {
+        order: 1;
+        height: 170px;
+    }
+}
