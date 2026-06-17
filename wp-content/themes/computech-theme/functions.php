@@ -2230,10 +2230,30 @@ function computech_hero_full_title(WP_Post $slide): string {
     return trim(implode(' ', $parts));
 }
 
+function computech_hero_tag_icon_options(): array {
+    return array(
+        'desktop' => 'كمبيوتر',
+        'globe' => 'استيراد',
+        'headphones' => 'دعم فني',
+        'shield' => 'ضمان',
+        'truck' => 'توصيل',
+        'star' => 'مميز',
+        'bolt' => 'أداء',
+        'tag' => 'عرض',
+        'check' => 'متاح',
+        'gift' => 'هدية',
+    );
+}
+
 function computech_normalize_hero_tag(array $tag): array {
+    $icon = sanitize_key((string) ($tag['icon'] ?? 'desktop'));
+    if (!array_key_exists($icon, computech_hero_tag_icon_options())) {
+        $icon = 'desktop';
+    }
     return array(
         'show' => !empty($tag['show']) ? '1' : '0',
         'text' => sanitize_text_field((string) ($tag['text'] ?? '')),
+        'icon' => $icon,
     );
 }
 
@@ -2258,8 +2278,9 @@ function computech_get_hero_tags(WP_Post $slide): array {
     }
 
     $legacy = array_values(array_filter(array_map('trim', preg_split('/\r\n|\r|\n/', computech_hero_meta($slide, '_computech_hero_features', '')))));
-    foreach ($legacy as $text) {
-        $tags[] = array('show' => '1', 'text' => $text);
+    foreach ($legacy as $i => $text) {
+        $icons = array_keys(computech_hero_tag_icon_options());
+        $tags[] = array('show' => '1', 'text' => $text, 'icon' => $icons[$i % count($icons)] ?? 'desktop');
     }
 
     return $tags;
@@ -2272,12 +2293,24 @@ function computech_get_hero_display_tags(WP_Post $slide): array {
         if ($tag['show'] !== '1' || $tag['text'] === '') {
             continue;
         }
-        $selected[] = $tag['text'];
+        $selected[] = array(
+            'text' => $tag['text'],
+            'icon' => $tag['icon'] ?? 'desktop',
+        );
         if (count($selected) >= 4) {
             break;
         }
     }
     return $selected;
+}
+
+function computech_hero_tag_icon_select(string $name, string $selected): string {
+    $html = '<select name="' . esc_attr($name) . '" class="widefat">';
+    foreach (computech_hero_tag_icon_options() as $key => $label) {
+        $html .= '<option value="' . esc_attr($key) . '" ' . selected($selected, $key, false) . '>' . esc_html($label) . '</option>';
+    }
+    $html .= '</select>';
+    return $html;
 }
 
 function computech_hero_tag_row_html(array $tag, $index): string {
@@ -2293,8 +2326,9 @@ function computech_hero_tag_row_html(array $tag, $index): string {
                 <button type="button" class="button-link-delete" data-remove-hero-tag>حذف</button>
             </div>
         </div>
-        <div class="ct-hero-repeat-grid" style="grid-template-columns:1fr;">
+        <div class="ct-hero-repeat-grid" style="grid-template-columns:1fr 220px;">
             <p class="ct-field"><label>النص</label><input type="text" name="<?php echo esc_attr($base); ?>[text]" value="<?php echo esc_attr($tag['text']); ?>" class="widefat" placeholder="مثال: أجهزة جديدة"></p>
+            <p class="ct-field"><label>الأيقونة</label><?php echo computech_hero_tag_icon_select($base . '[icon]', $tag['icon']); ?></p>
         </div>
     </div>
     <?php
@@ -2474,7 +2508,7 @@ function computech_hero_slide_metabox(WP_Post $post): void {
                             <div id="ct-hero-tags-list" class="ct-repeat-list">
                                 <?php $hero_tags = computech_get_hero_tags($post); foreach ($hero_tags as $i => $tag) { echo computech_hero_tag_row_html($tag, (int) $i); } ?>
                             </div>
-                            <template id="ct-hero-tag-template"><?php echo computech_hero_tag_row_html(array('show' => '1', 'text' => ''), '__INDEX__'); ?></template>
+                            <template id="ct-hero-tag-template"><?php echo computech_hero_tag_row_html(array('show' => '1', 'text' => '', 'icon' => 'desktop'), '__INDEX__'); ?></template>
                         </div>
                     </div>
                 </div>
@@ -2577,6 +2611,39 @@ function computech_hero_slide_metabox(WP_Post $post): void {
         });
     })();
     </script>
+    <script>
+    (function(){
+        function updateHeroButtonRow(row) {
+            if (!row) { return; }
+            var select = row.querySelector('.ct-hero-link-type');
+            var type = select ? select.value : 'none';
+            var pageField = row.querySelector('.ct-link-page-field');
+            var categoryField = row.querySelector('.ct-link-category-field');
+            var urlField = row.querySelector('.ct-link-url-field');
+            if (pageField) { pageField.hidden = !(type === 'page' || type === 'home'); pageField.style.display = (type === 'page' || type === 'home') ? '' : 'none'; }
+            if (categoryField) { categoryField.hidden = type !== 'category'; categoryField.style.display = type === 'category' ? '' : 'none'; }
+            if (urlField) { urlField.hidden = type !== 'custom'; urlField.style.display = type === 'custom' ? '' : 'none'; }
+        }
+        function updateAllHeroButtonRows() {
+            document.querySelectorAll('[data-hero-button-row]').forEach(updateHeroButtonRow);
+        }
+        document.addEventListener('change', function(e){
+            if (e.target && e.target.matches('.ct-hero-link-type')) {
+                updateHeroButtonRow(e.target.closest('[data-hero-button-row]'));
+            }
+        });
+        document.addEventListener('click', function(e){
+            if (e.target && e.target.id === 'ct-add-hero-button') {
+                window.setTimeout(updateAllHeroButtonRows, 0);
+            }
+        });
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', updateAllHeroButtonRows);
+        } else {
+            updateAllHeroButtonRows();
+        }
+    })();
+    </script>
     <?php
 }
 
@@ -2655,6 +2722,7 @@ function computech_save_hero_slide(int $post_id): void {
             $clean = computech_normalize_hero_tag(array(
                 'show' => !empty($row['show']) ? '1' : '0',
                 'text' => sanitize_text_field(wp_unslash($row['text'] ?? '')),
+                'icon' => sanitize_key(wp_unslash($row['icon'] ?? 'desktop')),
             ));
             if ($clean['text'] !== '') {
                 $hero_tags[] = $clean;
@@ -2685,13 +2753,25 @@ function computech_get_hero_slides(): array {
 }
 
 function computech_hero_feature_svg(int $index): string {
+    $icons = array_keys(computech_hero_tag_icon_options());
+    return computech_hero_tag_icon_svg($icons[$index % count($icons)] ?? 'desktop');
+}
+
+function computech_hero_tag_icon_svg(string $icon): string {
+    $icon = sanitize_key($icon);
     $svgs = array(
-        '<svg viewBox="0 0 20 20" fill="none" stroke="#2563eb" stroke-width="1.5"><rect x="2" y="4" width="16" height="12" rx="2"/><path d="M6 16v2M14 16v2M4 18h12"/></svg>',
-        '<svg viewBox="0 0 20 20" fill="none" stroke="#06b6d4" stroke-width="1.5"><circle cx="10" cy="10" r="8"/><path d="M10 2a8 8 0 0 1 0 16"/><path d="M2 10h16"/></svg>',
-        '<svg viewBox="0 0 20 20" fill="none" stroke="#16a34a" stroke-width="1.5"><path d="M3 15v-3a7 7 0 0 1 14 0v3"/><rect x="6" y="15" width="8" height="3" rx="1"/></svg>',
-        '<svg viewBox="0 0 20 20" fill="none" stroke="#2563eb" stroke-width="1.5"><path d="M10 2l2 5 5 .5-4 3.5 1.5 5L10 13l-4.5 3 1.5-5-4-3.5 5-.5z"/></svg>',
+        'desktop' => '<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="2.5" y="4" width="15" height="10" rx="2"/><path d="M7 17h6M10 14v3"/></svg>',
+        'globe' => '<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="10" cy="10" r="7.5"/><path d="M10 2.5a11 11 0 0 1 0 15M10 2.5a11 11 0 0 0 0 15M2.5 10h15"/></svg>',
+        'headphones' => '<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M3.5 12v-2a6.5 6.5 0 0 1 13 0v2"/><rect x="2.5" y="12" width="4" height="4" rx="1.2"/><rect x="13.5" y="12" width="4" height="4" rx="1.2"/></svg>',
+        'shield' => '<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M10 2.5l6 2v4.5c0 4-2.4 7-6 8.5C6.4 16 4 13 4 9V4.5l6-2z"/><path d="M7.5 10l1.7 1.7L13 8"/></svg>',
+        'truck' => '<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M2.5 5h10v8h-10z"/><path d="M12.5 8h3l2 2.3V13h-5"/><circle cx="6" cy="15" r="1.5"/><circle cx="15" cy="15" r="1.5"/></svg>',
+        'star' => '<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M10 2.5l2.1 4.4 4.9.7-3.5 3.4.8 4.8L10 13.5l-4.3 2.3.8-4.8L3 7.6l4.9-.7L10 2.5z"/></svg>',
+        'bolt' => '<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M11 2.5L4.5 11H10l-1 6.5 6.5-8.5H10l1-6.5z"/></svg>',
+        'tag' => '<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M3.5 4.5h6l7 7-5 5-7-7v-6z"/><circle cx="7" cy="7" r="1"/></svg>',
+        'check' => '<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="10" cy="10" r="7.5"/><path d="M6.5 10l2.2 2.2 4.8-5"/></svg>',
+        'gift' => '<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="8" width="14" height="9" rx="1.5"/><path d="M2.5 6h15v2H2.5zM10 6v11M7.5 6C6 6 5 5.2 5 4.2S6.5 2.8 7.5 4L10 6M12.5 6c1.5 0 2.5-.8 2.5-1.8S13.5 2.8 12.5 4L10 6"/></svg>',
     );
-    return $svgs[$index % count($svgs)];
+    return $svgs[$icon] ?? $svgs['desktop'];
 }
 
 function computech_hero_link_url_from_data(WP_Post $slide, array $item): string {
@@ -2783,8 +2863,12 @@ function computech_render_hero_slide(WP_Post $slide, int $index): void {
                 <?php if (trim($description) !== '') : ?><p class="hero-description"><?php echo esc_html($description); ?></p><?php endif; ?>
                 <?php if ($features) : ?>
                     <div class="hero-feature-pills">
-                        <?php foreach ($features as $feature_index => $feature) : ?>
-                            <div class="feature-pill"><?php echo computech_hero_feature_svg($feature_index); ?><span><?php echo esc_html($feature); ?></span></div>
+                        <?php foreach ($features as $feature_index => $feature) :
+                            $feature_text = is_array($feature) ? (string) ($feature['text'] ?? '') : (string) $feature;
+                            $feature_icon = is_array($feature) ? (string) ($feature['icon'] ?? 'desktop') : '';
+                            if ($feature_text === '') { continue; }
+                        ?>
+                            <div class="feature-pill"><?php echo $feature_icon !== '' ? computech_hero_tag_icon_svg($feature_icon) : computech_hero_feature_svg($feature_index); ?><span><?php echo esc_html($feature_text); ?></span></div>
                         <?php endforeach; ?>
                     </div>
                 <?php endif; ?>

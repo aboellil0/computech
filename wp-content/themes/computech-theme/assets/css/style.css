@@ -15527,3 +15527,30 @@ body.home .contact-section .contact-panel .contact-social-btn span {
         text-align: center !important;
     }
 }
+
+/* Empty product state: fill page container, not one grid column */
+.prod-grid > .wp-product-empty,
+.featured-grid > .wp-product-empty {
+    grid-column: 1 / -1 !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    margin: 0 auto !important;
+    padding: 46px 32px !important;
+    box-sizing: border-box !important;
+    text-align: center !important;
+}
+
+.prod-grid-section .wp-product-empty {
+    min-height: 180px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+}
+
+@media (max-width: 768px) {
+    .prod-grid > .wp-product-empty,
+    .featured-grid > .wp-product-empty {
+        padding: 34px 20px !important;
+    }
+}
