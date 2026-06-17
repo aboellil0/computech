@@ -14003,3 +14003,611 @@ body.home .needs-section.computech-dynamic-needs .need-card-image img {
         height: 170px;
     }
 }
+
+/* ============================================
+   Category cards stability + one category image
+   ============================================ */
+.computech-wc-shop-categories .shop-card {
+    height: 246px !important;
+    min-height: 246px !important;
+    max-height: 246px !important;
+}
+
+.computech-wc-shop-categories .shop-card-image {
+    width: 230px !important;
+    height: 176px !important;
+    max-width: 230px !important;
+    max-height: 176px !important;
+    flex: 0 0 230px !important;
+    overflow: hidden !important;
+}
+
+.computech-wc-shop-categories .shop-card-image img {
+    width: 100% !important;
+    height: 100% !important;
+    object-fit: contain !important;
+    object-position: center !important;
+}
+
+.computech-wc-shop-categories .shop-card-title,
+.cat-card-title,
+.cat-feat-card-title {
+    display: -webkit-box !important;
+    -webkit-box-orient: vertical !important;
+    -webkit-line-clamp: 2 !important;
+    overflow: hidden !important;
+}
+
+.computech-wc-shop-categories .shop-card-desc,
+.cat-card-desc,
+.cat-feat-card-desc {
+    display: -webkit-box !important;
+    -webkit-box-orient: vertical !important;
+    -webkit-line-clamp: 2 !important;
+    overflow: hidden !important;
+}
+
+.cat-card,
+.cat-feat-card {
+    height: 100% !important;
+    min-height: 410px !important;
+    display: flex !important;
+    flex-direction: column !important;
+    overflow: hidden !important;
+}
+
+.cat-card-image,
+.cat-feat-card-image {
+    height: 190px !important;
+    min-height: 190px !important;
+    max-height: 190px !important;
+    width: 100% !important;
+    overflow: hidden !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+}
+
+.cat-card-image img,
+.cat-feat-card-image img {
+    width: 100% !important;
+    height: 100% !important;
+    object-fit: contain !important;
+    object-position: center !important;
+}
+
+.cat-card-body,
+.cat-feat-card-content {
+    flex: 1 1 auto !important;
+    display: flex !important;
+    flex-direction: column !important;
+    min-height: 0 !important;
+}
+
+.cat-card-footer {
+    margin-top: auto !important;
+    gap: 10px !important;
+}
+
+.cat-feat-card-count {
+    width: fit-content !important;
+}
+
+.cat-feat-card-btn {
+    margin-top: auto !important;
+}
+
+.cat-card-icon-img,
+.shop-card-icon-img {
+    display: none !important;
+}
+
+@media (max-width: 768px) {
+    .computech-wc-shop-categories .shop-card {
+        height: auto !important;
+        min-height: 390px !important;
+        max-height: none !important;
+    }
+    .computech-wc-shop-categories .shop-card-image {
+        width: 100% !important;
+        max-width: 260px !important;
+        flex-basis: auto !important;
+    }
+    .cat-card,
+    .cat-feat-card {
+        min-height: 390px !important;
+    }
+}
+
+/* Computech WooCommerce modern product cards */
+.prod-grid,
+.featured-grid {
+    align-items: stretch;
+}
+
+.prod-card-modern.prod-card {
+    min-height: 535px;
+    padding: 16px;
+    border-radius: 22px;
+    background: #fff;
+    border: 1px solid rgba(37, 99, 235, 0.12);
+    box-shadow: 0 10px 32px rgba(15, 23, 42, 0.06);
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+}
+
+.prod-card-modern .prod-card-topline {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    min-height: 36px;
+    gap: 12px;
+}
+
+.prod-card-modern .prod-fav-icon {
+    width: 38px;
+    height: 38px;
+    border-radius: 50%;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    color: #94a3b8;
+    background: #fff;
+    border: 1px solid rgba(148, 163, 184, 0.24);
+    box-shadow: 0 4px 12px rgba(15, 23, 42, 0.04);
+}
+
+.prod-card-modern .prod-fav-icon svg {
+    width: 20px;
+    height: 20px;
+}
+
+.prod-card-modern .prod-badge {
+    position: static;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 62px;
+    height: 34px;
+    padding: 0 16px;
+    border-radius: 10px;
+    font-size: 13px;
+    font-weight: 800;
+}
+
+.prod-card-modern .prod-badge-new {
+    color: #fff;
+    background: #16a34a;
+}
+
+.prod-card-modern .prod-badge-imported {
+    color: #fff;
+    background: #2563eb;
+}
+
+.prod-card-modern .prod-card-image {
+    display: block;
+    width: 100%;
+    height: 210px;
+    border-radius: 14px;
+    background: #f6f8fb;
+    overflow: hidden;
+    flex: 0 0 210px;
+}
+
+.prod-card-modern .prod-card-image img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    padding: 18px;
+}
+
+.prod-card-modern:hover .prod-card-image img {
+    transform: scale(1.035);
+}
+
+.prod-card-modern .prod-card-body {
+    padding: 0;
+    text-align: center;
+    flex: 1 1 auto;
+}
+
+.prod-card-modern .prod-card-title {
+    margin: 2px 0 8px;
+    min-height: 54px;
+    font-size: 18px;
+    line-height: 1.45;
+    font-weight: 800;
+    color: #0f172a;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+
+.prod-card-modern .prod-card-title a {
+    color: inherit;
+}
+
+.prod-card-modern .prod-card-desc {
+    min-height: 22px;
+    margin: 0 0 14px;
+    font-size: 14px;
+    color: #64748b;
+    line-height: 1.6;
+    display: -webkit-box;
+    -webkit-line-clamp: 1;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+
+.prod-card-modern .prod-card-specs {
+    display: flex;
+    flex-wrap: nowrap;
+    justify-content: center;
+    gap: 8px;
+    min-height: 34px;
+    margin: 0 0 18px;
+    overflow: hidden;
+}
+
+.prod-card-modern .prod-spec {
+    max-width: 32%;
+    padding: 7px 12px;
+    border-radius: 8px;
+    background: #eef2f7;
+    color: #64748b;
+    font-size: 12px;
+    font-weight: 800;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.prod-card-modern .prod-card-price {
+    margin: 0 0 20px;
+    min-height: 38px;
+    font-size: 26px;
+    line-height: 1.2;
+    font-weight: 900;
+    color: #0f172a;
+}
+
+.prod-card-modern .prod-card-actions {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    margin-top: auto;
+}
+
+.prod-card-modern .prod-card-btn {
+    height: 50px;
+    border-radius: 10px;
+    padding: 0 16px;
+    font-size: 15px;
+    font-weight: 800;
+    box-shadow: none;
+}
+
+.prod-card-modern .prod-btn-details {
+    background: #fff;
+    color: #334155;
+    border: 1px solid #e2e8f0;
+}
+
+.prod-card-modern .prod-btn-details:hover {
+    background: #f8fafc;
+    color: #2563eb;
+    border-color: #bfdbfe;
+    box-shadow: none;
+}
+
+.prod-card-modern .prod-btn-details svg,
+.prod-card-modern .prod-btn-cart svg {
+    width: 18px;
+    height: 18px;
+}
+
+.prod-card-modern .prod-btn-cart {
+    background: #2563eb;
+    color: #fff;
+    border: 1px solid #2563eb;
+}
+
+.prod-card-modern .prod-btn-cart:hover {
+    background: #1d4ed8;
+    color: #fff;
+    border-color: #1d4ed8;
+    transform: translateY(-1px);
+}
+
+.prod-btn-clear {
+    background: #fff;
+    color: #64748b;
+    border: 1px solid #e2e8f0;
+}
+
+.prod-btn-clear:hover {
+    background: #f8fafc;
+    color: #2563eb;
+}
+
+@media (max-width: 1100px) {
+    .prod-grid {
+        grid-template-columns: repeat(3, 1fr);
+    }
+}
+
+@media (max-width: 800px) {
+    .prod-grid,
+    .featured-grid,
+    body.home .featured-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    }
+}
+
+@media (max-width: 560px) {
+    .prod-grid,
+    .featured-grid,
+    body.home .featured-grid {
+        grid-template-columns: 1fr !important;
+    }
+    .prod-card-modern.prod-card {
+        min-height: 500px;
+    }
+    .prod-card-modern .prod-card-image {
+        height: 190px;
+        flex-basis: 190px;
+    }
+}
+
+/* Promo banners from WordPress CPT */
+.offer-main-banner.offer-color-blue,
+.offer-sub-card.offer-color-blue { --offer-accent: #2563eb; --offer-soft-a: #dbeafe; --offer-soft-b: #e0eaff; --offer-soft-c: #c7d8fe; }
+.offer-main-banner.offer-color-green,
+.offer-sub-card.offer-color-green { --offer-accent: #16a34a; --offer-soft-a: #dcfce7; --offer-soft-b: #e8f8ee; --offer-soft-c: #d1fae5; }
+.offer-main-banner.offer-color-orange,
+.offer-sub-card.offer-color-orange { --offer-accent: #f97316; --offer-soft-a: #ffedd5; --offer-soft-b: #fff7ed; --offer-soft-c: #fed7aa; }
+.offer-main-banner.offer-color-purple,
+.offer-sub-card.offer-color-purple { --offer-accent: #7c3aed; --offer-soft-a: #ede9fe; --offer-soft-b: #f5f3ff; --offer-soft-c: #ddd6fe; }
+.offer-main-banner.offer-color-dark,
+.offer-sub-card.offer-color-dark { --offer-accent: #0f172a; --offer-soft-a: #e2e8f0; --offer-soft-b: #f8fafc; --offer-soft-c: #cbd5e1; }
+
+.offer-main-banner[class*="offer-color-"] {
+    border-color: color-mix(in srgb, var(--offer-accent) 16%, transparent);
+}
+.offer-main-banner[class*="offer-color-"]::before {
+    background: radial-gradient(ellipse at 20% 50%, color-mix(in srgb, var(--offer-accent) 6%, transparent) 0%, transparent 62%);
+}
+.offer-promo-icon {
+    position: absolute;
+    top: 22px;
+    right: 22px;
+    width: 54px;
+    height: 54px;
+    border-radius: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #fff;
+    color: var(--offer-accent, #2563eb);
+    box-shadow: 0 8px 22px rgba(15, 23, 42, 0.08);
+    z-index: 4;
+}
+.offer-promo-icon svg,
+.offer-sub-float-icon svg {
+    width: 24px;
+    height: 24px;
+    color: currentColor;
+}
+.offer-main-banner[class*="offer-color-"] .offer-main-title span,
+.offer-main-banner[class*="offer-color-"] .offer-main-title {
+    color: var(--offer-accent, #2563eb);
+}
+.offer-main-banner[class*="offer-color-"] .offer-main-btn,
+.offer-sub-card[class*="offer-color-"] .offer-sub-btn {
+    background: var(--offer-accent, #2563eb);
+    color: #fff;
+    box-shadow: 0 4px 14px color-mix(in srgb, var(--offer-accent) 32%, transparent);
+}
+.offer-main-banner[class*="offer-color-"] .offer-main-btn:hover,
+.offer-sub-card[class*="offer-color-"] .offer-sub-btn:hover {
+    background: color-mix(in srgb, var(--offer-accent) 88%, #000 12%);
+    transform: translateY(-2px);
+}
+.offer-sub-card[class*="offer-color-"] {
+    background: linear-gradient(135deg, var(--offer-soft-a) 0%, var(--offer-soft-b) 50%, var(--offer-soft-c) 100%);
+    border: 1.5px solid color-mix(in srgb, var(--offer-accent) 16%, transparent);
+}
+.offer-sub-card[class*="offer-color-"] .offer-sub-float-icon {
+    color: var(--offer-accent, #2563eb);
+}
+.offer-sub-card[class*="offer-color-"] .offer-sub-title {
+    color: var(--offer-accent, #2563eb);
+}
+
+/* Product card readability fix */
+.prod-card-modern.prod-card {
+    width: 100%;
+    max-width: 100%;
+    min-height: 500px;
+    padding: 14px;
+    gap: 12px;
+    border-radius: 22px;
+}
+
+.prod-card-modern .prod-card-topline {
+    min-height: 34px;
+}
+
+.prod-card-modern .prod-fav-icon {
+    width: 36px;
+    height: 36px;
+    flex: 0 0 36px;
+}
+
+.prod-card-modern .prod-badge {
+    min-width: 58px;
+    height: 32px;
+    padding: 0 14px;
+    white-space: nowrap;
+}
+
+.prod-card-modern .prod-card-image {
+    height: 175px;
+    flex: 0 0 175px;
+    border-radius: 13px;
+    background: #f6f8fb;
+}
+
+.prod-card-modern .prod-card-image img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    padding: 14px;
+    transform-origin: center;
+}
+
+.prod-card-modern .prod-card-body {
+    display: flex;
+    flex-direction: column;
+    text-align: center;
+    min-width: 0;
+    height: 100%;
+}
+
+.prod-card-modern .prod-card-title {
+    min-height: 48px;
+    margin: 0 0 6px;
+    font-size: 17px;
+    line-height: 1.42;
+    letter-spacing: 0;
+    overflow-wrap: break-word;
+    word-break: normal;
+}
+
+.prod-card-modern .prod-card-desc {
+    min-height: 24px;
+    margin: 0 0 12px;
+    font-size: 13px;
+    line-height: 1.55;
+    color: #667085;
+    -webkit-line-clamp: 1;
+}
+
+.prod-card-modern .prod-card-specs {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 7px;
+    min-height: 31px;
+    margin: 0 0 14px;
+    width: 100%;
+}
+
+.prod-card-modern .prod-spec {
+    max-width: none;
+    min-width: 0;
+    padding: 7px 6px;
+    border-radius: 8px;
+    font-size: 11.5px;
+    line-height: 1.2;
+    text-align: center;
+}
+
+.prod-card-modern .prod-card-price {
+    direction: ltr;
+    unicode-bidi: isolate;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    justify-content: center;
+    gap: 8px;
+    min-height: 38px;
+    margin: 0 0 14px;
+    color: #0f172a;
+    text-align: center;
+}
+
+.prod-card-modern .prod-card-price .prod-price-current,
+.prod-card-modern .prod-card-price ins {
+    display: inline-flex;
+    align-items: baseline;
+    gap: 4px;
+    color: #0f172a;
+    font-size: 23px;
+    line-height: 1.15;
+    font-weight: 900;
+    text-decoration: none;
+    white-space: nowrap;
+}
+
+.prod-card-modern .prod-card-price .prod-price-old,
+.prod-card-modern .prod-card-price del {
+    display: inline-flex;
+    align-items: baseline;
+    color: #94a3b8;
+    font-size: 14px;
+    line-height: 1.2;
+    font-weight: 800;
+    text-decoration: line-through;
+    white-space: nowrap;
+    opacity: 1;
+}
+
+.prod-card-modern .prod-card-price .woocommerce-Price-currencySymbol {
+    font-size: .72em;
+    font-weight: 800;
+    margin-inline-start: 3px;
+}
+
+.prod-card-modern .prod-card-actions {
+    grid-template-columns: 1fr 1fr;
+    gap: 9px;
+    margin-top: auto;
+    align-items: stretch;
+}
+
+.prod-card-modern .prod-card-btn {
+    min-width: 0;
+    height: 48px;
+    padding: 0 10px;
+    border-radius: 11px;
+    font-size: 14px;
+    line-height: 1.25;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    white-space: normal;
+    text-align: center;
+}
+
+.prod-card-modern .prod-btn-cart {
+    background: #2563eb;
+    color: #fff;
+    border-color: #2563eb;
+}
+
+.prod-card-modern .prod-btn-cart.added {
+    background: #16a34a;
+    border-color: #16a34a;
+}
+
+@media (max-width: 560px) {
+    .prod-card-modern.prod-card {
+        min-height: 480px;
+    }
+    .prod-card-modern .prod-card-image {
+        height: 165px;
+        flex-basis: 165px;
+    }
+    .prod-card-modern .prod-card-actions {
+        gap: 8px;
+    }
+    .prod-card-modern .prod-card-btn {
+        height: 46px;
+        font-size: 13px;
+    }
+}

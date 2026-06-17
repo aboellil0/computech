@@ -73,15 +73,9 @@ function computech_wc_term_image(int $term_id, string $size = 'large'): array {
 }
 
 function computech_wc_term_icon(int $term_id, string $size = 'thumbnail'): array {
-    $icon_id = absint(get_term_meta($term_id, '_computech_wc_category_icon_id', true));
-    if ($icon_id) {
-        $url = wp_get_attachment_image_url($icon_id, $size);
-        $alt = (string) get_post_meta($icon_id, '_wp_attachment_image_alt', true);
-        if ($url) {
-            return array('url' => $url, 'alt' => $alt);
-        }
-    }
-    return computech_wc_term_image($term_id, $size);
+    // Category has one real image only: native WooCommerce thumbnail.
+    // Icons are rendered as theme SVG, not uploaded category images.
+    return array('url' => '', 'alt' => '');
 }
 
 function computech_wc_category_product_count(int $term_id): int {
@@ -139,13 +133,24 @@ function computech_wc_term_card_item(WP_Term $term, string $context = 'shop'): a
     );
 }
 
+function computech_wc_term_has_image(WP_Term $term): bool {
+    $image = computech_wc_term_image((int) $term->term_id, 'thumbnail');
+    return $image['url'] !== '';
+}
+
+function computech_wc_term_is_featured(WP_Term $term): bool {
+    $term_id = (int) $term->term_id;
+    $new_value = get_term_meta($term_id, '_computech_wc_is_featured', true);
+    if ($new_value !== '') {
+        return (string) $new_value === '1';
+    }
+    return computech_wc_bool_term_meta($term_id, '_computech_wc_show_featured_categories', false);
+}
+
 function computech_wc_get_category_items(string $section = 'shop', int $limit = 0): array {
     if (!taxonomy_exists('product_cat')) {
         return array();
     }
-
-    $show_key = $section === 'featured' ? '_computech_wc_show_featured_categories' : '_computech_wc_show_shop_section';
-    $order_key = $section === 'featured' ? '_computech_wc_featured_order' : '_computech_wc_shop_order';
 
     $terms = get_terms(array(
         'taxonomy' => 'product_cat',
@@ -164,19 +169,38 @@ function computech_wc_get_category_items(string $section = 'shop', int $limit = 
         if ($visibility === 'hidden') {
             continue;
         }
-        if (!computech_wc_bool_term_meta((int) $term->term_id, $show_key, false)) {
+        if (!computech_wc_term_has_image($term)) {
             continue;
         }
+
+        if ($section === 'featured') {
+            if (!computech_wc_term_is_featured($term)) {
+                continue;
+            }
+            $order = (int) computech_wc_term_meta((int) $term->term_id, '_computech_wc_featured_order', (string) $term->term_order);
+            $items[] = array(
+                'order' => $order,
+                'name' => $term->name,
+                'item' => computech_wc_term_card_item($term, $section),
+            );
+            continue;
+        }
+
+        // Shop section is random, not manually selected.
         $items[] = array(
-            'order' => (int) computech_wc_term_meta((int) $term->term_id, $order_key, (string) $term->term_order),
+            'order' => 0,
             'name' => $term->name,
             'item' => computech_wc_term_card_item($term, $section),
         );
     }
 
-    usort($items, static function(array $a, array $b): int {
-        return $a['order'] === $b['order'] ? strnatcasecmp($a['name'], $b['name']) : $a['order'] <=> $b['order'];
-    });
+    if ($section === 'featured') {
+        usort($items, static function(array $a, array $b): int {
+            return $a['order'] === $b['order'] ? strnatcasecmp($a['name'], $b['name']) : $a['order'] <=> $b['order'];
+        });
+    } else {
+        shuffle($items);
+    }
 
     $items = array_map(static fn(array $row): array => $row['item'], $items);
     return $limit > 0 ? array_slice($items, 0, $limit) : $items;
@@ -216,13 +240,12 @@ function computech_wc_render_shop_categories_section(): void {
     if (function_exists('computech_home_section_option') && computech_home_section_option('shop_show', '0') !== '1') {
         return;
     }
-    $items = computech_wc_get_category_items('shop');
+    $items = computech_wc_get_category_items('shop', 5);
     if (!$items) {
         return;
     }
     $title = function_exists('computech_home_section_option') ? computech_home_section_option('shop_title', 'تسوق حسب القسم') : 'تسوق حسب القسم';
     $subtitle = function_exists('computech_home_section_option') ? computech_home_section_option('shop_subtitle', '') : '';
-    $items = array_slice($items, 0, 5);
     $top_items = array_slice($items, 0, 3);
     $bottom_items = array_slice($items, 3, 2);
     ?>
@@ -287,18 +310,27 @@ function computech_wc_product_whatsapp_url(WC_Product $product): string {
     return 'https://wa.me/' . $number . '?text=' . rawurlencode($message);
 }
 
+function computech_wc_product_condition_value(WC_Product $product): string {
+    $value = sanitize_key((string) get_post_meta($product->get_id(), '_computech_wc_condition', true));
+    if (in_array($value, array('new', 'imported'), true)) {
+        return $value;
+    }
+    $attribute = trim((string) $product->get_attribute('pa_condition'));
+    if ($attribute === '') {
+        $attribute = trim((string) $product->get_attribute('condition'));
+    }
+    if (stripos($attribute, 'import') !== false || strpos($attribute, 'استيراد') !== false) {
+        return 'imported';
+    }
+    return 'new';
+}
+
 function computech_wc_product_condition_label(WC_Product $product): string {
-    $condition = trim((string) $product->get_attribute('pa_condition'));
-    if ($condition === '') {
-        $condition = trim((string) $product->get_attribute('condition'));
-    }
-    if ($condition !== '') {
-        return $condition;
-    }
     if (!$product->is_in_stock()) {
         return 'غير متوفر';
     }
-    return '';
+    $condition = computech_wc_product_condition_value($product);
+    return $condition === 'imported' ? 'استيراد' : 'جديد';
 }
 
 function computech_wc_product_filter_category_slugs(int $product_id): string {
@@ -325,19 +357,19 @@ function computech_wc_product_price_number(WC_Product $product): int {
     return (int) preg_replace('/[^0-9]/', '', (string) $price);
 }
 
-function computech_wc_product_highlights(WC_Product $product, int $limit = 4): array {
-    $manual = array();
-    for ($i = 1; $i <= 4; $i++) {
-        $value = trim((string) get_post_meta($product->get_id(), '_computech_wc_highlight_' . $i, true));
-        if ($value !== '') {
-            $manual[] = $value;
+function computech_wc_product_specs(WC_Product $product, int $limit = 12): array {
+    $specs = array();
+    for ($i = 1; $i <= 12; $i++) {
+        $label = trim((string) get_post_meta($product->get_id(), '_computech_wc_spec_label_' . $i, true));
+        $value = trim((string) get_post_meta($product->get_id(), '_computech_wc_spec_value_' . $i, true));
+        if ($label !== '' && $value !== '') {
+            $specs[] = array('label' => $label, 'value' => $value);
+        }
+        if (count($specs) >= $limit) {
+            return $specs;
         }
     }
-    if ($manual) {
-        return array_slice($manual, 0, $limit);
-    }
 
-    $out = array();
     foreach ($product->get_attributes() as $attribute) {
         if (!$attribute instanceof WC_Product_Attribute || !$attribute->get_visible()) {
             continue;
@@ -353,14 +385,54 @@ function computech_wc_product_highlights(WC_Product $product, int $limit = 4): a
             $values = $attribute->get_options();
         }
         $value = trim(implode(', ', array_map('wp_strip_all_tags', $values)));
+        if ($name !== '' && $value !== '') {
+            $specs[] = array('label' => $name, 'value' => $value);
+        }
+        if (count($specs) >= $limit) {
+            break;
+        }
+    }
+    return $specs;
+}
+
+function computech_wc_product_highlights(WC_Product $product, int $limit = 4): array {
+    $specs = computech_wc_product_specs($product, $limit);
+    $out = array();
+    foreach ($specs as $spec) {
+        $value = trim((string) ($spec['value'] ?? ''));
         if ($value !== '') {
-            $out[] = $name . ': ' . $value;
+            $out[] = $value;
         }
         if (count($out) >= $limit) {
             break;
         }
     }
     return $out;
+}
+
+
+function computech_wc_card_price_html(WC_Product $product): string {
+    if (!$product instanceof WC_Product || $product->get_price() === '') {
+        return '';
+    }
+
+    if ($product->is_type('simple') || $product->is_type('external')) {
+        $current_price = $product->is_on_sale() && $product->get_sale_price() !== '' ? $product->get_sale_price() : $product->get_price();
+        $regular_price = $product->get_regular_price();
+        $current = wc_price(wc_get_price_to_display($product, array('price' => (float) $current_price)));
+        $old = '';
+        if ($product->is_on_sale() && $regular_price !== '' && (float) $regular_price > (float) $current_price) {
+            $old = wc_price(wc_get_price_to_display($product, array('price' => (float) $regular_price)));
+        }
+        $html = '<span class="prod-price-current">' . $current . '</span>';
+        if ($old !== '') {
+            $html .= '<span class="prod-price-old">' . $old . '</span>';
+        }
+        return $html;
+    }
+
+    $price_html = $product->get_price_html();
+    return $price_html !== '' ? '<span class="prod-price-current prod-price-range">' . $price_html . '</span>' : '';
 }
 
 function computech_wc_product_card($product_or_post = null): void {
@@ -381,37 +453,32 @@ function computech_wc_product_card($product_or_post = null): void {
 
     $product_id = $product->get_id();
     $title = $product->get_name();
-    $card_title = trim((string) get_post_meta($product_id, '_computech_wc_card_title', true));
-    $subtitle = trim((string) get_post_meta($product_id, '_computech_wc_card_subtitle', true));
+    $subtitle = wp_strip_all_tags($product->get_short_description());
     if ($subtitle === '') {
-        $subtitle = wp_strip_all_tags($product->get_short_description());
-    }
-    if ($subtitle === '') {
-        $subtitle = wp_trim_words(wp_strip_all_tags($product->get_description()), 20, '...');
+        $subtitle = wp_trim_words(wp_strip_all_tags($product->get_description()), 10, '...');
     }
     $image_id = $product->get_image_id();
     $image_url = $image_id ? wp_get_attachment_image_url($image_id, 'large') : wc_placeholder_img_src('large');
     $image_alt = $image_id ? (string) get_post_meta($image_id, '_wp_attachment_image_alt', true) : '';
     $badge = computech_wc_product_condition_label($product);
-    $highlights = computech_wc_product_highlights($product, 4);
-    $note = trim((string) get_post_meta($product_id, '_computech_wc_card_note', true));
-    $whatsapp_url = computech_wc_product_whatsapp_url($product);
+    $condition = function_exists('computech_wc_product_condition_value') ? computech_wc_product_condition_value($product) : 'new';
+    $highlights = computech_wc_product_highlights($product, 3);
+    $permalink = get_permalink($product_id);
     ?>
-    <div class="prod-card" data-category="<?php echo esc_attr(computech_wc_product_filter_category_slugs($product_id)); ?>" data-status="<?php echo esc_attr($product->get_stock_status()); ?>" data-price="<?php echo esc_attr((string) computech_wc_product_price_number($product)); ?>" data-name="<?php echo esc_attr($title); ?>">
-        <div class="prod-card-image">
-            <?php if ($badge !== '') : ?><span class="prod-badge <?php echo esc_attr($product->is_in_stock() ? 'prod-badge-new' : 'prod-badge-imported'); ?>"><?php echo esc_html($badge); ?></span><?php endif; ?>
-            <a href="<?php echo esc_url(get_permalink($product_id)); ?>"><img src="<?php echo esc_url($image_url); ?>" alt="<?php echo esc_attr($image_alt !== '' ? $image_alt : $title); ?>" loading="lazy"></a>
+    <div class="prod-card prod-card-modern" data-category="<?php echo esc_attr(computech_wc_product_filter_category_slugs($product_id)); ?>" data-status="<?php echo esc_attr(trim($condition . ' ' . $product->get_stock_status())); ?>" data-price="<?php echo esc_attr((string) computech_wc_product_price_number($product)); ?>" data-name="<?php echo esc_attr($title); ?>">
+        <div class="prod-card-topline">
+            <span class="prod-fav-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M20.8 4.6c-1.7-1.7-4.4-1.7-6.1 0L12 7.3 9.3 4.6c-1.7-1.7-4.4-1.7-6.1 0s-1.7 4.4 0 6.1L12 19.5l8.8-8.8c1.7-1.7 1.7-4.4 0-6.1z"/></svg></span>
+            <?php if ($badge !== '') : ?><span class="prod-badge <?php echo esc_attr($condition === 'imported' ? 'prod-badge-imported' : 'prod-badge-new'); ?>"><?php echo esc_html($badge); ?></span><?php endif; ?>
         </div>
+        <a href="<?php echo esc_url($permalink); ?>" class="prod-card-image" aria-label="<?php echo esc_attr($title); ?>"><img src="<?php echo esc_url($image_url); ?>" alt="<?php echo esc_attr($image_alt !== '' ? $image_alt : $title); ?>" loading="lazy"></a>
         <div class="prod-card-body">
-            <h3 class="prod-card-title"><a href="<?php echo esc_url(get_permalink($product_id)); ?>"><?php echo esc_html($card_title !== '' ? $card_title : $title); ?></a></h3>
-            <?php if ($subtitle !== '') : ?><p class="prod-card-desc"><?php echo esc_html(wp_trim_words($subtitle, 20, '...')); ?></p><?php endif; ?>
+            <h3 class="prod-card-title"><a href="<?php echo esc_url($permalink); ?>"><?php echo esc_html($title); ?></a></h3>
+            <?php if ($subtitle !== '') : ?><p class="prod-card-desc"><?php echo esc_html(wp_trim_words($subtitle, 12, '...')); ?></p><?php endif; ?>
             <?php if ($highlights) : ?><div class="prod-card-specs"><?php foreach ($highlights as $highlight) : ?><span class="prod-spec"><?php echo esc_html($highlight); ?></span><?php endforeach; ?></div><?php endif; ?>
-            <?php if ($product->get_price_html() !== '') : ?><div class="prod-card-price"><?php echo wp_kses_post($product->get_price_html()); ?></div><?php endif; ?>
-            <?php if ($note !== '') : ?><div class="prod-card-warranty"><?php echo esc_html($note); ?></div><?php endif; ?>
+            <?php $card_price_html = computech_wc_card_price_html($product); ?><?php if ($card_price_html !== '') : ?><div class="prod-card-price"><?php echo wp_kses_post($card_price_html); ?></div><?php endif; ?>
             <div class="prod-card-actions">
-                <a href="<?php echo esc_url(get_permalink($product_id)); ?>" class="prod-card-btn prod-btn-details"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>عرض التفاصيل</a>
-                <?php if ($whatsapp_url !== '') : ?><a href="<?php echo esc_url($whatsapp_url); ?>" target="_blank" rel="noopener" class="prod-card-btn prod-btn-whatsapp"><?php echo computech_whatsapp_icon(); ?>واتساب</a><?php endif; ?>
-                <?php if ($product->is_purchasable() && $product->is_in_stock()) : ?><a href="<?php echo esc_url($product->add_to_cart_url()); ?>" data-quantity="1" data-product_id="<?php echo esc_attr((string) $product_id); ?>" class="prod-card-btn prod-btn-cart add_to_cart_button ajax_add_to_cart">إضافة للسلة</a><?php endif; ?>
+                <a href="<?php echo esc_url($permalink); ?>" class="prod-card-btn prod-btn-details">عرض التفاصيل <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg></a>
+                <?php if ($product->is_purchasable() && $product->is_in_stock()) : ?><a href="<?php echo esc_url($product->add_to_cart_url()); ?>" data-quantity="1" data-product_id="<?php echo esc_attr((string) $product_id); ?>" class="prod-card-btn prod-btn-cart add_to_cart_button ajax_add_to_cart" aria-label="إضافة للسلة"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.7 13.4a2 2 0 0 0 2 1.6h8.8a2 2 0 0 0 2-1.6L23 6H6"/></svg><span>إضافة للسلة</span></a><?php endif; ?>
             </div>
         </div>
     </div>
@@ -424,11 +491,12 @@ function computech_wc_get_featured_products(int $limit = 12): array {
     }
     $products = wc_get_products(array(
         'status' => 'publish',
-        'featured' => true,
         'limit' => $limit,
         'orderby' => 'date',
         'order' => 'DESC',
         'return' => 'objects',
+        'meta_key' => '_computech_wc_is_featured',
+        'meta_value' => '1',
     ));
     usort($products, static function(WC_Product $a, WC_Product $b): int {
         $ao = (int) get_post_meta($a->get_id(), '_computech_wc_featured_order', true);
@@ -502,12 +570,13 @@ function computech_wc_render_categories_page(): void {
         foreach ($terms as $term) {
             if (!$term instanceof WP_Term) { continue; }
             if (computech_wc_term_meta((int) $term->term_id, '_computech_wc_category_visibility', 'visible') === 'hidden') { continue; }
+            if (!computech_wc_term_has_image($term)) { continue; }
             $all[] = computech_wc_term_card_item($term, 'all');
         }
     }
     ?>
-    <section class="cat-hero"><div class="cat-hero-bg"><div class="cat-hero-circuit cat-hero-circuit-1"></div><div class="cat-hero-circuit cat-hero-circuit-2"></div><div class="cat-hero-circuit cat-hero-circuit-3"></div><div class="cat-hero-dot cat-hero-dot-1"></div><div class="cat-hero-dot cat-hero-dot-2"></div><div class="cat-hero-dot cat-hero-dot-3"></div><div class="cat-hero-dot cat-hero-dot-4"></div><div class="cat-hero-glow cat-hero-glow-1"></div><div class="cat-hero-glow cat-hero-glow-2"></div></div><div class="cat-container cat-hero-inner"><div class="cat-hero-decorative-dots"><span class="h-dot blue"></span><span class="h-dot cyan"></span><span class="h-dot green"></span></div><h1 class="cat-hero-title">أقسام المتجر</h1><p class="cat-hero-subtitle">كل الأقسام هنا من WooCommerce Product Categories.</p><div class="cat-hero-pills"><span class="cat-hero-pill">WooCommerce</span><span class="cat-hero-pill">أقسام غير محدودة</span><span class="cat-hero-pill">صور وأيقونات من القسم</span></div></div></section>
-    <?php if ($featured) : ?><section class="cat-featured"><div class="cat-featured-bg"><div class="cat-feat-glow cat-feat-glow-tr"></div><div class="cat-feat-glow cat-feat-glow-bl"></div><div class="cat-feat-dots cat-feat-dots-tr"></div><div class="cat-feat-dots cat-feat-dots-bl"></div></div><div class="cat-container"><div class="cat-section-header"><div class="cat-section-dots"><span class="sdot blue"></span><span class="sdot cyan"></span><span class="sdot bar"></span><span class="sdot green"></span></div><h2 class="cat-section-title">الأقسام <span class="cat-section-highlight">المميزة</span></h2><p class="cat-section-subtitle">من WooCommerce Categories: Show in Featured Categories</p></div><div class="cat-featured-grid"><?php foreach ($featured as $item) { computech_wc_render_featured_category_card($item); } ?></div></div></section><?php endif; ?>
+    <section class="cat-hero"><div class="cat-hero-bg"><div class="cat-hero-circuit cat-hero-circuit-1"></div><div class="cat-hero-circuit cat-hero-circuit-2"></div><div class="cat-hero-circuit cat-hero-circuit-3"></div><div class="cat-hero-dot cat-hero-dot-1"></div><div class="cat-hero-dot cat-hero-dot-2"></div><div class="cat-hero-dot cat-hero-dot-3"></div><div class="cat-hero-dot cat-hero-dot-4"></div><div class="cat-hero-glow cat-hero-glow-1"></div><div class="cat-hero-glow cat-hero-glow-2"></div></div><div class="cat-container cat-hero-inner"><div class="cat-hero-decorative-dots"><span class="h-dot blue"></span><span class="h-dot cyan"></span><span class="h-dot green"></span></div><h1 class="cat-hero-title">أقسام المتجر</h1><p class="cat-hero-subtitle">كل الأقسام هنا من WooCommerce Product Categories.</p><div class="cat-hero-pills"><span class="cat-hero-pill">WooCommerce</span><span class="cat-hero-pill">أقسام غير محدودة</span><span class="cat-hero-pill">صورة واحدة لكل قسم</span></div></div></section>
+    <?php if ($featured) : ?><section class="cat-featured"><div class="cat-featured-bg"><div class="cat-feat-glow cat-feat-glow-tr"></div><div class="cat-feat-glow cat-feat-glow-bl"></div><div class="cat-feat-dots cat-feat-dots-tr"></div><div class="cat-feat-dots cat-feat-dots-bl"></div></div><div class="cat-container"><div class="cat-section-header"><div class="cat-section-dots"><span class="sdot blue"></span><span class="sdot cyan"></span><span class="sdot bar"></span><span class="sdot green"></span></div><h2 class="cat-section-title">الأقسام <span class="cat-section-highlight">المميزة</span></h2><p class="cat-section-subtitle">من WooCommerce Categories: Is Featured</p></div><div class="cat-featured-grid"><?php foreach ($featured as $item) { computech_wc_render_featured_category_card($item); } ?></div></div></section><?php endif; ?>
     <section class="cat-all"><div class="cat-all-bg"><div class="cat-all-circuit cat-all-circuit-tr"></div><div class="cat-all-circuit cat-all-circuit-bl"></div><div class="cat-all-dots cat-all-dots-tr"></div><div class="cat-all-dots cat-all-dots-bl"></div><div class="cat-all-glow cat-all-glow-tr"></div><div class="cat-all-glow cat-all-glow-bl"></div></div><div class="cat-container"><div class="cat-section-header"><div class="cat-section-dots"><span class="sdot blue"></span><span class="sdot cyan"></span><span class="sdot bar"></span><span class="sdot green"></span></div><h2 class="cat-section-title">جميع <span class="cat-section-highlight">الأقسام</span></h2><p class="cat-section-subtitle">من WooCommerce Product Categories فقط</p></div><div class="cat-grid"><?php if ($all) { foreach ($all as $item) { computech_wc_render_category_grid_card($item); } } else { echo '<div class="wp-product-empty"><h2>لا توجد أقسام بعد</h2><p>أضف الأقسام من Products > Categories.</p></div>'; } ?></div></div></section>
     <?php
 }
@@ -600,7 +669,7 @@ function computech_wc_render_products_filters(): void {
         <?php endforeach; ?>
         <div class="prod-filter-group"><select name="sort" class="prod-filter-select"><option value="newest" <?php selected($selected_sort, 'newest'); ?>>الأحدث</option><option value="price-asc" <?php selected($selected_sort, 'price-asc'); ?>>السعر الأقل</option><option value="price-desc" <?php selected($selected_sort, 'price-desc'); ?>>السعر الأعلى</option><option value="popular" <?php selected($selected_sort, 'popular'); ?>>الأكثر مبيعًا</option></select></div>
         <button type="submit" class="prod-card-btn prod-btn-details">تصفية</button>
-        <a href="<?php echo esc_url(computech_wc_products_page_url()); ?>" class="prod-card-btn prod-btn-whatsapp">مسح</a>
+        <a href="<?php echo esc_url(computech_wc_products_page_url()); ?>" class="prod-card-btn prod-btn-clear">مسح</a>
     </form></div></section>
     <?php
 }
@@ -629,7 +698,7 @@ function computech_wc_render_category_archive(WP_Term $term): void {
     if (!is_wp_error($children) && $children) {
         echo '<section class="cat-all"><div class="cat-container"><div class="cat-grid">';
         foreach ($children as $child) {
-            if ($child instanceof WP_Term) {
+            if ($child instanceof WP_Term && computech_wc_term_meta((int) $child->term_id, '_computech_wc_category_visibility', 'visible') !== 'hidden' && computech_wc_term_has_image($child)) {
                 computech_wc_render_category_grid_card(computech_wc_term_card_item($child, 'all'));
             }
         }
@@ -660,25 +729,26 @@ function computech_wc_render_category_archive(WP_Term $term): void {
 function computech_wc_category_fields_markup(?WP_Term $term = null): void {
     $term_id = $term ? (int) $term->term_id : 0;
     $visibility = $term_id ? computech_wc_term_meta($term_id, '_computech_wc_category_visibility', 'visible') : 'visible';
-    $fields = array(
-        '_computech_wc_show_shop_section' => 'Show in Shop Section',
-        '_computech_wc_show_featured_categories' => 'Show in Featured Categories',
-    );
-    $orders = array(
-        '_computech_wc_shop_order' => 'Shop Section Order',
-        '_computech_wc_featured_order' => 'Featured Categories Order',
-    );
+    $is_featured = false;
+    if ($term) {
+        $new_featured = get_term_meta($term_id, '_computech_wc_is_featured', true);
+        $is_featured = $new_featured !== '' ? ((string) $new_featured === '1') : computech_wc_bool_term_meta($term_id, '_computech_wc_show_featured_categories', false);
+    }
+    $featured_order = $term_id ? computech_wc_term_meta($term_id, '_computech_wc_featured_order', '0') : '0';
+
     if ($term) {
         ?>
         <tr class="form-field"><th scope="row">Computech Visibility</th><td><select name="_computech_wc_category_visibility"><option value="visible" <?php selected($visibility, 'visible'); ?>>Visible</option><option value="hidden" <?php selected($visibility, 'hidden'); ?>>Hidden</option></select></td></tr>
-        <?php foreach ($fields as $key => $label) : ?><tr class="form-field"><th scope="row"><?php echo esc_html($label); ?></th><td><label><input type="checkbox" name="<?php echo esc_attr($key); ?>" value="1" <?php checked(computech_wc_bool_term_meta($term_id, $key)); ?>> Yes</label></td></tr><?php endforeach; ?>
-        <?php foreach ($orders as $key => $label) : ?><tr class="form-field"><th scope="row"><?php echo esc_html($label); ?></th><td><input type="number" name="<?php echo esc_attr($key); ?>" value="<?php echo esc_attr(computech_wc_term_meta($term_id, $key, '0')); ?>"></td></tr><?php endforeach; ?>
+        <tr class="form-field"><th scope="row">Is Featured</th><td><label><input type="checkbox" name="_computech_wc_is_featured" value="1" <?php checked($is_featured); ?>> Yes</label><p class="description">Shows this category inside الأقسام المميزة.</p></td></tr>
+        <tr class="form-field"><th scope="row">Featured Order</th><td><input type="number" name="_computech_wc_featured_order" value="<?php echo esc_attr($featured_order); ?>" min="0" step="1"><p class="description">Used only in الأقسام المميزة.</p></td></tr>
+        <tr class="form-field"><th scope="row">Category Image</th><td><p class="description">Use the native WooCommerce thumbnail image below. Category cards need one image only.</p></td></tr>
         <?php
     } else {
         ?>
         <div class="form-field"><label>Computech Visibility</label><select name="_computech_wc_category_visibility"><option value="visible">Visible</option><option value="hidden">Hidden</option></select></div>
-        <?php foreach ($fields as $key => $label) : ?><div class="form-field"><label><input type="checkbox" name="<?php echo esc_attr($key); ?>" value="1"> <?php echo esc_html($label); ?></label></div><?php endforeach; ?>
-        <?php foreach ($orders as $key => $label) : ?><div class="form-field"><label><?php echo esc_html($label); ?></label><input type="number" name="<?php echo esc_attr($key); ?>" value="0"></div><?php endforeach; ?>
+        <div class="form-field"><label><input type="checkbox" name="_computech_wc_is_featured" value="1"> Is Featured</label><p>Shows this category inside الأقسام المميزة.</p></div>
+        <div class="form-field"><label>Featured Order</label><input type="number" name="_computech_wc_featured_order" value="0" min="0" step="1"></div>
+        <div class="form-field"><p class="description">Set one native WooCommerce thumbnail image for this category.</p></div>
         <?php
     }
 }
@@ -686,21 +756,22 @@ add_action('product_cat_add_form_fields', static function(): void { computech_wc
 add_action('product_cat_edit_form_fields', static function(WP_Term $term): void { computech_wc_category_fields_markup($term); });
 
 function computech_wc_save_category_fields(int $term_id): void {
-    $keys = array('_computech_wc_category_visibility','_computech_wc_shop_order','_computech_wc_featured_order');
-    update_term_meta($term_id, '_computech_wc_show_shop_section', !empty($_POST['_computech_wc_show_shop_section']) ? '1' : '0');
-    update_term_meta($term_id, '_computech_wc_show_featured_categories', !empty($_POST['_computech_wc_show_featured_categories']) ? '1' : '0');
+    update_term_meta($term_id, '_computech_wc_category_visibility', isset($_POST['_computech_wc_category_visibility']) ? sanitize_text_field(wp_unslash($_POST['_computech_wc_category_visibility'])) : 'visible');
+    update_term_meta($term_id, '_computech_wc_is_featured', !empty($_POST['_computech_wc_is_featured']) ? '1' : '0');
+    update_term_meta($term_id, '_computech_wc_featured_order', (string) absint($_POST['_computech_wc_featured_order'] ?? 0));
     update_term_meta($term_id, 'display_type', '');
-    foreach (array('_computech_wc_shop_badge_text','_computech_wc_shop_button_text','_computech_wc_featured_badge_text','_computech_wc_featured_button_text','_computech_wc_category_icon_id') as $removed_key) {
+
+    foreach (array(
+        '_computech_wc_show_shop_section',
+        '_computech_wc_shop_order',
+        '_computech_wc_show_featured_categories',
+        '_computech_wc_shop_badge_text',
+        '_computech_wc_shop_button_text',
+        '_computech_wc_featured_badge_text',
+        '_computech_wc_featured_button_text',
+        '_computech_wc_category_icon_id'
+    ) as $removed_key) {
         delete_term_meta($term_id, $removed_key);
-    }
-    foreach ($keys as $key) {
-        if (!isset($_POST[$key])) { continue; }
-        $raw = wp_unslash($_POST[$key]);
-        if (strpos($key, 'order') !== false) {
-            update_term_meta($term_id, $key, (string) absint($raw));
-        } else {
-            update_term_meta($term_id, $key, sanitize_text_field($raw));
-        }
     }
 }
 add_action('created_product_cat', 'computech_wc_save_category_fields');
@@ -715,8 +786,6 @@ function computech_wc_admin_media_script(string $hook): void {
 jQuery(function($){
     $('#display_type').val('');
     $('#display_type').closest('tr,.form-field').hide();
-    $('#product_cat_thumbnail_id').closest('tr,.form-field').hide();
-    $('.upload_image_button,.remove_image_button').closest('tr,.form-field').hide();
 });
 JS;
     wp_add_inline_script('jquery-core', $script);
@@ -726,46 +795,41 @@ add_action('admin_enqueue_scripts', 'computech_wc_admin_media_script');
 function computech_wc_hide_default_category_admin_fields(): void {
     $screen = function_exists('get_current_screen') ? get_current_screen() : null;
     if (!$screen || $screen->taxonomy !== 'product_cat') { return; }
-    echo '<style>.term-display-type-wrap,.term-thumbnail-wrap{display:none!important}</style>';
+    echo '<style>.term-display-type-wrap{display:none!important}</style>';
 }
 add_action('admin_head', 'computech_wc_hide_default_category_admin_fields');
 
-/* WooCommerce product extra card fields */
+/* WooCommerce product extra fields */
 function computech_wc_product_metabox(): void {
-    add_meta_box('computech_wc_product_card', 'Computech Card / Display', 'computech_wc_product_metabox_html', 'product', 'normal', 'default');
+    add_meta_box('computech_wc_product_card', 'Computech Product Settings', 'computech_wc_product_metabox_html', 'product', 'normal', 'default');
 }
 add_action('add_meta_boxes_product', 'computech_wc_product_metabox');
 
-function computech_wc_product_term_options(int $selected = 0): string {
-    $terms = get_terms(array('taxonomy' => 'product_cat', 'hide_empty' => false));
-    $html = '<option value="0">—</option>';
-    if (!is_wp_error($terms)) {
-        foreach ($terms as $term) {
-            if ($term instanceof WP_Term) {
-                $html .= '<option value="' . esc_attr((string) $term->term_id) . '" ' . selected($selected, (int) $term->term_id, false) . '>' . esc_html($term->name) . '</option>';
-            }
-        }
-    }
-    return $html;
-}
-
 function computech_wc_product_metabox_html(WP_Post $post): void {
     wp_nonce_field('computech_wc_save_product_fields', 'computech_wc_product_nonce');
-    $primary = absint(get_post_meta($post->ID, '_computech_wc_primary_category', true));
+    $is_featured = get_post_meta($post->ID, '_computech_wc_is_featured', true) === '1';
+    $featured_order = (string) get_post_meta($post->ID, '_computech_wc_featured_order', true);
+    $condition = sanitize_key((string) get_post_meta($post->ID, '_computech_wc_condition', true));
+    if (!in_array($condition, array('new', 'imported'), true)) { $condition = 'new'; }
     ?>
-    <div class="computech-product-admin" style="direction:rtl;display:grid;gap:14px">
-        <p><strong>WooCommerce controls main data.</strong> Price, stock, images, gallery, categories, attributes from WooCommerce product editor.</p>
-        <div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px">
-            <p><label>Primary Category</label><select name="_computech_wc_primary_category" class="widefat"><?php echo computech_wc_product_term_options($primary); ?></select></p>
-            <p><label>Featured Products Order</label><input type="number" name="_computech_wc_featured_order" value="<?php echo esc_attr(get_post_meta($post->ID, '_computech_wc_featured_order', true)); ?>" class="widefat"></p>
-            <p><label>Card Title Override</label><input type="text" name="_computech_wc_card_title" value="<?php echo esc_attr(get_post_meta($post->ID, '_computech_wc_card_title', true)); ?>" class="widefat"></p>
-            <p><label>Card Subtitle</label><input type="text" name="_computech_wc_card_subtitle" value="<?php echo esc_attr(get_post_meta($post->ID, '_computech_wc_card_subtitle', true)); ?>" class="widefat"></p>
-            <p><label>Card Note</label><input type="text" name="_computech_wc_card_note" value="<?php echo esc_attr(get_post_meta($post->ID, '_computech_wc_card_note', true)); ?>" class="widefat" placeholder="ضمان 12 شهر"></p>
-            <p><label>WhatsApp Number Override</label><input type="text" name="_computech_wc_whatsapp_number" value="<?php echo esc_attr(get_post_meta($post->ID, '_computech_wc_whatsapp_number', true)); ?>" class="widefat"></p>
+    <div class="computech-product-admin" style="direction:rtl;display:grid;gap:18px">
+        <p><strong>WooCommerce controls:</strong> price, stock, product image, gallery, categories, and core data.</p>
+        <div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px">
+            <p><label style="display:block;font-weight:700;margin-bottom:6px"><input type="checkbox" name="_computech_wc_is_featured" value="1" <?php checked($is_featured); ?>> Is Featured</label><span class="description">Shows this product in homepage featured products.</span></p>
+            <p><label style="display:block;font-weight:700;margin-bottom:6px">Featured Order</label><input type="number" name="_computech_wc_featured_order" value="<?php echo esc_attr($featured_order); ?>" class="widefat" min="0" step="1"></p>
+            <p><label style="display:block;font-weight:700;margin-bottom:6px">Status</label><select name="_computech_wc_condition" class="widefat"><option value="new" <?php selected($condition, 'new'); ?>>جديد</option><option value="imported" <?php selected($condition, 'imported'); ?>>استيراد</option></select></p>
         </div>
-        <p><label>WhatsApp Message</label><textarea name="_computech_wc_whatsapp_message" rows="2" class="widefat"><?php echo esc_textarea(get_post_meta($post->ID, '_computech_wc_whatsapp_message', true)); ?></textarea></p>
-        <div style="display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px">
-            <?php for ($i = 1; $i <= 4; $i++) : ?><p><label>Highlight <?php echo esc_html((string) $i); ?></label><input type="text" name="_computech_wc_highlight_<?php echo esc_attr((string) $i); ?>" value="<?php echo esc_attr(get_post_meta($post->ID, '_computech_wc_highlight_' . $i, true)); ?>" class="widefat"></p><?php endfor; ?>
+        <div>
+            <h3 style="margin:0 0 8px">مواصفات المنتج</h3>
+            <p class="description">اكتب كل مواصفة كسطر: الاسم والقيمة. مثال: المعالج / Intel Core i9-14900K.</p>
+            <div style="display:grid;gap:8px">
+                <?php for ($i = 1; $i <= 12; $i++) : ?>
+                    <div style="display:grid;grid-template-columns:1fr 2fr;gap:8px">
+                        <input type="text" name="_computech_wc_spec_label_<?php echo esc_attr((string) $i); ?>" value="<?php echo esc_attr(get_post_meta($post->ID, '_computech_wc_spec_label_' . $i, true)); ?>" class="widefat" placeholder="اسم المواصفة">
+                        <input type="text" name="_computech_wc_spec_value_<?php echo esc_attr((string) $i); ?>" value="<?php echo esc_attr(get_post_meta($post->ID, '_computech_wc_spec_value_' . $i, true)); ?>" class="widefat" placeholder="القيمة">
+                    </div>
+                <?php endfor; ?>
+            </div>
         </div>
     </div>
     <?php
@@ -775,15 +839,30 @@ function computech_wc_save_product_fields(int $post_id): void {
     if (!isset($_POST['computech_wc_product_nonce']) || !wp_verify_nonce(sanitize_text_field(wp_unslash($_POST['computech_wc_product_nonce'])), 'computech_wc_save_product_fields')) { return; }
     if (defined('DOING_AUTOSAVE') && DOING_AUTOSAVE) { return; }
     if (!current_user_can('edit_post', $post_id)) { return; }
-    $fields = array('_computech_wc_card_title','_computech_wc_card_subtitle','_computech_wc_card_note','_computech_wc_whatsapp_number','_computech_wc_whatsapp_message');
-    foreach ($fields as $field) {
-        update_post_meta($post_id, $field, isset($_POST[$field]) ? sanitize_text_field(wp_unslash($_POST[$field])) : '');
-    }
-    update_post_meta($post_id, '_computech_wc_primary_category', absint($_POST['_computech_wc_primary_category'] ?? 0));
+
+    update_post_meta($post_id, '_computech_wc_is_featured', !empty($_POST['_computech_wc_is_featured']) ? '1' : '0');
     update_post_meta($post_id, '_computech_wc_featured_order', absint($_POST['_computech_wc_featured_order'] ?? 0));
-    for ($i = 1; $i <= 4; $i++) {
-        $key = '_computech_wc_highlight_' . $i;
-        update_post_meta($post_id, $key, isset($_POST[$key]) ? sanitize_text_field(wp_unslash($_POST[$key])) : '');
+    $condition = sanitize_key(wp_unslash($_POST['_computech_wc_condition'] ?? 'new'));
+    update_post_meta($post_id, '_computech_wc_condition', in_array($condition, array('new', 'imported'), true) ? $condition : 'new');
+
+    for ($i = 1; $i <= 12; $i++) {
+        update_post_meta($post_id, '_computech_wc_spec_label_' . $i, isset($_POST['_computech_wc_spec_label_' . $i]) ? sanitize_text_field(wp_unslash($_POST['_computech_wc_spec_label_' . $i])) : '');
+        update_post_meta($post_id, '_computech_wc_spec_value_' . $i, isset($_POST['_computech_wc_spec_value_' . $i]) ? sanitize_text_field(wp_unslash($_POST['_computech_wc_spec_value_' . $i])) : '');
+    }
+
+    foreach (array(
+        '_computech_wc_primary_category',
+        '_computech_wc_card_title',
+        '_computech_wc_card_subtitle',
+        '_computech_wc_card_note',
+        '_computech_wc_whatsapp_number',
+        '_computech_wc_whatsapp_message',
+        '_computech_wc_highlight_1',
+        '_computech_wc_highlight_2',
+        '_computech_wc_highlight_3',
+        '_computech_wc_highlight_4'
+    ) as $removed_key) {
+        delete_post_meta($post_id, $removed_key);
     }
 }
 add_action('save_post_product', 'computech_wc_save_product_fields');

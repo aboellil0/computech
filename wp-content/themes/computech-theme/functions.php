@@ -1118,8 +1118,19 @@ function computech_admin_header_pages_options(): string {
 }
 
 function computech_admin_menu(): void {
+    if (function_exists('computech_register_customer_need_cards_cpt') && !post_type_exists('computech_need_card')) {
+        computech_register_customer_need_cards_cpt();
+    }
+
+    if (function_exists('computech_register_home_offer_banner_cpt') && !post_type_exists('ct_offer_banner')) {
+        computech_register_home_offer_banner_cpt();
+    }
+
     add_menu_page('General', 'General', computech_admin_capability(), 'computech-settings', 'computech_settings_page', 'dashicons-admin-generic', 58);
     add_submenu_page('computech-settings', 'الهيدر', 'الهيدر', computech_admin_capability(), 'computech-settings', 'computech_settings_page');
+
+    // Explicit submenu. Post type slug must stay <= 20 chars.
+    add_submenu_page('computech-settings', 'عروض وبنرات', 'عروض وبنرات', computech_admin_capability(), 'edit.php?post_type=ct_offer_banner');
 }
 add_action('admin_menu', 'computech_admin_menu');
 
@@ -1133,6 +1144,7 @@ function computech_reorder_general_admin_submenus(): void {
     $wanted_order = array(
         'computech-settings' => 0,
         'edit.php?post_type=computech_need_card' => 1,
+        'edit.php?post_type=ct_offer_banner' => 2,
     );
 
     usort($submenu['computech-settings'], static function ($a, $b) use ($wanted_order): int {
@@ -1147,6 +1159,21 @@ function computech_reorder_general_admin_submenus(): void {
 
         return $a_order <=> $b_order;
     });
+
+    // Remove duplicate submenu items that may be added by CPT auto menu + manual menu.
+    $seen = array();
+    $deduped = array();
+    foreach ($submenu['computech-settings'] as $item) {
+        $slug = isset($item[2]) ? (string) $item[2] : '';
+        if ($slug !== '' && isset($seen[$slug])) {
+            continue;
+        }
+        if ($slug !== '') {
+            $seen[$slug] = true;
+        }
+        $deduped[] = $item;
+    }
+    $submenu['computech-settings'] = $deduped;
 
     foreach ($submenu['computech-settings'] as &$item) {
         if (isset($item[2]) && $item[2] === 'computech-settings') {
@@ -2125,7 +2152,7 @@ function computech_get_hero_slides(): array {
     $query = new WP_Query(array(
         'post_type' => 'computech_hero_slide',
         'post_status' => 'publish',
-        'posts_per_page' => -1,
+        'posts_per_page' => 6,
         'orderby' => array('menu_order' => 'ASC', 'date' => 'ASC'),
         'order' => 'ASC',
         'has_password' => false,
@@ -2358,11 +2385,11 @@ function computech_hero_card_metabox(WP_Post $post): void {
         <div class="ct-hero-dashboard-head">
             <div>
                 <h2>ترتيب بيانات كارت الهيرو</h2>
-                <p>اسم الكارت بيتعدل من عنوان البوست بالأعلى، والصورة ترفعها من خانة الصورة داخل الكارت. هنا بتتحكم في الظهور، الوصف، الرابط، وبيانات الصورة.</p>
+                <p>الظهور من حالة النشر والرؤية في WordPress. الصورة من Featured image. العنوان من Title، والترتيب من Order.</p>
             </div>
             <div class="ct-status-card">
-                <label><input type="checkbox" name="_computech_card_show" value="1" <?php checked(computech_card_meta($post, '_computech_card_show', '1'), '1'); ?>> إظهار هذا الكارت</label>
-                <p class="description">لو اتقفلت، الكارت مش هيظهر أسفل الهيرو.</p>
+                <strong>ظهور الكارت</strong>
+                <p class="description">Published + Public = يظهر. Draft / Pending / Private / Password protected = لا يظهر.</p>
             </div>
         </div>
 
@@ -2377,8 +2404,8 @@ function computech_hero_card_metabox(WP_Post $post): void {
                 <div class="ct-admin-section-body">
                     <div class="ct-card-preview-info" style="margin-bottom:14px">
                         <div class="ct-mini-info"><strong>العنوان</strong><span>عدّله من خانة العنوان أعلى الصفحة.</span></div>
-                        <div class="ct-mini-info"><strong>الصورة</strong><span>اختارها من خانة الصورة داخل هذا الكارت.</span></div>
-                        <div class="ct-mini-info"><strong>الترتيب</strong><span>استخدم Order من Page Attributes لو ظهر عندك.</span></div>
+                        <div class="ct-mini-info"><strong>الصورة</strong><span>اختارها من Featured image.</span></div>
+                        <div class="ct-mini-info"><strong>الترتيب</strong><span>استخدم Order من Page Attributes.</span></div>
                     </div>
                     <p class="ct-field"><label>الوصف</label><textarea name="_computech_card_text" rows="3" class="widefat" placeholder="مثال: لابتوبات، شاشات، مكونات، سيرفرات وملحقاتها"><?php echo esc_textarea(computech_card_meta($post, '_computech_card_text', '')); ?></textarea></p>
                 </div>
@@ -2408,13 +2435,12 @@ function computech_hero_card_metabox(WP_Post $post): void {
             <section class="ct-admin-section">
                 <div class="ct-admin-section-head">
                     <div>
-                        <h3>3. الصورة وبياناتها</h3>
-                        <p>الواجهة بتحمي حجم الصورة مهما كانت كبيرة، لكن الأفضل استخدام صورة واضحة وخلفية شفافة إن أمكن.</p>
+                        <h3>3. الصورة</h3>
+                        <p>ارفع الصورة من صندوق Featured image الموجود في جانب الصفحة.</p>
                     </div>
                 </div>
                 <div class="ct-admin-section-body">
-                    <div class="ct-note"><span>ℹ️</span><div>اختار صورة الكارت من Media Library. سيتم استخدام Alt Text وTitle من بيانات الصورة نفسها تلقائيًا.</div></div>
-                    <?php computech_admin_image_upload_field('صورة الكارت', '_computech_card_image_id', $post->ID, 'ارفع أو اختر صورة الكارت. لا تحتاج لإدخال رابط أو Alt Text يدويًا.'); ?>
+                    <div class="ct-note"><span>ℹ️</span><div>واجهة الموقع تستخدم Featured image وAlt Text من Media Library تلقائيًا. لا يوجد حقل صورة مخصص هنا.</div></div>
                 </div>
             </section>
         </div>
@@ -2451,7 +2477,7 @@ function computech_save_hero_card(int $post_id): void {
     if (!current_user_can('edit_post', $post_id)) {
         return;
     }
-    update_post_meta($post_id, '_computech_card_show', !empty($_POST['_computech_card_show']) ? '1' : '0');
+    delete_post_meta($post_id, '_computech_card_show');
     update_post_meta($post_id, '_computech_card_text', sanitize_textarea_field(wp_unslash($_POST['_computech_card_text'] ?? '')));
     update_post_meta($post_id, '_computech_card_link_text', sanitize_text_field(wp_unslash($_POST['_computech_card_link_text'] ?? '')));
     $type = sanitize_key(wp_unslash($_POST['_computech_card_link_type'] ?? 'none'));
@@ -2462,7 +2488,8 @@ function computech_save_hero_card(int $post_id): void {
     update_post_meta($post_id, '_computech_card_term_id', (string) absint($_POST['_computech_card_term_id'] ?? 0));
     update_post_meta($post_id, '_computech_card_url', esc_url_raw(wp_unslash($_POST['_computech_card_url'] ?? '')));
     update_post_meta($post_id, '_computech_card_new_tab', !empty($_POST['_computech_card_new_tab']) ? '1' : '0');
-    update_post_meta($post_id, '_computech_card_image_id', (string) absint($_POST['_computech_card_image_id'] ?? 0));
+    delete_post_meta($post_id, '_computech_card_image_id');
+    delete_post_meta($post_id, '_computech_card_image_url');
 }
 add_action('save_post_computech_hero_card', 'computech_save_hero_card');
 
@@ -2470,14 +2497,17 @@ function computech_get_hero_cards(): array {
     $query = new WP_Query(array(
         'post_type' => 'computech_hero_card',
         'post_status' => 'publish',
-        'posts_per_page' => -1,
+        'post_password' => '',
+        'has_password' => false,
+        'posts_per_page' => 6,
         'orderby' => array('menu_order' => 'ASC', 'date' => 'ASC'),
         'order' => 'ASC',
-        'meta_query' => array(
-            array('key' => '_computech_card_show', 'value' => '1', 'compare' => '='),
-        ),
     ));
-    return $query->posts;
+    $cards = is_array($query->posts) ? $query->posts : array();
+    if (count($cards) > 4) {
+        $cards = array_slice($cards, -4);
+    }
+    return $cards;
 }
 
 function computech_hero_card_url(WP_Post $card): string {
@@ -2511,9 +2541,10 @@ function computech_render_hero_quick_cards(): void {
             $text = computech_card_meta($card, '_computech_card_text', '');
             $link_text = computech_card_meta($card, '_computech_card_link_text', '');
             $url = computech_hero_card_url($card);
-            $card_image = computech_post_image_data((int) $card->ID, '_computech_card_image_id', 'full', '_computech_card_image_url');
-            $image = $card_image['url'];
-            $alt = $card_image['alt'] !== '' ? $card_image['alt'] : $title;
+            $thumb_id = (int) get_post_thumbnail_id($card->ID);
+            $card_image = $thumb_id ? computech_attachment_image_data($thumb_id, 'full') : array('url' => '', 'alt' => '');
+            $image = $card_image['url'] ?? '';
+            $alt = !empty($card_image['alt']) ? (string) $card_image['alt'] : $title;
             ?>
             <div class="quick-card">
                 <?php if ($image !== '') : ?><div class="quick-card-image"><img src="<?php echo esc_url($image); ?>" alt="<?php echo esc_attr($alt); ?>"></div><?php endif; ?>
@@ -2690,7 +2721,10 @@ function computech_get_featured_products(): array {
     ));
     $items = $query->posts;
     wp_reset_postdata();
-    return is_array($items) ? $items : array();
+    if (!is_array($items)) {
+        return array();
+    }
+    return array_slice($items, 0, 6);
 }
 
 function computech_featured_status_label(string $status): array {
@@ -2882,7 +2916,7 @@ function computech_register_customer_need_cards_cpt(): void {
         'public' => false,
         'show_ui' => true,
         'show_in_menu' => 'computech-settings',
-        'supports' => array('title', 'page-attributes'),
+        'supports' => array('title', 'thumbnail', 'page-attributes'),
         'capability_type' => 'page',
         'map_meta_cap' => true,
         'show_in_rest' => false,
@@ -2931,7 +2965,7 @@ function computech_need_card_metabox(WP_Post $post): void {
         <div class="ct-hero-dashboard-head">
             <div>
                 <h2>كارت ابدأ من احتياجك</h2>
-                <p>المتاح فقط: الاسم، الوصف، الصورة، الرابط، الترتيب.</p>
+                <p>المتاح فقط: الاسم، الوصف، الصورة من Featured Image، الرابط، الترتيب.</p>
             </div>
         </div>
         <div class="ct-hero-dashboard">
@@ -2969,11 +3003,11 @@ function computech_need_card_metabox(WP_Post $post): void {
                 <div class="ct-admin-section-head">
                     <div>
                         <h3>3. الصورة</h3>
-                        <p>اختار صورة ثابتة للكارت.</p>
+                        <p>صورة الكارت من Featured Image الخاصة بهذا الكارت.</p>
                     </div>
                 </div>
                 <div class="ct-admin-section-body">
-                    <?php computech_admin_image_upload_field('صورة الكارت', '_computech_need_image_id', $post->ID, 'ارفع أو اختر صورة الكارت.'); ?>
+                    <div class="ct-admin-note">استخدم صندوق Featured Image الموجود في جانب صفحة التعديل لاختيار صورة الكارت.</div>
                 </div>
             </section>
         </div>
@@ -3019,7 +3053,8 @@ function computech_save_need_card(int $post_id): void {
     update_post_meta($post_id, '_computech_need_term_id', (string) absint($_POST['_computech_need_term_id'] ?? 0));
     update_post_meta($post_id, '_computech_need_url', esc_url_raw(wp_unslash($_POST['_computech_need_url'] ?? '')));
     update_post_meta($post_id, '_computech_need_new_tab', !empty($_POST['_computech_need_new_tab']) ? '1' : '0');
-    update_post_meta($post_id, '_computech_need_image_id', (string) absint($_POST['_computech_need_image_id'] ?? 0));
+    delete_post_meta($post_id, '_computech_need_image_id');
+    delete_post_meta($post_id, '_computech_need_image_url');
 }
 add_action('save_post_computech_need_card', 'computech_save_need_card');
 
@@ -3112,7 +3147,7 @@ function computech_home_sections_settings_page(): void {
     ?>
     <div class="wrap computech-admin-wrap" dir="rtl">
         <h1>إعدادات أقسام الصفحة الرئيسية</h1>
-        <p>هنا تتحكم في عناوين ووصف سكشن <strong>ابدأ من احتياجك</strong> وسكشن <strong>تسوق حسب القسم</strong>. كروت تسوق حسب القسم تُسحب الآن من <strong>أقسام المنتجات</strong> حسب Show in Shop Section والترتيب.</p>
+        <p>هنا تتحكم في عناوين ووصف سكشن <strong>ابدأ من احتياجك</strong> وسكشن <strong>تسوق حسب القسم</strong>. كروت تسوق حسب القسم تُسحب عشوائيًا من <strong>أقسام WooCommerce</strong> بحد أقصى 5 أقسام.</p>
         <form method="post">
             <?php wp_nonce_field('computech_save_home_sections', 'computech_home_sections_nonce'); ?>
             <div class="computech-settings-card" style="background:#fff;border:1px solid #dcdcde;border-radius:14px;padding:20px;margin:18px 0;max-width:1040px">
@@ -3250,14 +3285,17 @@ function computech_get_customer_need_cards(): array {
     $query = new WP_Query(array(
         'post_type' => 'computech_need_card',
         'post_status' => 'publish',
-        'posts_per_page' => -1,
+        'posts_per_page' => 6,
         'orderby' => array('menu_order' => 'ASC', 'date' => 'ASC'),
         'order' => 'ASC',
         'no_found_rows' => true,
     ));
     $items = $query->posts;
     wp_reset_postdata();
-    return is_array($items) ? $items : array();
+    if (!is_array($items)) {
+        return array();
+    }
+    return array_slice($items, 0, 6);
 }
 
 function computech_render_customer_needs_section(): void {
@@ -3294,6 +3332,9 @@ function computech_render_customer_needs_section(): void {
                     if (!$card instanceof WP_Post) {
                         continue;
                     }
+                    if (post_password_required($card)) {
+                        continue;
+                    }
                     $title = get_the_title($card);
                     $text = computech_section_meta($card, '_computech_need_text', '');
                     $link_type = computech_section_meta($card, '_computech_need_link_type', '');
@@ -3304,9 +3345,10 @@ function computech_render_customer_needs_section(): void {
                         $url = computech_section_meta($card, '_computech_need_url', '');
                         $target = '';
                     }
-                    $need_image = computech_post_image_data((int) $card->ID, '_computech_need_image_id', 'full', '_computech_need_image_url');
-                    $image = $need_image['url'];
-                    $alt = $need_image['alt'] !== '' ? $need_image['alt'] : $title;
+                    $thumb_id = get_post_thumbnail_id((int) $card->ID);
+                    $image = $thumb_id ? wp_get_attachment_image_url($thumb_id, 'full') : '';
+                    $alt = $thumb_id ? get_post_meta($thumb_id, '_wp_attachment_image_alt', true) : '';
+                    $alt = $alt !== '' ? $alt : $title;
                     ?>
                     <div class="need-card">
                         <div class="need-card-text">
@@ -4405,6 +4447,207 @@ function computech_home_extra_icon_select(string $name, string $selected): strin
     return $html . '</select>';
 }
 
+
+
+/* ============================================
+   Home Promo Banners CPT
+   Title / image / visibility use native WordPress fields.
+   ============================================ */
+function computech_register_home_offer_banner_cpt(): void {
+    register_post_type('ct_offer_banner', array(
+        'labels' => array(
+            'name' => 'عروض خاصة وبنرات ترويجية',
+            'singular_name' => 'بنر ترويجي',
+            'menu_name' => 'عروض وبنرات',
+            'add_new_item' => 'إضافة بنر جديد',
+            'edit_item' => 'تعديل بنر',
+            'new_item' => 'بنر جديد',
+            'search_items' => 'بحث في البنرات',
+            'not_found' => 'لا توجد بنرات',
+        ),
+        'public' => false,
+        'show_ui' => true,
+        'show_in_menu' => 'computech-settings',
+        'supports' => array('title', 'thumbnail', 'page-attributes'),
+        'capability_type' => 'page',
+        'map_meta_cap' => true,
+        'show_in_rest' => false,
+    ));
+}
+add_action('init', 'computech_register_home_offer_banner_cpt');
+
+function computech_home_offer_color_choices(): array {
+    return array(
+        'blue' => 'أزرق',
+        'green' => 'أخضر',
+        'orange' => 'برتقالي',
+        'purple' => 'بنفسجي',
+        'dark' => 'داكن',
+    );
+}
+
+function computech_home_offer_color_select(string $name, string $selected): string {
+    $html = '<select name="' . esc_attr($name) . '" class="widefat">';
+    foreach (computech_home_offer_color_choices() as $key => $label) {
+        $html .= '<option value="' . esc_attr($key) . '" ' . selected($selected, $key, false) . '>' . esc_html($label) . '</option>';
+    }
+    return $html . '</select>';
+}
+
+function computech_home_offer_link_type_select(string $name, string $selected): string {
+    $types = array(
+        'none' => 'بدون رابط',
+        'page' => 'صفحة موجودة',
+        'custom' => 'رابط خارجي',
+    );
+    $html = '<select name="' . esc_attr($name) . '" class="ct-offer-link-type widefat">';
+    foreach ($types as $key => $label) {
+        $html .= '<option value="' . esc_attr($key) . '" ' . selected($selected, $key, false) . '>' . esc_html($label) . '</option>';
+    }
+    return $html . '</select>';
+}
+
+function computech_add_home_offer_banner_metaboxes(): void {
+    add_meta_box('ct_offer_banner_data', 'بيانات البنر الترويجي', 'computech_home_offer_banner_metabox', 'ct_offer_banner', 'normal', 'high');
+}
+add_action('add_meta_boxes', 'computech_add_home_offer_banner_metaboxes');
+
+function computech_home_offer_banner_metabox(WP_Post $post): void {
+    wp_nonce_field('computech_save_home_offer_banner', 'computech_home_offer_banner_nonce');
+    computech_admin_editor_styles_once();
+    $link_type = computech_section_meta($post, '_computech_offer_link_type', 'none');
+    $page_id = computech_section_meta($post, '_computech_offer_page_id', '0');
+    $color = computech_section_meta($post, '_computech_offer_color', 'blue');
+    $icon = computech_section_meta($post, '_computech_offer_icon', 'offer');
+    ?>
+    <div class="ct-editor ct-hero-admin" dir="rtl">
+        <div class="ct-hero-dashboard-head">
+            <div>
+                <h2>بنر ترويجي</h2>
+                <p>العنوان من عنوان WordPress. الصورة من Featured Image. الظهور من Published/Public فقط.</p>
+            </div>
+        </div>
+        <div class="ct-hero-dashboard">
+            <section class="ct-admin-section">
+                <div class="ct-admin-section-head"><div><h3>1. المحتوى</h3><p>لا تستخدم صورة مخصصة هنا. استخدم Featured Image من يمين الشاشة.</p></div></div>
+                <div class="ct-admin-section-body">
+                    <p class="ct-field"><label>الوصف</label><textarea name="_computech_offer_desc" rows="3" class="widefat" placeholder="وصف قصير للبانر"><?php echo esc_textarea(computech_section_meta($post, '_computech_offer_desc', '')); ?></textarea></p>
+                    <div class="ct-grid ct-grid-2">
+                        <p class="ct-field"><label>اللون</label><?php echo computech_home_offer_color_select('_computech_offer_color', $color); ?></p>
+                        <p class="ct-field"><label>الأيقونة</label><?php echo computech_home_extra_icon_select('_computech_offer_icon', $icon); ?></p>
+                    </div>
+                </div>
+            </section>
+            <section class="ct-admin-section">
+                <div class="ct-admin-section-head"><div><h3>2. الرابط</h3><p>اختار صفحة موجودة أو رابط خارجي.</p></div></div>
+                <div class="ct-admin-section-body">
+                    <div class="ct-grid ct-grid-2">
+                        <p class="ct-field"><label>نوع الرابط</label><?php echo computech_home_offer_link_type_select('_computech_offer_link_type', $link_type); ?></p>
+                        <p class="ct-field ct-offer-page-field"><label>اختيار صفحة</label><select name="_computech_offer_page_id" class="widefat"><?php echo computech_need_pages_options($page_id); ?></select></p>
+                    </div>
+                    <p class="ct-field ct-offer-url-field" style="margin-top:14px"><label>رابط خارجي</label><input type="url" name="_computech_offer_url" value="<?php echo esc_attr(computech_section_meta($post, '_computech_offer_url', '')); ?>" class="widefat" placeholder="https://example.com"></p>
+                    <p class="ct-field" style="margin-top:14px"><label><input type="checkbox" name="_computech_offer_new_tab" value="1" <?php checked(computech_section_meta($post, '_computech_offer_new_tab', '0'), '1'); ?>> فتح في تبويب جديد</label></p>
+                </div>
+            </section>
+            <section class="ct-admin-section">
+                <div class="ct-admin-section-head"><div><h3>3. الصورة والظهور</h3></div></div>
+                <div class="ct-admin-section-body">
+                    <div class="ct-admin-note">الصورة من Featured Image. الظهور من Publish/Public. الترتيب من Order داخل Page Attributes. أول بنر في الترتيب يظهر كبير بعرض الصفحة.</div>
+                </div>
+            </section>
+        </div>
+    </div>
+    <script>
+    (function(){
+        var root = document.currentScript.previousElementSibling;
+        if (!root) { return; }
+        function updateFields(){
+            var select = root.querySelector('.ct-offer-link-type');
+            var type = select ? select.value : 'none';
+            var pageField = root.querySelector('.ct-offer-page-field');
+            var urlField = root.querySelector('.ct-offer-url-field');
+            if (pageField) { pageField.style.display = type === 'page' ? '' : 'none'; }
+            if (urlField) { urlField.style.display = type === 'custom' ? '' : 'none'; }
+        }
+        var select = root.querySelector('.ct-offer-link-type');
+        if (select) { select.addEventListener('change', updateFields); }
+        updateFields();
+    })();
+    </script>
+    <?php
+}
+
+function computech_save_home_offer_banner(int $post_id): void {
+    if (!isset($_POST['computech_home_offer_banner_nonce']) || !wp_verify_nonce(sanitize_text_field(wp_unslash($_POST['computech_home_offer_banner_nonce'])), 'computech_save_home_offer_banner')) {
+        return;
+    }
+    if (defined('DOING_AUTOSAVE') && DOING_AUTOSAVE) {
+        return;
+    }
+    if (!current_user_can('edit_post', $post_id)) {
+        return;
+    }
+    update_post_meta($post_id, '_computech_offer_desc', sanitize_textarea_field(wp_unslash($_POST['_computech_offer_desc'] ?? '')));
+    $type = sanitize_key(wp_unslash($_POST['_computech_offer_link_type'] ?? 'none'));
+    $type = in_array($type, array('none', 'page', 'custom'), true) ? $type : 'none';
+    update_post_meta($post_id, '_computech_offer_link_type', $type);
+    update_post_meta($post_id, '_computech_offer_page_id', (string) absint($_POST['_computech_offer_page_id'] ?? 0));
+    update_post_meta($post_id, '_computech_offer_url', esc_url_raw(wp_unslash($_POST['_computech_offer_url'] ?? '')));
+    update_post_meta($post_id, '_computech_offer_new_tab', !empty($_POST['_computech_offer_new_tab']) ? '1' : '0');
+    $color = sanitize_key(wp_unslash($_POST['_computech_offer_color'] ?? 'blue'));
+    $color = array_key_exists($color, computech_home_offer_color_choices()) ? $color : 'blue';
+    update_post_meta($post_id, '_computech_offer_color', $color);
+    $icon = sanitize_key(wp_unslash($_POST['_computech_offer_icon'] ?? 'offer'));
+    $icon = array_key_exists($icon, computech_home_extra_icon_choices()) ? $icon : 'offer';
+    update_post_meta($post_id, '_computech_offer_icon', $icon);
+    delete_post_meta($post_id, '_computech_offer_show');
+    delete_post_meta($post_id, '_computech_offer_image');
+    delete_post_meta($post_id, '_computech_offer_image_id');
+}
+add_action('save_post_ct_offer_banner', 'computech_save_home_offer_banner');
+
+function computech_home_offer_banner_posts(): array {
+    $posts = get_posts(array(
+        'post_type' => 'ct_offer_banner',
+        'post_status' => 'publish',
+        'posts_per_page' => -1,
+        'orderby' => array('menu_order' => 'ASC', 'date' => 'DESC'),
+        'order' => 'ASC',
+        'post_password' => '',
+        'no_found_rows' => true,
+        'suppress_filters' => false,
+    ));
+    return array_values(array_filter($posts, static function($post): bool {
+        return $post instanceof WP_Post && $post->post_status === 'publish' && $post->post_password === '';
+    }));
+}
+
+function computech_home_offer_banner_url(WP_Post $post): string {
+    $type = computech_section_meta($post, '_computech_offer_link_type', 'none');
+    if ($type === 'page') {
+        $page_id = absint(computech_section_meta($post, '_computech_offer_page_id', '0'));
+        $url = $page_id ? get_permalink($page_id) : '';
+        return $url ? $url : '#';
+    }
+    if ($type === 'custom') {
+        $url = computech_section_meta($post, '_computech_offer_url', '');
+        return $url !== '' ? $url : '#';
+    }
+    return '#';
+}
+
+function computech_home_offer_banner_desc(WP_Post $post): string {
+    $desc = computech_section_meta($post, '_computech_offer_desc', '');
+    if ($desc !== '') {
+        return $desc;
+    }
+    return $post->post_excerpt !== '' ? $post->post_excerpt : wp_strip_all_tags($post->post_content);
+}
+
+function computech_home_offer_banner_target(WP_Post $post): string {
+    return computech_section_meta($post, '_computech_offer_new_tab', '0') === '1' ? ' target="_blank" rel="noopener"' : '';
+}
+
 function computech_home_extra_sanitize_settings(array $data): array {
     $defaults = computech_home_extra_default_settings();
     $out = array();
@@ -4506,14 +4749,12 @@ function computech_home_extra_settings_page(): void {
                 <label><input type="checkbox" name="offers_show" value="1" <?php checked($settings['offers_show'], '1'); ?>> إظهار السكشن</label>
                 <div class="ct-grid"><label>نص العنوان<input type="text" name="offers_title_before" value="<?php echo esc_attr($settings['offers_title_before']); ?>"></label><label>الكلمة المميزة<input type="text" name="offers_title_highlight" value="<?php echo esc_attr($settings['offers_title_highlight']); ?>"></label></div>
                 <label>الوصف<textarea name="offers_subtitle" rows="2"><?php echo esc_textarea($settings['offers_subtitle']); ?></textarea></label>
-                <h3>البانر الكبير</h3>
-                <div class="ct-grid"><label>عنوان البانر<input type="text" name="offers_main_title" value="<?php echo esc_attr($settings['offers_main_title']); ?>"></label><label>الكلمة المميزة داخل البانر<input type="text" name="offers_main_title_highlight" value="<?php echo esc_attr($settings['offers_main_title_highlight']); ?>"></label></div>
-                <label>وصف البانر<textarea name="offers_main_desc" rows="3"><?php echo esc_textarea($settings['offers_main_desc']); ?></textarea></label>
-                <div class="ct-grid"><label>نص الزر<input type="text" name="offers_main_button_label" value="<?php echo esc_attr($settings['offers_main_button_label']); ?>"></label><label>رابط الزر<input type="text" name="offers_main_button_url" value="<?php echo esc_attr($settings['offers_main_button_url']); ?>"></label></div>
-                <div class="ct-grid"><label>صورة البانر<input type="text" name="offers_main_image" value="<?php echo esc_attr($settings['offers_main_image']); ?>"></label><label>صورة الرييبون<input type="text" name="offers_ribbon_image" value="<?php echo esc_attr($settings['offers_ribbon_image']); ?>"></label></div>
-                <label>صورة Badge أفضل قيمة<input type="text" name="offers_value_badge_image" value="<?php echo esc_attr($settings['offers_value_badge_image']); ?>"></label>
-                <h3>نقاط البانر الكبير</h3><div id="che-pills-list"><?php foreach ($offer_pills as $i => $row) : ?><div class="ct-row"><div class="ct-row-head"><strong>نقطة</strong><button type="button" class="button-link-delete che-remove-row">حذف</button></div><label><input type="checkbox" name="offer_pills[<?php echo esc_attr((string)$i); ?>][show]" value="1" <?php checked(!empty($row['show'])); ?>> إظهار</label><label>الأيقونة<?php echo computech_home_extra_icon_select('offer_pills[' . esc_attr((string)$i) . '][icon]', $row['icon'] ?? 'search'); ?></label><label>النص<input type="text" name="offer_pills[<?php echo esc_attr((string)$i); ?>][text]" value="<?php echo esc_attr($row['text'] ?? ''); ?>"></label></div><?php endforeach; ?></div><button type="button" class="button che-add-row" data-target="che-pills-list" data-template="che-pill-template" data-name="offer_pills">+ إضافة نقطة</button>
-                <h3>البنرات الصغيرة</h3><div id="che-offer-cards-list"><?php foreach ($offer_cards as $i => $row) : ?><div class="ct-row"><div class="ct-row-head"><strong>بنر صغير</strong><button type="button" class="button-link-delete che-remove-row">حذف</button></div><label><input type="checkbox" name="offer_cards[<?php echo esc_attr((string)$i); ?>][show]" value="1" <?php checked(!empty($row['show'])); ?>> إظهار</label><label>العنوان <small>كل سطر يظهر منفصل</small><textarea name="offer_cards[<?php echo esc_attr((string)$i); ?>][title]" rows="2"><?php echo esc_textarea($row['title'] ?? ''); ?></textarea></label><label>العنوان الفرعي<input type="text" name="offer_cards[<?php echo esc_attr((string)$i); ?>][subtitle]" value="<?php echo esc_attr($row['subtitle'] ?? ''); ?>"></label><label>الوصف<textarea name="offer_cards[<?php echo esc_attr((string)$i); ?>][desc]" rows="2"><?php echo esc_textarea($row['desc'] ?? ''); ?></textarea></label><label>نص الزر<input type="text" name="offer_cards[<?php echo esc_attr((string)$i); ?>][button_label]" value="<?php echo esc_attr($row['button_label'] ?? ''); ?>"></label><label>رابط الزر<input type="text" name="offer_cards[<?php echo esc_attr((string)$i); ?>][button_url]" value="<?php echo esc_attr($row['button_url'] ?? ''); ?>"></label><label>الصورة<input type="text" name="offer_cards[<?php echo esc_attr((string)$i); ?>][image]" value="<?php echo esc_attr($row['image'] ?? ''); ?>"></label><label>الصورة العائمة<input type="text" name="offer_cards[<?php echo esc_attr((string)$i); ?>][float_image]" value="<?php echo esc_attr($row['float_image'] ?? ''); ?>"></label><label>Alt الصورة<input type="text" name="offer_cards[<?php echo esc_attr((string)$i); ?>][alt]" value="<?php echo esc_attr($row['alt'] ?? ''); ?>"></label></div><?php endforeach; ?></div><button type="button" class="button che-add-row" data-target="che-offer-cards-list" data-template="che-offer-card-template" data-name="offer_cards">+ إضافة بنر صغير</button>
+                <div class="ct-admin-note" style="background:#f8fafc;border:1px solid #dbeafe;border-radius:12px;padding:14px;margin-top:14px">
+                    البنرات نفسها أصبحت من قائمة <strong>General → عروض وبنرات</strong>.
+                    العنوان من عنوان WordPress، الصورة من Featured Image، والظهور من Published/Public.
+                    أول بنر حسب Order يظهر كبير بعرض الصفحة، والباقي يظهر كبنرات صغيرة بنفس تصميم السكشن.
+                </div>
+                <p style="margin-top:14px"><a href="<?php echo esc_url(admin_url('post-new.php?post_type=ct_offer_banner')); ?>" class="button button-primary">+ إضافة بنر</a> <a href="<?php echo esc_url(admin_url('edit.php?post_type=ct_offer_banner')); ?>" class="button">إدارة البنرات</a></p>
             </div>
 
             <div class="ct-panel"><h2>2. طرق الدفع المتاحة</h2><label><input type="checkbox" name="payment_show" value="1" <?php checked($settings['payment_show'], '1'); ?>> إظهار السكشن</label><label>العنوان<input type="text" name="payment_title" value="<?php echo esc_attr($settings['payment_title']); ?>"></label><div id="che-payment-list"><?php foreach ($payment_methods as $i => $row) : ?><div class="ct-row"><div class="ct-row-head"><strong>طريقة دفع</strong><button type="button" class="button-link-delete che-remove-row">حذف</button></div><label><input type="checkbox" name="payment_methods[<?php echo esc_attr((string)$i); ?>][show]" value="1" <?php checked(!empty($row['show'])); ?>> إظهار</label><label>الأيقونة<?php echo computech_home_extra_icon_select('payment_methods[' . esc_attr((string)$i) . '][icon]', $row['icon'] ?? 'credit_card'); ?></label><label>الاسم<input type="text" name="payment_methods[<?php echo esc_attr((string)$i); ?>][name]" value="<?php echo esc_attr($row['name'] ?? ''); ?>"></label></div><?php endforeach; ?></div><button type="button" class="button che-add-row" data-target="che-payment-list" data-template="che-payment-template" data-name="payment_methods">+ إضافة طريقة دفع</button></div>
@@ -4540,19 +4781,51 @@ function computech_home_extra_settings_page(): void {
 function computech_render_home_offers_section(): void {
     $s = computech_home_extra_settings();
     if ($s['offers_show'] !== '1') { return; }
-    $pills = computech_home_extra_visible_rows('computech_home_offer_pills', 'computech_home_extra_default_offer_pills');
-    $cards = computech_home_extra_visible_rows('computech_home_offer_cards', 'computech_home_extra_default_offer_cards');
+    $banners = computech_home_offer_banner_posts();
+
+    if (!$banners) {
+        $pills = computech_home_extra_visible_rows('computech_home_offer_pills', 'computech_home_extra_default_offer_pills');
+        $cards = computech_home_extra_visible_rows('computech_home_offer_cards', 'computech_home_extra_default_offer_cards');
+        ?>
+        <section class="offers-section">
+            <div class="offers-bg-decor"><div class="obg-circuit obg-circuit-right"></div><div class="obg-circuit obg-circuit-left"></div><div class="obg-dots obg-dots-right"></div><div class="obg-dots obg-dots-left"></div><div class="obg-circle obg-circle-right"></div><div class="obg-circle obg-circle-left"></div></div>
+            <div class="offers-container">
+                <div class="offers-header"><div class="offers-header-dots"><span class="ohd blue"></span><span class="ohd cyan"></span><span class="ohd pill"></span><span class="ohd green"></span></div><h2 class="offers-heading"><?php echo esc_html($s['offers_title_before']); ?> <span class="offers-heading-blue"><?php echo esc_html($s['offers_title_highlight']); ?></span></h2><?php if ($s['offers_subtitle'] !== '') : ?><p class="offers-heading-sub"><?php echo esc_html($s['offers_subtitle']); ?></p><?php endif; ?></div>
+                <div class="offer-main-banner">
+                    <?php if ($s['offers_ribbon_image'] !== '') : ?><div class="offer-ribbon"><img src="<?php echo esc_url($s['offers_ribbon_image']); ?>" alt="عرض مميز"></div><?php endif; ?>
+                    <?php if ($s['offers_value_badge_image'] !== '') : ?><div class="offer-value-badge"><img src="<?php echo esc_url($s['offers_value_badge_image']); ?>" alt="أفضل قيمة"></div><?php endif; ?>
+                    <div class="offer-main-inner"><div class="offer-main-text"><h3 class="offer-main-title"><?php echo esc_html($s['offers_main_title']); ?><br><span><?php echo esc_html($s['offers_main_title_highlight']); ?></span></h3><?php if ($s['offers_main_desc'] !== '') : ?><p class="offer-main-desc"><?php echo esc_html($s['offers_main_desc']); ?></p><?php endif; ?><div class="offer-main-pills"><?php foreach ($pills as $pill) : ?><span class="omp"><?php echo computech_home_extra_icon_svg((string)($pill['icon'] ?? 'shield')); ?><?php echo esc_html($pill['text'] ?? ''); ?></span><?php endforeach; ?></div><?php if ($s['offers_main_button_label'] !== '') : ?><a href="<?php echo esc_url(computech_home_extra_url($s['offers_main_button_url'], computech_page_url('products'))); ?>" class="offer-main-btn"><?php echo esc_html($s['offers_main_button_label']); ?></a><?php endif; ?></div><?php if ($s['offers_main_image'] !== '') : ?><div class="offer-main-image"><img src="<?php echo esc_url($s['offers_main_image']); ?>" alt="<?php echo esc_attr($s['offers_main_title']); ?>"></div><?php endif; ?></div>
+                </div>
+                <?php if ($cards) : ?><div class="offer-dual-row"><?php foreach ($cards as $i => $card) : $is_green = $i % 2 === 1; $title_lines = computech_home_extra_text_lines((string)($card['title'] ?? '')); ?><div class="offer-sub-card <?php echo $is_green ? 'offer-sub-green' : 'offer-sub-blue'; ?>"><?php if (!empty($card['float_image'])) : ?><div class="<?php echo $is_green ? 'offer-sub-float-badge' : 'offer-sub-float-icon'; ?>"><img src="<?php echo esc_url($card['float_image']); ?>" alt=""></div><?php endif; ?><?php if (!empty($card['image'])) : ?><div class="offer-sub-image"><img src="<?php echo esc_url($card['image']); ?>" alt="<?php echo esc_attr($card['alt'] ?? ($card['title'] ?? '')); ?>"></div><?php endif; ?><div class="offer-sub-text"><?php if ($title_lines) : ?><h3 class="offer-sub-title"><?php echo implode('<br>', array_map('esc_html', $title_lines)); ?></h3><?php endif; ?><?php if (!empty($card['subtitle'])) : ?><p class="offer-sub-subtitle <?php echo $is_green ? 'offer-sub-subtitle-green' : ''; ?>"><?php echo esc_html($card['subtitle']); ?></p><?php endif; ?><?php if (!empty($card['desc'])) : ?><p class="offer-sub-desc"><?php echo esc_html($card['desc']); ?></p><?php endif; ?><?php if (!empty($card['button_label'])) : ?><a href="<?php echo esc_url(computech_home_extra_url((string)($card['button_url'] ?? ''), computech_page_url('products'))); ?>" class="offer-sub-btn <?php echo $is_green ? 'offer-sub-btn-green' : 'offer-sub-btn-blue'; ?>"><?php echo esc_html($card['button_label']); ?></a><?php endif; ?></div></div><?php endforeach; ?></div><?php endif; ?>
+            </div>
+        </section>
+        <?php
+        return;
+    }
+
+    $main = array_shift($banners);
+    $main_color = sanitize_key(computech_section_meta($main, '_computech_offer_color', 'blue'));
+    $main_icon = sanitize_key(computech_section_meta($main, '_computech_offer_icon', 'offer'));
+    $main_url = computech_home_offer_banner_url($main);
+    $main_desc = computech_home_offer_banner_desc($main);
+    $main_image = get_the_post_thumbnail_url($main, 'full');
     ?>
     <section class="offers-section">
         <div class="offers-bg-decor"><div class="obg-circuit obg-circuit-right"></div><div class="obg-circuit obg-circuit-left"></div><div class="obg-dots obg-dots-right"></div><div class="obg-dots obg-dots-left"></div><div class="obg-circle obg-circle-right"></div><div class="obg-circle obg-circle-left"></div></div>
         <div class="offers-container">
             <div class="offers-header"><div class="offers-header-dots"><span class="ohd blue"></span><span class="ohd cyan"></span><span class="ohd pill"></span><span class="ohd green"></span></div><h2 class="offers-heading"><?php echo esc_html($s['offers_title_before']); ?> <span class="offers-heading-blue"><?php echo esc_html($s['offers_title_highlight']); ?></span></h2><?php if ($s['offers_subtitle'] !== '') : ?><p class="offers-heading-sub"><?php echo esc_html($s['offers_subtitle']); ?></p><?php endif; ?></div>
-            <div class="offer-main-banner">
-                <?php if ($s['offers_ribbon_image'] !== '') : ?><div class="offer-ribbon"><img src="<?php echo esc_url($s['offers_ribbon_image']); ?>" alt="عرض مميز"></div><?php endif; ?>
-                <?php if ($s['offers_value_badge_image'] !== '') : ?><div class="offer-value-badge"><img src="<?php echo esc_url($s['offers_value_badge_image']); ?>" alt="أفضل قيمة"></div><?php endif; ?>
-                <div class="offer-main-inner"><div class="offer-main-text"><h3 class="offer-main-title"><?php echo esc_html($s['offers_main_title']); ?><br><span><?php echo esc_html($s['offers_main_title_highlight']); ?></span></h3><?php if ($s['offers_main_desc'] !== '') : ?><p class="offer-main-desc"><?php echo esc_html($s['offers_main_desc']); ?></p><?php endif; ?><div class="offer-main-pills"><?php foreach ($pills as $pill) : ?><span class="omp"><?php echo computech_home_extra_icon_svg((string)($pill['icon'] ?? 'shield')); ?><?php echo esc_html($pill['text'] ?? ''); ?></span><?php endforeach; ?></div><?php if ($s['offers_main_button_label'] !== '') : ?><a href="<?php echo esc_url(computech_home_extra_url($s['offers_main_button_url'], computech_page_url('products'))); ?>" class="offer-main-btn"><?php echo esc_html($s['offers_main_button_label']); ?></a><?php endif; ?></div><?php if ($s['offers_main_image'] !== '') : ?><div class="offer-main-image"><img src="<?php echo esc_url($s['offers_main_image']); ?>" alt="<?php echo esc_attr($s['offers_main_title']); ?>"></div><?php endif; ?></div>
+            <div class="offer-main-banner offer-color-<?php echo esc_attr($main_color); ?>">
+                <div class="offer-promo-icon" aria-hidden="true"><?php echo computech_home_extra_icon_svg($main_icon); ?></div>
+                <div class="offer-main-inner">
+                    <div class="offer-main-text">
+                        <h3 class="offer-main-title"><?php echo esc_html(get_the_title($main)); ?></h3>
+                        <?php if ($main_desc !== '') : ?><p class="offer-main-desc"><?php echo esc_html($main_desc); ?></p><?php endif; ?>
+                        <?php if ($main_url !== '#') : ?><a href="<?php echo esc_url($main_url); ?>" class="offer-main-btn"<?php echo computech_home_offer_banner_target($main); ?>>تصفح الآن ←</a><?php endif; ?>
+                    </div>
+                    <?php if ($main_image) : ?><div class="offer-main-image"><img src="<?php echo esc_url($main_image); ?>" alt="<?php echo esc_attr(get_the_title($main)); ?>"></div><?php endif; ?>
+                </div>
             </div>
-            <?php if ($cards) : ?><div class="offer-dual-row"><?php foreach ($cards as $i => $card) : $is_green = $i % 2 === 1; $title_lines = computech_home_extra_text_lines((string)($card['title'] ?? '')); ?><div class="offer-sub-card <?php echo $is_green ? 'offer-sub-green' : 'offer-sub-blue'; ?>"><?php if (!empty($card['float_image'])) : ?><div class="<?php echo $is_green ? 'offer-sub-float-badge' : 'offer-sub-float-icon'; ?>"><img src="<?php echo esc_url($card['float_image']); ?>" alt=""></div><?php endif; ?><?php if (!empty($card['image'])) : ?><div class="offer-sub-image"><img src="<?php echo esc_url($card['image']); ?>" alt="<?php echo esc_attr($card['alt'] ?? ($card['title'] ?? '')); ?>"></div><?php endif; ?><div class="offer-sub-text"><?php if ($title_lines) : ?><h3 class="offer-sub-title"><?php echo implode('<br>', array_map('esc_html', $title_lines)); ?></h3><?php endif; ?><?php if (!empty($card['subtitle'])) : ?><p class="offer-sub-subtitle <?php echo $is_green ? 'offer-sub-subtitle-green' : ''; ?>"><?php echo esc_html($card['subtitle']); ?></p><?php endif; ?><?php if (!empty($card['desc'])) : ?><p class="offer-sub-desc"><?php echo esc_html($card['desc']); ?></p><?php endif; ?><?php if (!empty($card['button_label'])) : ?><a href="<?php echo esc_url(computech_home_extra_url((string)($card['button_url'] ?? ''), computech_page_url('products'))); ?>" class="offer-sub-btn <?php echo $is_green ? 'offer-sub-btn-green' : 'offer-sub-btn-blue'; ?>"><?php echo esc_html($card['button_label']); ?></a><?php endif; ?></div></div><?php endforeach; ?></div><?php endif; ?>
+            <?php if ($banners) : ?><div class="offer-dual-row"><?php foreach ($banners as $banner) : $color = sanitize_key(computech_section_meta($banner, '_computech_offer_color', 'blue')); $icon = sanitize_key(computech_section_meta($banner, '_computech_offer_icon', 'offer')); $desc = computech_home_offer_banner_desc($banner); $url = computech_home_offer_banner_url($banner); $img = get_the_post_thumbnail_url($banner, 'large'); ?><div class="offer-sub-card offer-color-<?php echo esc_attr($color); ?>"><div class="offer-sub-float-icon"><?php echo computech_home_extra_icon_svg($icon); ?></div><?php if ($img) : ?><div class="offer-sub-image"><img src="<?php echo esc_url($img); ?>" alt="<?php echo esc_attr(get_the_title($banner)); ?>"></div><?php endif; ?><div class="offer-sub-text"><h3 class="offer-sub-title"><?php echo esc_html(get_the_title($banner)); ?></h3><?php if ($desc !== '') : ?><p class="offer-sub-desc"><?php echo esc_html($desc); ?></p><?php endif; ?><?php if ($url !== '#') : ?><a href="<?php echo esc_url($url); ?>" class="offer-sub-btn"<?php echo computech_home_offer_banner_target($banner); ?>>اعرف المزيد ←</a><?php endif; ?></div></div><?php endforeach; ?></div><?php endif; ?>
         </div>
     </section>
     <?php

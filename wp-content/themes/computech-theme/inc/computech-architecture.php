@@ -202,10 +202,8 @@ function computech_arch_category_fields_markup(?WP_Term $term = null): void {
     $image_id = computech_arch_term_meta($term_id, '_computech_cat_image_id', '');
     $icon = computech_arch_term_meta($term_id, '_computech_cat_icon', 'desktop');
     $term_order = computech_arch_term_meta($term_id, '_computech_term_order', '0');
-    $show_shop = computech_arch_term_meta($term_id, '_computech_shop_show', '0');
-    $shop_order = computech_arch_term_meta($term_id, '_computech_shop_order', '0');
-    $show_featured = computech_arch_term_meta($term_id, '_computech_featured_cat_show', '0');
-    $featured_order = computech_arch_term_meta($term_id, '_computech_featured_cat_order', '0');
+    $is_featured = computech_arch_term_meta($term_id, '_computech_cat_is_featured', computech_arch_term_meta($term_id, '_computech_featured_cat_show', '0'));
+    $featured_order = computech_arch_term_meta($term_id, '_computech_cat_featured_order', computech_arch_term_meta($term_id, '_computech_featured_cat_order', '0'));
     $full_description = computech_arch_term_meta($term_id, '_computech_cat_full_description', '');
     $is_edit = $term instanceof WP_Term;
     $wrap_start = $is_edit ? '<tr class="form-field term-computech-arch-wrap"><th scope="row">%s</th><td>' : '<div class="form-field term-computech-arch-wrap"><label>%s</label>';
@@ -245,18 +243,10 @@ function computech_arch_category_fields_markup(?WP_Term $term = null): void {
         <p class="description">هذا الترتيب يخص مكان القسم داخل نفس الـ parent فقط.</p>
     <?php echo $wrap_end; ?>
 
-    <?php printf($wrap_start, 'Home Display / الظهور في الصفحة الرئيسية'); ?>
-        <fieldset style="border:1px solid #dcdcde;border-radius:10px;padding:12px;margin-bottom:12px">
-            <legend style="font-weight:700">تسوق حسب القسم</legend>
-            <label><input type="checkbox" name="computech_shop_show" value="1" <?php checked($show_shop, '1'); ?>> Show in Shop Section / يظهر في تسوق حسب القسم</label>
-            <p><label>Shop Section Order<br><input type="number" name="computech_shop_order" value="<?php echo esc_attr($shop_order); ?>" class="small-text" min="0" step="1"></label></p>
-        </fieldset>
-        <fieldset style="border:1px solid #dcdcde;border-radius:10px;padding:12px">
-            <legend style="font-weight:700">الأقسام المميزة</legend>
-            <label><input type="checkbox" name="computech_featured_cat_show" value="1" <?php checked($show_featured, '1'); ?>> Show in Featured Categories / يظهر في الأقسام المميزة</label>
-            <p><label>Featured Categories Order<br><input type="number" name="computech_featured_cat_order" value="<?php echo esc_attr($featured_order); ?>" class="small-text" min="0" step="1"></label></p>
-        </fieldset>
-        <p class="description">لا يوجد حقل عام اسمه Is Featured. كل سكشن له show/order خاص به.</p>
+    <?php printf($wrap_start, 'Featured / الأقسام المميزة'); ?>
+        <label><input type="checkbox" name="computech_cat_is_featured" value="1" <?php checked($is_featured, '1'); ?>> Is Featured / قسم مميز</label>
+        <p><label>Featured Order<br><input type="number" name="computech_cat_featured_order" value="<?php echo esc_attr($featured_order); ?>" class="small-text" min="0" step="1"></label></p>
+        <p class="description">يظهر في الأقسام المميزة فقط.</p>
     <?php echo $wrap_end; ?>
     <?php
 }
@@ -278,16 +268,14 @@ function computech_arch_save_category_fields(int $term_id): void {
         '_computech_cat_image_id' => (string) absint($_POST['computech_cat_image_id'] ?? 0),
         '_computech_cat_icon' => sanitize_key(wp_unslash($_POST['computech_cat_icon'] ?? 'desktop')),
         '_computech_term_order' => (string) absint($_POST['computech_term_order'] ?? 0),
-        '_computech_shop_show' => !empty($_POST['computech_shop_show']) ? '1' : '0',
-        '_computech_shop_order' => (string) absint($_POST['computech_shop_order'] ?? 0),
-        '_computech_featured_cat_show' => !empty($_POST['computech_featured_cat_show']) ? '1' : '0',
-        '_computech_featured_cat_order' => (string) absint($_POST['computech_featured_cat_order'] ?? 0),
+        '_computech_cat_is_featured' => !empty($_POST['computech_cat_is_featured']) ? '1' : '0',
+        '_computech_cat_featured_order' => (string) absint($_POST['computech_cat_featured_order'] ?? 0),
     );
 
     foreach ($fields as $key => $value) {
         update_term_meta($term_id, $key, $value);
     }
-    foreach (array('_computech_shop_badge','_computech_shop_button','_computech_featured_cat_badge','_computech_featured_cat_button') as $removed_key) {
+    foreach (array('_computech_shop_show','_computech_shop_order','_computech_featured_cat_show','_computech_featured_cat_order','_computech_shop_badge','_computech_shop_button','_computech_featured_cat_badge','_computech_featured_cat_button') as $removed_key) {
         delete_term_meta($term_id, $removed_key);
     }
 }
@@ -671,12 +659,20 @@ function computech_arch_term_to_card_item(WP_Term $term, string $mode = 'shop'):
 }
 
 function computech_get_shop_section_category_items(): array {
-    $terms = computech_arch_get_terms_for_home('_computech_shop_show', '_computech_shop_order');
+    $terms = get_terms(array('taxonomy' => 'product_category', 'hide_empty' => false));
+    if (is_wp_error($terms) || !is_array($terms)) {
+        return array();
+    }
+    $terms = array_values(array_filter($terms, static function($term): bool {
+        return $term instanceof WP_Term && computech_arch_term_meta((int) $term->term_id, '_computech_cat_visibility', 'visible') !== 'hidden';
+    }));
+    shuffle($terms);
+    $terms = array_slice($terms, 0, 5);
     return array_map(static fn(WP_Term $term): array => computech_arch_term_to_card_item($term, 'shop'), $terms);
 }
 
 function computech_get_featured_category_items(int $limit = 3): array {
-    $terms = computech_arch_get_terms_for_home('_computech_featured_cat_show', '_computech_featured_cat_order', $limit);
+    $terms = computech_arch_get_terms_for_home('_computech_cat_is_featured', '_computech_cat_featured_order', $limit);
     return array_map(static fn(WP_Term $term): array => computech_arch_term_to_card_item($term, 'featured'), $terms);
 }
 
@@ -730,7 +726,7 @@ function computech_arch_render_categories_page(): void {
     <section class="cat-hero"><div class="cat-hero-bg"><div class="cat-hero-circuit cat-hero-circuit-1"></div><div class="cat-hero-circuit cat-hero-circuit-2"></div><div class="cat-hero-circuit cat-hero-circuit-3"></div><div class="cat-hero-dot cat-hero-dot-1"></div><div class="cat-hero-dot cat-hero-dot-2"></div><div class="cat-hero-dot cat-hero-dot-3"></div><div class="cat-hero-dot cat-hero-dot-4"></div><div class="cat-hero-glow cat-hero-glow-1"></div><div class="cat-hero-glow cat-hero-glow-2"></div></div><div class="cat-container cat-hero-inner"><div class="cat-hero-decorative-dots"><span class="h-dot blue"></span><span class="h-dot cyan"></span><span class="h-dot green"></span></div><h1 class="cat-hero-title">أقسام المتجر</h1><p class="cat-hero-subtitle"><?php echo esc_html(sprintf('استكشف شجرة أقسام %s بأي عدد من المستويات، والمنتجات تظهر تلقائيًا داخل القسم وكل الأقسام الأب.', computech_site_name())); ?></p><div class="cat-hero-pills"><span class="cat-hero-pill">أقسام غير محدودة</span><span class="cat-hero-pill">ربط ذكي بالمنتجات</span><span class="cat-hero-pill">تحكم كامل من الداشبورد</span></div></div></section>
 
     <?php if (!empty($featured)) : ?>
-    <section class="cat-featured"><div class="cat-featured-bg"><div class="cat-feat-glow cat-feat-glow-tr"></div><div class="cat-feat-glow cat-feat-glow-bl"></div><div class="cat-feat-dots cat-feat-dots-tr"></div><div class="cat-feat-dots cat-feat-dots-bl"></div></div><div class="cat-container"><div class="cat-section-header"><div class="cat-section-dots"><span class="sdot blue"></span><span class="sdot cyan"></span><span class="sdot bar"></span><span class="sdot green"></span></div><h2 class="cat-section-title">الأقسام <span class="cat-section-highlight">المميزة</span></h2><p class="cat-section-subtitle">الأقسام التي تم تفعيل Show in Featured Categories لها من الداشبورد</p></div><div class="cat-featured-grid"><?php foreach ($featured as $item) { computech_arch_render_featured_category_card($item); } ?></div></div></section>
+    <section class="cat-featured"><div class="cat-featured-bg"><div class="cat-feat-glow cat-feat-glow-tr"></div><div class="cat-feat-glow cat-feat-glow-bl"></div><div class="cat-feat-dots cat-feat-dots-tr"></div><div class="cat-feat-dots cat-feat-dots-bl"></div></div><div class="cat-container"><div class="cat-section-header"><div class="cat-section-dots"><span class="sdot blue"></span><span class="sdot cyan"></span><span class="sdot bar"></span><span class="sdot green"></span></div><h2 class="cat-section-title">الأقسام <span class="cat-section-highlight">المميزة</span></h2><p class="cat-section-subtitle">الأقسام التي تم تفعيل Is Featured لها من الداشبورد</p></div><div class="cat-featured-grid"><?php foreach ($featured as $item) { computech_arch_render_featured_category_card($item); } ?></div></div></section>
     <?php endif; ?>
 
     <section class="cat-all"><div class="cat-all-bg"><div class="cat-all-circuit cat-all-circuit-tr"></div><div class="cat-all-circuit cat-all-circuit-bl"></div><div class="cat-all-dots cat-all-dots-tr"></div><div class="cat-all-dots cat-all-dots-bl"></div><div class="cat-all-glow cat-all-glow-tr"></div><div class="cat-all-glow cat-all-glow-bl"></div></div><div class="cat-container"><div class="cat-section-header"><div class="cat-section-dots"><span class="sdot blue"></span><span class="sdot cyan"></span><span class="sdot bar"></span><span class="sdot green"></span></div><h2 class="cat-section-title">جميع <span class="cat-section-highlight">الأقسام</span></h2><p class="cat-section-subtitle">كل قسم ظاهر في taxonomy أقسام المنتجات</p></div><div class="cat-grid"><?php if ($all) { foreach ($all as $item) { computech_arch_render_category_grid_card($item); } } else { echo '<div class="wp-product-empty"><h2>لا توجد أقسام بعد</h2><p>أضف أقسام المنتجات من لوحة التحكم.</p></div>'; } ?></div></div></section>

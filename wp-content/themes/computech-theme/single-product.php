@@ -45,9 +45,8 @@ while (have_posts()) : the_post();
             $gallery[] = array('url' => $url, 'alt' => (string) get_post_meta($gallery_id, '_wp_attachment_image_alt', true) ?: $title);
         }
     }
-    $whatsapp_url = function_exists('computech_wc_product_whatsapp_url') ? computech_wc_product_whatsapp_url($product) : '';
     $badge = function_exists('computech_wc_product_condition_label') ? computech_wc_product_condition_label($product) : '';
-    $highlights = function_exists('computech_wc_product_highlights') ? computech_wc_product_highlights($product, 8) : array();
+    $specs = function_exists('computech_wc_product_specs') ? computech_wc_product_specs($product, 12) : array();
     ?>
 
     <section class="pd-page">
@@ -68,7 +67,6 @@ while (have_posts()) : the_post();
                         <?php if ($product->is_purchasable() && $product->is_in_stock()) : ?>
                             <a href="<?php echo esc_url($product->add_to_cart_url()); ?>" data-quantity="1" data-product_id="<?php echo esc_attr((string) $product_id); ?>" class="pd-btn pd-btn-primary add_to_cart_button ajax_add_to_cart"><?php echo esc_html($product->add_to_cart_text()); ?></a>
                         <?php endif; ?>
-                        <?php if ($whatsapp_url !== '') : ?><a href="<?php echo esc_url($whatsapp_url); ?>" target="_blank" rel="noopener" class="pd-btn pd-btn-whatsapp"><?php echo computech_whatsapp_icon(); ?>استفسر واتساب</a><?php endif; ?>
                         <a href="#product-specs" class="pd-btn pd-btn-share">المواصفات</a>
                     </div>
                 </div>
@@ -80,22 +78,11 @@ while (have_posts()) : the_post();
         </div>
     </section>
 
-    <?php if ($highlights || $product->get_attributes()) : ?>
+    <?php if ($specs) : ?>
     <section class="pd-specs" id="product-specs"><div class="pd-container"><div class="pd-section-header"><div class="pd-section-dots"><span class="sdot blue"></span><span class="sdot cyan"></span><span class="sdot bar"></span><span class="sdot green"></span></div><h2 class="pd-section-title">مواصفات <span class="pd-highlight">المنتج</span></h2></div><div class="pd-specs-card"><table class="pd-specs-table"><tbody>
-        <?php foreach ($product->get_attributes() as $attribute) :
-            if (!$attribute instanceof WC_Product_Attribute || !$attribute->get_visible()) { continue; }
-            $name = wc_attribute_label($attribute->get_name());
-            if ($attribute->is_taxonomy()) {
-                $values = wc_get_product_terms($product_id, $attribute->get_name(), array('fields' => 'names'));
-                $value = is_wp_error($values) ? '' : implode(', ', $values);
-            } else {
-                $value = implode(', ', $attribute->get_options());
-            }
-            if ($value === '') { continue; }
-        ?>
-            <tr><td><?php echo esc_html($name); ?></td><td><?php echo esc_html($value); ?></td></tr>
+        <?php foreach ($specs as $spec) : ?>
+            <tr><td><?php echo esc_html((string) ($spec['label'] ?? '')); ?></td><td><?php echo esc_html((string) ($spec['value'] ?? '')); ?></td></tr>
         <?php endforeach; ?>
-        <?php foreach ($highlights as $line) : if (strpos($line, ':') === false) { continue; } $parts = array_map('trim', explode(':', $line, 2)); ?><tr><td><?php echo esc_html($parts[0]); ?></td><td><?php echo esc_html($parts[1] ?? ''); ?></td></tr><?php endforeach; ?>
     </tbody></table></div></div></section>
     <?php endif; ?>
 
