@@ -15488,3 +15488,42 @@ body.home .contact-section .contact-panel .contact-social-btn span {
     display: none !important;
     content: none !important;
 }
+
+/* Topbar item text alignment fix: swapped right/left, center unchanged */
+.computech-topbar .benefits-track > .benefit-item:nth-child(3n + 1) {
+    justify-content: flex-end !important;
+    text-align: right !important;
+}
+
+.computech-topbar .benefits-track > .benefit-item:nth-child(3n + 1) .benefit-text {
+    text-align: right !important;
+}
+
+.computech-topbar .benefits-track > .benefit-item:nth-child(3n + 2) {
+    justify-content: center !important;
+    text-align: center !important;
+}
+
+.computech-topbar .benefits-track > .benefit-item:nth-child(3n + 2) .benefit-text {
+    text-align: center !important;
+}
+
+.computech-topbar .benefits-track > .benefit-item:nth-child(3n) {
+    justify-content: flex-start !important;
+    text-align: left !important;
+}
+
+.computech-topbar .benefits-track > .benefit-item:nth-child(3n) .benefit-text {
+    text-align: left !important;
+}
+
+@media (max-width: 1024px) {
+    .computech-topbar .benefits-track > .benefit-item {
+        justify-content: center !important;
+        text-align: center !important;
+    }
+
+    .computech-topbar .benefits-track > .benefit-item .benefit-text {
+        text-align: center !important;
+    }
+}
