@@ -152,6 +152,9 @@ function computech_site_identity_defaults(): array {
         'map_embed_url' => (string) get_option('computech_general_map_embed_url', ''),
         'contact_page_id' => 0,
         'contact_page_url' => '',
+        'sitemap_url' => computech_page_url('sitemap'),
+        'terms_url' => computech_page_url('terms'),
+        'privacy_url' => computech_page_url('privacy-policy'),
         'socials' => array(),
     );
 }
@@ -1434,6 +1437,9 @@ function computech_handle_site_identity_save(): void {
         'map_embed_url' => esc_url_raw(wp_unslash($_POST['map_embed_url'] ?? '')),
         'contact_page_id' => absint($_POST['contact_page_id'] ?? 0),
         'contact_page_url' => esc_url_raw(wp_unslash($_POST['contact_page_url'] ?? '')),
+        'sitemap_url' => esc_url_raw(wp_unslash($_POST['sitemap_url'] ?? '')),
+        'terms_url' => esc_url_raw(wp_unslash($_POST['terms_url'] ?? '')),
+        'privacy_url' => esc_url_raw(wp_unslash($_POST['privacy_url'] ?? '')),
         'socials' => $socials,
     );
 
@@ -1463,6 +1469,9 @@ function computech_handle_site_identity_save(): void {
     update_option('computech_general_map_url', $settings['map_url'], false);
     update_option('computech_general_map_embed_url', $settings['map_embed_url'], false);
     update_option('computech_general_contact_page_url', $settings['contact_page_url'], false);
+    update_option('computech_footer_sitemap_url', $settings['sitemap_url'], false);
+    update_option('computech_footer_terms_url', $settings['terms_url'], false);
+    update_option('computech_footer_privacy_url', $settings['privacy_url'], false);
 
     add_settings_error('computech_site_identity_messages', 'computech_saved', 'تم حفظ Site Identity بنجاح.', 'updated');
 }
@@ -1530,6 +1539,16 @@ function computech_site_identity_page(): void {
                 <div class="ct-grid">
                     <label>رابط الخريطة<input type="url" name="map_url" value="<?php echo esc_attr($settings['map_url']); ?>" placeholder="https://maps.google.com/..."></label>
                     <label>رابط تضمين الخريطة<input type="url" name="map_embed_url" value="<?php echo esc_attr($settings['map_embed_url']); ?>" placeholder="https://www.google.com/maps/embed?..."></label>
+                </div>
+            </div>
+
+            <div class="ct-panel">
+                <h2>روابط الفوتر الثابتة</h2>
+                <p class="description">النص ثابت في الواجهة. هنا تعديل الرابط فقط.</p>
+                <div class="ct-grid">
+                    <label>خريطة الموقع<input type="url" name="sitemap_url" value="<?php echo esc_attr($settings['sitemap_url']); ?>" placeholder="<?php echo esc_attr(computech_page_url('sitemap')); ?>"></label>
+                    <label>الشروط والأحكام<input type="url" name="terms_url" value="<?php echo esc_attr($settings['terms_url']); ?>" placeholder="<?php echo esc_attr(computech_page_url('terms')); ?>"></label>
+                    <label>سياسة الخصوصية<input type="url" name="privacy_url" value="<?php echo esc_attr($settings['privacy_url']); ?>" placeholder="<?php echo esc_attr(computech_page_url('privacy-policy')); ?>"></label>
                 </div>
             </div>
 
@@ -5918,3 +5937,245 @@ function computech_service_icon_html(WP_Post $post): string {
 // Computech categories/products architecture layer.
 require_once get_template_directory() . '/inc/computech-architecture.php';
 require_once get_template_directory() . '/inc/computech-woocommerce.php';
+
+// Footer dynamic sources: Site Identity, WordPress menu, WooCommerce categories, خدمات posts.
+function computech_footer_wp_menu_items(): array {
+    $locations = get_nav_menu_locations();
+    $menu_id = isset($locations['primary']) ? absint($locations['primary']) : 0;
+    if (!$menu_id) {
+        return array();
+    }
+
+    $items = wp_get_nav_menu_items($menu_id, array('update_post_term_cache' => false));
+    if (!is_array($items)) {
+        return array();
+    }
+
+    $links = array();
+    foreach ($items as $item) {
+        if (!$item instanceof WP_Post) { continue; }
+        if ((int) $item->menu_item_parent !== 0) { continue; }
+        $title = trim((string) $item->title);
+        $url = trim((string) $item->url);
+        if ($title === '' || $url === '') { continue; }
+        $links[] = array(
+            'title' => $title,
+            'url' => $url,
+            'target' => trim((string) get_post_meta($item->ID, '_menu_item_target', true)),
+        );
+    }
+
+    return $links;
+}
+
+function computech_footer_has_wp_menu_links(): bool {
+    return !empty(computech_footer_wp_menu_items());
+}
+
+function computech_render_footer_wp_menu_links(): void {
+    $items = computech_footer_wp_menu_items();
+    if (!$items) { return; }
+    echo '<ul class="footer-links">';
+    foreach ($items as $item) {
+        $target = ($item['target'] ?? '') === '_blank' ? ' target="_blank" rel="noopener"' : '';
+        echo '<li><a href="' . esc_url($item['url']) . '"' . $target . '>' . esc_html($item['title']) . '</a></li>';
+    }
+    echo '</ul>';
+}
+
+function computech_footer_wc_category_terms(): array {
+    if (!taxonomy_exists('product_cat')) {
+        return array();
+    }
+
+    $terms = get_terms(array(
+        'taxonomy' => 'product_cat',
+        'hide_empty' => false,
+        'parent' => 0,
+        'orderby' => 'menu_order',
+        'order' => 'ASC',
+        'number' => 12,
+    ));
+
+    if (is_wp_error($terms) || !is_array($terms)) {
+        return array();
+    }
+
+    return array_values(array_filter($terms, static function ($term): bool {
+        return $term instanceof WP_Term && $term->slug !== 'uncategorized';
+    }));
+}
+
+function computech_footer_has_wc_categories(): bool {
+    return !empty(computech_footer_wc_category_terms());
+}
+
+function computech_render_footer_wc_categories(): void {
+    $terms = computech_footer_wc_category_terms();
+    if (!$terms) { return; }
+    echo '<ul class="footer-links">';
+    foreach ($terms as $term) {
+        $url = get_term_link($term);
+        if (is_wp_error($url)) { continue; }
+        echo '<li><a href="' . esc_url($url) . '">' . esc_html($term->name) . '</a></li>';
+    }
+    echo '</ul>';
+}
+
+function computech_footer_service_posts(): array {
+    if (!post_type_exists('ct_service')) {
+        return array();
+    }
+
+    if (function_exists('computech_service_posts')) {
+        return computech_service_posts();
+    }
+
+    return get_posts(array(
+        'post_type' => 'ct_service',
+        'post_status' => 'publish',
+        'posts_per_page' => 12,
+        'orderby' => array('menu_order' => 'ASC', 'date' => 'DESC'),
+        'order' => 'ASC',
+        'post_password' => '',
+        'no_found_rows' => true,
+    ));
+}
+
+function computech_footer_has_service_posts(): bool {
+    return !empty(computech_footer_service_posts());
+}
+
+function computech_render_footer_service_posts(): void {
+    $posts = computech_footer_service_posts();
+    if (!$posts) { return; }
+    echo '<ul class="footer-links">';
+    foreach ($posts as $post) {
+        if (!$post instanceof WP_Post) { continue; }
+        $title = trim(get_the_title($post));
+        if ($title === '') { continue; }
+        $url = function_exists('computech_service_url') ? computech_service_url($post) : get_permalink($post);
+        $target = function_exists('computech_service_target') ? computech_service_target($post) : '';
+        echo '<li><a href="' . esc_url($url ?: '#') . '"' . $target . '>' . esc_html($title) . '</a></li>';
+    }
+    echo '</ul>';
+}
+
+function computech_footer_site_identity_contact_rows(): array {
+    $rows = array();
+
+    $phone = function_exists('computech_business_phone') ? computech_business_phone() : '';
+    if ($phone !== '') {
+        $rows[] = array('icon' => 'phone', 'text' => $phone, 'url' => function_exists('computech_tel_url') ? computech_tel_url($phone) : 'tel:' . preg_replace('/[^0-9+]/', '', $phone), 'target' => '');
+    }
+
+    $whatsapp = function_exists('computech_business_whatsapp_number') ? computech_business_whatsapp_number() : '';
+    if ($whatsapp !== '') {
+        $rows[] = array('icon' => 'whatsapp', 'text' => '+' . $whatsapp, 'url' => function_exists('computech_whatsapp_url') ? computech_whatsapp_url() : 'https://wa.me/' . preg_replace('/\D+/', '', $whatsapp), 'target' => ' target="_blank" rel="noopener"');
+    }
+
+    $email = function_exists('computech_business_email') ? computech_business_email() : '';
+    if ($email !== '') {
+        $rows[] = array('icon' => 'email', 'text' => $email, 'url' => function_exists('computech_mailto_url') ? computech_mailto_url($email) : 'mailto:' . $email, 'target' => '');
+    }
+
+    $address = function_exists('computech_business_address') ? computech_business_address() : '';
+    if ($address !== '') {
+        $map = function_exists('computech_business_map_url') ? computech_business_map_url() : '';
+        $rows[] = array('icon' => 'location', 'text' => $address, 'url' => $map, 'target' => $map !== '' ? ' target="_blank" rel="noopener"' : '');
+    }
+
+    $hours = function_exists('computech_business_hours') ? computech_business_hours() : '';
+    if ($hours !== '') {
+        $contact_url = function_exists('computech_contact_page_url') ? computech_contact_page_url() : home_url('/');
+        $rows[] = array('icon' => 'clock', 'text' => $hours, 'url' => $contact_url, 'target' => '');
+    }
+
+    $contact_page = function_exists('computech_contact_page_url') ? computech_contact_page_url() : '';
+    if ($contact_page !== '') {
+        $rows[] = array('icon' => 'link', 'text' => 'صفحة التواصل', 'url' => $contact_page, 'target' => '');
+    }
+
+    return $rows;
+}
+
+function computech_footer_has_site_identity_contact(): bool {
+    return !empty(computech_footer_site_identity_contact_rows());
+}
+
+function computech_render_footer_site_identity_contact(): void {
+    $rows = computech_footer_site_identity_contact_rows();
+    if (!$rows) { return; }
+    echo '<ul class="footer-contact">';
+    foreach ($rows as $row) {
+        $icon = sanitize_key((string) ($row['icon'] ?? 'link'));
+        $text = trim((string) ($row['text'] ?? ''));
+        $url = trim((string) ($row['url'] ?? ''));
+        $target = (string) ($row['target'] ?? '');
+        if ($text === '') { continue; }
+        echo '<li>' . computech_footer_icon_svg($icon);
+        if ($url !== '') {
+            echo '<a href="' . esc_url($url) . '"' . $target . '>' . esc_html($text) . '</a>';
+        } else {
+            echo '<span>' . esc_html($text) . '</span>';
+        }
+        echo '</li>';
+    }
+    echo '</ul>';
+}
+
+
+function computech_footer_newsletter_mailto_action_url(): string {
+    $email = function_exists('computech_business_email') ? computech_business_email() : '';
+    if ($email !== '') {
+        return 'mailto:' . sanitize_email($email);
+    }
+    return function_exists('computech_contact_page_url') ? computech_contact_page_url() : home_url('/');
+}
+
+function computech_footer_static_feature_items(): array {
+    return array(
+        array('icon' => 'check', 'text' => 'فحص قبل البيع'),
+        array('icon' => 'warranty', 'text' => 'ضمان حسب المنتج'),
+        array('icon' => 'delivery', 'text' => 'توصيل سريع'),
+        array('icon' => 'support', 'text' => 'دعم فني'),
+    );
+}
+
+function computech_render_footer_static_feature_strip(): void {
+    $items = computech_footer_static_feature_items();
+    if (empty($items)) { return; }
+    echo '<div class="footer-services">';
+    $last_index = count($items) - 1;
+    foreach ($items as $index => $item) {
+        $icon = sanitize_key((string) ($item['icon'] ?? 'check'));
+        $text = trim((string) ($item['text'] ?? ''));
+        if ($text === '') { continue; }
+        echo '<div class="footer-service-item"><div class="footer-service-icon">' . computech_footer_icon_svg($icon) . '</div><span>' . esc_html($text) . '</span></div>';
+        if ($index < $last_index) {
+            echo '<div class="footer-service-sep"></div>';
+        }
+    }
+    echo '</div>';
+}
+
+function computech_footer_static_bottom_links(): array {
+    $links = array(
+        array('label' => 'خريطة الموقع', 'url' => computech_site_identity_setting('sitemap_url', computech_page_url('sitemap'))),
+        array('label' => 'الشروط والأحكام', 'url' => computech_site_identity_setting('terms_url', computech_page_url('terms'))),
+        array('label' => 'سياسة الخصوصية', 'url' => computech_site_identity_setting('privacy_url', computech_page_url('privacy-policy'))),
+    );
+    return array_values(array_filter($links, static function ($item): bool {
+        return trim((string) ($item['url'] ?? '')) !== '';
+    }));
+}
+
+function computech_render_footer_site_identity_bottom_links(): void {
+    $links = computech_footer_static_bottom_links();
+    if (empty($links)) { return; }
+    echo '<div class="footer-bottom-links">';
+    foreach ($links as $link) {
+        echo '<a href="' . esc_url($link['url']) . '">' . esc_html($link['label']) . '</a>';
+    }
+    echo '</div>';
+}
