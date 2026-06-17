@@ -12669,3 +12669,274 @@ body.home .computech-dynamic-shop-row > .shop-card {
 .contact-card-value[href] {
     text-decoration: none;
 }
+
+
+/* ============================================
+   Floating WhatsApp button
+   Keep WhatsApp as a floating icon at the bottom-left of every page.
+   ============================================ */
+.floating-whatsapp-btn,
+.floating-whatsapp-btn:visited {
+    position: fixed !important;
+    left: 24px !important;
+    right: auto !important;
+    bottom: 24px !important;
+    top: auto !important;
+    inset-inline-start: 24px !important;
+    inset-inline-end: auto !important;
+    inset-block-end: 24px !important;
+    z-index: 100000 !important;
+    display: inline-flex !important;
+    visibility: visible !important;
+    align-items: center !important;
+    justify-content: center !important;
+    width: 58px !important;
+    height: 58px !important;
+    min-width: 58px !important;
+    max-width: 58px !important;
+    min-height: 58px !important;
+    max-height: 58px !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    border-radius: 50% !important;
+    background: #16a34a !important;
+    color: #ffffff !important;
+    box-shadow: 0 14px 34px rgba(22, 163, 74, 0.35) !important;
+    pointer-events: auto !important;
+    overflow: visible !important;
+    transform: none !important;
+}
+
+.floating-whatsapp-btn span {
+    display: none !important;
+}
+
+.floating-whatsapp-btn svg {
+    display: block !important;
+    width: 27px !important;
+    height: 27px !important;
+    flex: 0 0 27px !important;
+}
+
+.floating-whatsapp-btn:hover,
+.floating-whatsapp-btn:focus-visible {
+    background: #22c55e !important;
+    color: #ffffff !important;
+    transform: translateY(-4px) !important;
+    box-shadow: 0 18px 42px rgba(22, 163, 74, 0.45) !important;
+}
+
+@media (max-width: 768px) {
+    .floating-whatsapp-btn,
+    .floating-whatsapp-btn:visited {
+        left: 16px !important;
+        bottom: 16px !important;
+        inset-inline-start: 16px !important;
+        inset-block-end: 16px !important;
+        width: 52px !important;
+        height: 52px !important;
+        min-width: 52px !important;
+        max-width: 52px !important;
+        min-height: 52px !important;
+        max-height: 52px !important;
+    }
+
+    .floating-whatsapp-btn svg {
+        width: 24px !important;
+        height: 24px !important;
+        flex-basis: 24px !important;
+    }
+}
+
+/* ============================================
+   WordPress native nested menu support
+   Parent / child structure now follows Appearance > Menus
+   ============================================ */
+.main-header .nav-list,
+.main-header .nav-list ul,
+.main-header .mobile-nav-list,
+.main-header .mobile-nav-list ul {
+    list-style: none !important;
+    margin: 0 !important;
+    padding: 0 !important;
+}
+
+.main-header .nav-list > .menu-item {
+    position: relative;
+    display: flex;
+    align-items: center;
+}
+
+.main-header .menu-item-has-children > a {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+}
+
+.main-header .menu-item-has-children:hover > a .dropdown-arrow,
+.main-header .menu-item-has-children:focus-within > a .dropdown-arrow,
+.main-header .menu-item-has-children.submenu-open > a .dropdown-arrow,
+.main-header .nav-more:hover > .nav-more-toggle .dropdown-arrow,
+.main-header .nav-more:focus-within > .nav-more-toggle .dropdown-arrow {
+    opacity: 1;
+    transform: rotate(180deg);
+}
+
+.main-header .nav-list > .menu-item-has-children::after {
+    content: '';
+    position: absolute;
+    top: 100%;
+    right: 0;
+    left: 0;
+    height: 12px;
+}
+
+.main-header .nav-sub-menu {
+    position: absolute;
+    top: calc(100% + 10px);
+    right: 0;
+    min-width: 220px;
+    padding: 8px !important;
+    background: var(--color-white);
+    border: 1px solid var(--color-gray-200);
+    border-radius: 16px;
+    box-shadow: var(--shadow-lg);
+    opacity: 0;
+    visibility: hidden;
+    transform: translateY(8px);
+    transition: var(--transition);
+    pointer-events: none;
+    z-index: 10030;
+}
+
+.main-header .nav-sub-menu .menu-item {
+    position: relative;
+    display: block;
+}
+
+.main-header .nav-sub-menu .nav-sub-menu {
+    top: 0;
+    right: calc(100% + 8px);
+    transform: translateX(8px);
+}
+
+.main-header .menu-item-has-children:hover > .nav-sub-menu,
+.main-header .menu-item-has-children:focus-within > .nav-sub-menu,
+.main-header .menu-item-has-children.submenu-open > .nav-sub-menu {
+    opacity: 1;
+    visibility: visible;
+    transform: translate(0, 0);
+    pointer-events: auto;
+}
+
+.main-header .nav-sub-link,
+.main-header .nav-more-sub-link {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+    gap: 10px;
+    padding: 10px 12px;
+    border-radius: 10px;
+    color: var(--color-navy);
+    font-size: 13px;
+    font-weight: 700;
+    white-space: nowrap;
+    transition: var(--transition);
+}
+
+.main-header .nav-sub-link:hover,
+.main-header .nav-sub-link.active,
+.main-header .nav-more-sub-link:hover,
+.main-header .nav-more-sub-link.active {
+    color: var(--color-primary);
+    background: rgba(37, 99, 235, 0.06);
+}
+
+.main-header .nav-more-menu > .menu-item {
+    display: block;
+    position: relative;
+}
+
+.main-header .nav-more-menu .nav-more-sub-menu {
+    position: static;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    margin: 2px 12px 6px 0 !important;
+    padding: 0 10px 0 0 !important;
+    border-right: 1px solid rgba(37, 99, 235, 0.14);
+    opacity: 1;
+    visibility: visible;
+    transform: none;
+    pointer-events: auto;
+    background: transparent;
+    box-shadow: none;
+    border-top: 0;
+    border-bottom: 0;
+    border-left: 0;
+    border-radius: 0;
+    min-width: 0;
+}
+
+.main-header .nav-more-menu .nav-more-sub-link {
+    font-size: 12px;
+    font-weight: 600;
+    padding: 8px 10px;
+}
+
+.main-header .mobile-nav-list .menu-item {
+    display: block;
+    list-style: none !important;
+}
+
+.main-header .mobile-nav-list .menu-item-has-children > a .dropdown-arrow {
+    transform: rotate(180deg);
+    opacity: 0.85;
+}
+
+.main-header .mobile-sub-menu {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    margin: 0 12px 6px 0 !important;
+    padding: 0 10px 0 0 !important;
+    border-right: 1px solid rgba(37, 99, 235, 0.16);
+}
+
+.main-header .mobile-sub-link {
+    font-size: 13px !important;
+    font-weight: 600 !important;
+    padding: 9px 14px !important;
+    color: var(--color-gray-600) !important;
+}
+
+.main-header .mobile-sub-link:hover,
+.main-header .mobile-sub-link.active {
+    color: var(--color-primary) !important;
+    background: rgba(37, 99, 235, 0.06) !important;
+}
+
+@media (max-width: 1100px) {
+    .main-header .nav-sub-menu,
+    .main-header .nav-more-menu {
+        position: static;
+        opacity: 1;
+        visibility: visible;
+        transform: none;
+        pointer-events: auto;
+        box-shadow: none;
+    }
+}
+.contact-map-empty{
+    min-height:320px;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    padding:32px;
+    border-radius:22px;
+    background:rgba(15,23,42,.04);
+    color:#64748b;
+    font-weight:700;
+    text-align:center;
+}

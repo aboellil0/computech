@@ -113,8 +113,15 @@
 
     mobileNavLinks.forEach(function (link) {
         link.addEventListener('click', function (e) {
-            if (this.getAttribute('href') === '#') {
+            var href = this.getAttribute('href');
+            var parentItem = this.closest('.menu-item-has-children');
+            var hasSubMenu = parentItem && parentItem.querySelector('ul');
+
+            if (href === '#') {
                 e.preventDefault();
+                if (hasSubMenu) {
+                    return;
+                }
             }
             mobileNavLinks.forEach(function (l) {
                 l.classList.remove('active');
@@ -122,6 +129,28 @@
             this.classList.add('active');
             closeMobileMenu();
         });
+    });
+
+    /* WordPress dropdown menu support */
+    const parentMenuLinks = document.querySelectorAll('.main-header .menu-item-has-children > a');
+
+    parentMenuLinks.forEach(function (link) {
+        link.addEventListener('click', function (e) {
+            var href = this.getAttribute('href');
+            var item = this.parentElement;
+            if (href === '#') {
+                e.preventDefault();
+                item.classList.toggle('submenu-open');
+            }
+        });
+    });
+
+    document.addEventListener('click', function (e) {
+        if (!e.target.closest('.main-header .menu-item-has-children')) {
+            document.querySelectorAll('.main-header .submenu-open').forEach(function (item) {
+                item.classList.remove('submenu-open');
+            });
+        }
     });
 
     /* Card hover sound-like subtle effect via CSS class */

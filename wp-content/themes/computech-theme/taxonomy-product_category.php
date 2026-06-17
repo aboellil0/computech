@@ -72,7 +72,7 @@ $products_query = new WP_Query(array(
 <section class="prod-hero">
     <div class="prod-container prod-hero-inner">
         <h1 class="prod-hero-title"><?php echo esc_html($term->name); ?></h1>
-        <p class="prod-hero-subtitle"><?php echo esc_html(wp_strip_all_tags($description ?: 'منتجات هذا القسم من كمبيوتك، وتشمل المنتجات المرتبطة بالأقسام الفرعية تلقائيًا.')); ?></p>
+        <p class="prod-hero-subtitle"><?php echo esc_html(wp_strip_all_tags($description ?: sprintf('منتجات هذا القسم من %s، وتشمل المنتجات المرتبطة بالأقسام الفرعية تلقائيًا.', computech_site_name()))); ?></p>
     </div>
 </section>
 

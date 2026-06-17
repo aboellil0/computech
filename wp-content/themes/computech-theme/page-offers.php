@@ -3,6 +3,7 @@
  * Offers page template.
  */
 get_header();
+$ct_site_name = function_exists('computech_site_name') ? computech_site_name() : get_bloginfo('name');
 ?>
 <main>
     <?php computech_breadcrumbs('العروض'); ?>
@@ -14,12 +15,12 @@ get_header();
                     <div class="offer-ribbon"><img src="<?php echo esc_url(get_template_directory_uri()); ?>/assets/images/offers-featured-ribbon.png" alt="عرض مميز"></div>
                 </div>
                 <div class="offer-main-content">
-                    <span class="offer-badge">عروض كمبيوتيك</span>
+                    <span class="offer-badge">عروض <?php echo esc_html($ct_site_name); ?></span>
                     <h1 class="offer-title">عروض مختارة على الأجهزة والإكسسوارات</h1>
                     <p class="offer-desc">تابع أحدث الخصومات والباقات الخاصة، وتواصل معنا لمعرفة السعر الحالي والتوفر قبل الشراء.</p>
                     <div class="offer-actions">
                         <a href="<?php echo esc_url(computech_page_url('products')); ?>" class="offer-main-btn">تصفح المنتجات ←</a>
-                        <a href="<?php echo esc_url(computech_whatsapp_url('السلام عليكم، أريد الاستفسار عن عروض كمبيوتيك')); ?>" class="offer-sub-btn offer-sub-btn-green" target="_blank" rel="noopener">استفسار واتساب ←</a>
+                        <a href="<?php echo esc_url(computech_whatsapp_url(sprintf('السلام عليكم، أريد الاستفسار عن عروض %s', $ct_site_name))); ?>" class="offer-sub-btn offer-sub-btn-green" target="_blank" rel="noopener">استفسار واتساب ←</a>
                     </div>
                 </div>
             </div>
