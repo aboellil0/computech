@@ -84,14 +84,14 @@ function computech_wc_category_icon_select(string $name, string $selected): stri
     return $html . '</select>';
 }
 
-function computech_wc_term_image_upload_field(int $term_id): void {
-    $thumb_id = $term_id ? absint(get_term_meta($term_id, 'thumbnail_id', true)) : 0;
-    $url = $thumb_id ? wp_get_attachment_image_url($thumb_id, 'thumbnail') : '';
+function computech_wc_term_icon_image_upload_field(int $term_id): void {
+    $image_id = $term_id ? absint(get_term_meta($term_id, '_computech_wc_cat_icon_image_id', true)) : 0;
+    $url = $image_id ? wp_get_attachment_image_url($image_id, 'thumbnail') : '';
     ?>
     <div class="ct-term-image-uploader">
-        <input type="hidden" name="_computech_wc_cat_image_id" value="<?php echo esc_attr((string) $thumb_id); ?>" class="ct-term-image-id">
+        <input type="hidden" name="_computech_wc_cat_icon_image_id" value="<?php echo esc_attr((string) $image_id); ?>" class="ct-term-image-id">
         <div class="ct-term-image-preview" style="margin-bottom:8px"><?php if ($url) : ?><img src="<?php echo esc_url($url); ?>" style="max-width:90px;height:70px;object-fit:contain;border:1px solid #ddd;border-radius:8px;background:#fff" alt=""><?php endif; ?></div>
-        <button type="button" class="button ct-term-image-upload">اختيار صورة</button>
+        <button type="button" class="button ct-term-image-upload">اختيار صورة الأيقونة</button>
         <button type="button" class="button-link-delete ct-term-image-remove" style="margin-inline-start:8px">إزالة الصورة</button>
     </div>
     <?php
@@ -100,6 +100,12 @@ function computech_wc_term_image_upload_field(int $term_id): void {
 function computech_wc_term_icon(int $term_id, string $size = 'thumbnail'): array {
     $source = get_term_meta($term_id, '_computech_wc_cat_icon_source', true);
     if ($source !== 'icon') {
+        $image_id = absint(get_term_meta($term_id, '_computech_wc_cat_icon_image_id', true));
+        if ($image_id) {
+            $url = wp_get_attachment_image_url($image_id, $size);
+            $alt = (string) get_post_meta($image_id, '_wp_attachment_image_alt', true);
+            return array('url' => $url ?: '', 'alt' => $alt, 'icon' => '');
+        }
         return array('url' => '', 'alt' => '', 'icon' => '');
     }
     $icon = sanitize_key((string) get_term_meta($term_id, '_computech_wc_cat_icon_choice', true));
@@ -805,14 +811,14 @@ function computech_wc_category_fields_markup(?WP_Term $term = null): void {
         <tr class="form-field"><th scope="row">Computech Visibility</th><td><select name="_computech_wc_category_visibility"><option value="visible" <?php selected($visibility, 'visible'); ?>>Visible</option><option value="hidden" <?php selected($visibility, 'hidden'); ?>>Hidden</option></select></td></tr>
         <tr class="form-field"><th scope="row">Is Featured</th><td><label><input type="checkbox" name="_computech_wc_is_featured" value="1" <?php checked($is_featured); ?>> Yes</label><p class="description">Shows this category inside الأقسام المميزة.</p></td></tr>
         <tr class="form-field"><th scope="row">Featured Order</th><td><input type="number" name="_computech_wc_featured_order" value="<?php echo esc_attr($featured_order); ?>" min="0" step="1"><p class="description">Used only in الأقسام المميزة.</p></td></tr>
-        <tr class="form-field"><th scope="row">Category Icon</th><td><select name="_computech_wc_cat_icon_source" class="ct-category-icon-source widefat"><option value="image" <?php selected($icon_source, 'image'); ?>>استخدم صورة</option><option value="icon" <?php selected($icon_source, 'icon'); ?>>استخدم أيقونة جاهزة</option></select><div class="ct-category-image-choice" style="margin-top:10px"><?php computech_wc_term_image_upload_field($term_id); ?></div><div class="ct-category-icon-choice" style="margin-top:10px"><?php echo computech_wc_category_icon_select('_computech_wc_cat_icon_choice', $icon_choice); ?></div><p class="description">اختر صورة أو أيقونة جاهزة. الحقل المناسب يظهر فورًا حسب الاختيار.</p></td></tr>
+        <tr class="form-field"><th scope="row">Category Icon</th><td><select name="_computech_wc_cat_icon_source" class="ct-category-icon-source widefat"><option value="image" <?php selected($icon_source, 'image'); ?>>استخدم صورة</option><option value="icon" <?php selected($icon_source, 'icon'); ?>>استخدم أيقونة جاهزة</option></select><div class="ct-category-image-choice" style="margin-top:10px"><?php computech_wc_term_icon_image_upload_field($term_id); ?></div><div class="ct-category-icon-choice" style="margin-top:10px"><?php echo computech_wc_category_icon_select('_computech_wc_cat_icon_choice', $icon_choice); ?></div><p class="description">اختر صورة أو أيقونة جاهزة. الحقل المناسب يظهر فورًا حسب الاختيار.</p></td></tr>
         <?php
     } else {
         ?>
         <div class="form-field"><label>Computech Visibility</label><select name="_computech_wc_category_visibility"><option value="visible">Visible</option><option value="hidden">Hidden</option></select></div>
         <div class="form-field"><label><input type="checkbox" name="_computech_wc_is_featured" value="1"> Is Featured</label><p>Shows this category inside الأقسام المميزة.</p></div>
         <div class="form-field"><label>Featured Order</label><input type="number" name="_computech_wc_featured_order" value="0" min="0" step="1"></div>
-        <div class="form-field"><label>Category Icon</label><select name="_computech_wc_cat_icon_source" class="ct-category-icon-source widefat"><option value="image">استخدم صورة</option><option value="icon">استخدم أيقونة جاهزة</option></select><div class="ct-category-image-choice" style="margin-top:10px"><?php computech_wc_term_image_upload_field(0); ?></div><div class="ct-category-icon-choice" style="margin-top:10px"><?php echo computech_wc_category_icon_select('_computech_wc_cat_icon_choice', 'desktop'); ?></div></div>
+        <div class="form-field"><label>Category Icon</label><select name="_computech_wc_cat_icon_source" class="ct-category-icon-source widefat"><option value="image">استخدم صورة</option><option value="icon">استخدم أيقونة جاهزة</option></select><div class="ct-category-image-choice" style="margin-top:10px"><?php computech_wc_term_icon_image_upload_field(0); ?></div><div class="ct-category-icon-choice" style="margin-top:10px"><?php echo computech_wc_category_icon_select('_computech_wc_cat_icon_choice', 'desktop'); ?></div></div>
         <?php
     }
 }
@@ -826,8 +832,8 @@ function computech_wc_save_category_fields(int $term_id): void {
     $icon_source = sanitize_key(wp_unslash($_POST['_computech_wc_cat_icon_source'] ?? 'image'));
     update_term_meta($term_id, '_computech_wc_cat_icon_source', in_array($icon_source, array('image','icon'), true) ? $icon_source : 'image');
     update_term_meta($term_id, '_computech_wc_cat_icon_choice', sanitize_key(wp_unslash($_POST['_computech_wc_cat_icon_choice'] ?? 'desktop')));
-    if (isset($_POST['_computech_wc_cat_image_id'])) {
-        update_term_meta($term_id, 'thumbnail_id', (string) absint($_POST['_computech_wc_cat_image_id']));
+    if (isset($_POST['_computech_wc_cat_icon_image_id'])) {
+        update_term_meta($term_id, '_computech_wc_cat_icon_image_id', (string) absint($_POST['_computech_wc_cat_icon_image_id']));
     }
     update_term_meta($term_id, 'display_type', '');
 
@@ -856,7 +862,6 @@ function computech_wc_admin_media_script(string $hook): void {
 jQuery(function($){
     $('#display_type').val('');
     $('#display_type').closest('tr,.form-field').hide();
-    $('.term-thumbnail-wrap,.form-field.term-thumbnail-wrap').hide();
     function ctToggleCatIcon(){
         var v = $('.ct-category-icon-source').val() || 'image';
         $('.ct-category-icon-choice').toggle(v === 'icon');
@@ -866,7 +871,7 @@ jQuery(function($){
     $(document).on('click', '.ct-term-image-upload', function(e){
         e.preventDefault();
         var box = $(this).closest('.ct-term-image-uploader');
-        var frame = wp.media({title:'اختيار صورة القسم', button:{text:'استخدام الصورة'}, multiple:false});
+        var frame = wp.media({title:'اختيار صورة الأيقونة', button:{text:'استخدام الصورة'}, multiple:false});
         frame.on('select', function(){
             var file = frame.state().get('selection').first().toJSON();
             box.find('.ct-term-image-id').val(file.id);
@@ -890,7 +895,7 @@ add_action('admin_enqueue_scripts', 'computech_wc_admin_media_script');
 function computech_wc_hide_default_category_admin_fields(): void {
     $screen = function_exists('get_current_screen') ? get_current_screen() : null;
     if (!$screen || $screen->taxonomy !== 'product_cat') { return; }
-    echo '<style>.term-display-type-wrap,.term-thumbnail-wrap{display:none!important}</style>';
+    echo '<style>.term-display-type-wrap{display:none!important}</style>';
 }
 add_action('admin_head', 'computech_wc_hide_default_category_admin_fields');
 
@@ -908,6 +913,7 @@ function computech_wc_product_metabox_html(WP_Post $post): void {
     if (!in_array($condition, array('new', 'imported'), true)) { $condition = 'new'; }
     ?>
     <div class="computech-product-admin" style="direction:rtl;display:grid;gap:18px">
+        <div style="max-width:520px;background:#fff;border:1px solid #d7e2f2;border-radius:14px;padding:12px 14px;box-shadow:0 8px 24px rgba(15,23,42,.06)"><strong>ظهور الكارت</strong><p class="description" style="margin:8px 0 0;color:#64748b">Published + Public = يظهر. Draft / Pending / Private / Password protected = لا يظهر.</p></div>
         <p><strong>WooCommerce controls:</strong> price, stock, product image, gallery, categories, and core data.</p>
         <div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px">
             <p><label style="display:block;font-weight:700;margin-bottom:6px"><input type="checkbox" name="_computech_wc_is_featured" value="1" <?php checked($is_featured); ?>> Is Featured</label><span class="description">Shows this product in homepage featured products.</span></p>

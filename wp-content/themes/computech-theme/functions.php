@@ -2069,6 +2069,7 @@ function computech_default_hero_slide_meta(): array {
         '_computech_hero_description' => '',
         '_computech_hero_features' => '',
         '_computech_hero_tags' => array(),
+        '_computech_hero_badge_text' => '',
         '_computech_hero_badge_line_1' => '',
         '_computech_hero_badge_line_2' => '',
         '_computech_hero_primary_text' => '',
@@ -2383,6 +2384,12 @@ function computech_admin_editor_styles_once(): void {
         .ct-editor .ct-hero-repeat-grid .ct-span-2 { grid-column:span 2; }
         .ct-editor .ct-hero-repeat-grid .ct-span-full { grid-column:1/-1; }
         .ct-editor .ct-conditional-fields { grid-column:1/-1; display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:14px; }
+        .ct-editor [data-hero-button-row] .ct-hero-repeat-grid { grid-template-columns:repeat(2,minmax(0,1fr)); align-items:start; }
+        .ct-editor [data-hero-button-row] .ct-hero-repeat-grid .ct-span-2,
+        .ct-editor [data-hero-button-row] .ct-conditional-fields { grid-column:1/-1; }
+        .ct-editor [data-hero-button-row] .ct-conditional-fields { grid-template-columns:repeat(2,minmax(0,1fr)); }
+        .ct-editor [data-hero-button-row] .ct-link-url-field { grid-column:1/-1; }
+        .ct-editor [data-hero-button-row] .ct-field label input[type=checkbox] { margin-inline-start:8px; }
         .ct-editor .button.ct-add-button { border-radius:10px; min-height:38px; padding:2px 16px; font-weight:700; }
         .ct-editor .button-link-delete { color:#b42318; text-decoration:none; font-weight:700; }
         .ct-editor .button-link-delete:hover { color:#7a271a; }
@@ -2432,7 +2439,7 @@ function computech_hero_button_row_html(array $button, $index): string {
             <div class="ct-conditional-fields">
                 <p class="ct-field ct-link-page-field">
                     <label>اختيار صفحة</label>
-                    <select name="<?php echo esc_attr($base); ?>[page_id]" class="widefat"><?php echo computech_hero_pages_options($button['link_type'] === 'home' ? 'home' : $button['page_id']); ?></select>
+                    <select name="<?php echo esc_attr($base); ?>[page_id]" class="widefat"><?php echo computech_hero_pages_options($button['page_slug'] === 'home' ? 'home' : $button['page_id']); ?></select>
                 </p>
                 <p class="ct-field ct-link-category-field">
                     <label>اختيار قسم منتجات</label>
@@ -2455,7 +2462,7 @@ function computech_hero_slide_metabox(WP_Post $post): void {
     computech_admin_editor_styles_once();
     $defaults = computech_default_hero_slide_meta();
     $buttons = computech_get_hero_buttons($post);
-    $empty_button = array('show' => '1', 'text' => '', 'style' => 'secondary', 'link_type' => 'none', 'page_id' => '0', 'term_id' => '0', 'url' => '', 'new_tab' => '0');
+    $empty_button = array('show' => '1', 'text' => '', 'style' => 'secondary', 'link_type' => 'none', 'page_slug' => '', 'page_id' => '0', 'term_id' => '0', 'url' => '', 'new_tab' => '0');
     ?>
     <div class="ct-editor ct-hero-admin" dir="rtl">
         <div class="ct-hero-dashboard-head">
@@ -2463,10 +2470,7 @@ function computech_hero_slide_metabox(WP_Post $post): void {
                 <h2>سلايدر الرئيسية</h2>
                 <p>أضف، عدّل، أو احذف شرائح الهيرو من هنا. كل شريحة لها نفس الحقول.</p>
             </div>
-            <div class="ct-status-card">
-                <strong>الظهور من WordPress</strong>
-                <p class="description">الشريحة تظهر فقط عند الحالة Published والرؤية Public. استخدم صندوق Publish الجانبي للتحكم.</p>
-            </div>
+            <?php echo computech_visibility_guide_inline('ظهور الكارت'); ?>
         </div>
 
         <div class="ct-hero-dashboard">
@@ -2486,14 +2490,23 @@ function computech_hero_slide_metabox(WP_Post $post): void {
                         <div class="ct-admin-section-head">
                             <div>
                                 <h3>البادج العائم</h3>
-                                <p>اكتب نص البادج الظاهر فوق صورة الهيرو. لو الحقلين فاضيين، البادج لا يظهر.</p>
+                                <p>اكتب نص واحد فقط. الواجهة تقسمه تلقائيًا على سطرين حسب مساحة البادج، والباقي لا يظهر. لو الحقل فاضي، البادج لا يظهر.</p>
                             </div>
                         </div>
                         <div class="ct-admin-section-body">
-                            <div class="ct-grid ct-grid-2">
-                                <p class="ct-field"><label>النص الأول</label><input type="text" name="_computech_hero_badge_line_1" value="<?php echo esc_attr(computech_hero_meta($post, '_computech_hero_badge_line_1', $defaults['_computech_hero_badge_line_1'])); ?>" class="widefat" placeholder="أحدث الأجهزة"></p>
-                                <p class="ct-field"><label>النص الثاني</label><input type="text" name="_computech_hero_badge_line_2" value="<?php echo esc_attr(computech_hero_meta($post, '_computech_hero_badge_line_2', $defaults['_computech_hero_badge_line_2'])); ?>" class="widefat" placeholder="أفضل الأسعار"></p>
-                            </div>
+                            <?php
+                                $badge_text_value = computech_hero_meta($post, '_computech_hero_badge_text', '');
+                                if ($badge_text_value === '') {
+                                    $legacy_badge_1 = computech_hero_meta($post, '_computech_hero_badge_line_1', '');
+                                    $legacy_badge_2 = computech_hero_meta($post, '_computech_hero_badge_line_2', '');
+                                    $badge_text_value = trim($legacy_badge_1 . ' ' . $legacy_badge_2);
+                                }
+                            ?>
+                            <p class="ct-field">
+                                <label>نص البادج</label>
+                                <input type="text" name="_computech_hero_badge_text" value="<?php echo esc_attr($badge_text_value); ?>" class="widefat" maxlength="80" placeholder="أحدث الأجهزة أفضل الأسعار">
+                                <span class="ct-help">سيظهر سطرين فقط داخل البادج حسب المساحة. أي كلمات زائدة لن تظهر في الواجهة.</span>
+                            </p>
                         </div>
                     </div>
                     <div class="ct-admin-section" style="margin-top:14px; box-shadow:none;">
@@ -2665,12 +2678,13 @@ function computech_save_hero_slide(int $post_id): void {
         '_computech_hero_title_line_3',
         '_computech_hero_primary_text',
         '_computech_hero_secondary_text',
-        '_computech_hero_badge_line_1',
-        '_computech_hero_badge_line_2',
+        '_computech_hero_badge_text',
     );
     foreach ($text_fields as $field) {
         update_post_meta($post_id, $field, sanitize_text_field(wp_unslash($_POST[$field] ?? '')));
     }
+    update_post_meta($post_id, '_computech_hero_badge_line_1', '');
+    update_post_meta($post_id, '_computech_hero_badge_line_2', '');
 
     foreach (array('_computech_hero_description', '_computech_hero_features') as $field) {
         update_post_meta($post_id, $field, sanitize_textarea_field(wp_unslash($_POST[$field] ?? '')));
@@ -2841,6 +2855,44 @@ function computech_render_hero_buttons(WP_Post $slide): void {
     }
 }
 
+
+if (!function_exists('computech_hero_badge_lines_from_text')) {
+    function computech_hero_badge_lines_from_text(string $text): array {
+        $text = trim(preg_replace('/\s+/u', ' ', wp_strip_all_tags($text)));
+        if ($text === '') {
+            return ['', ''];
+        }
+
+        $max_chars = 16;
+        $words = preg_split('/\s+/u', $text, -1, PREG_SPLIT_NO_EMPTY);
+        $lines = ['', ''];
+        $current = 0;
+
+        foreach ($words as $word) {
+            if ($current > 1) {
+                break;
+            }
+            $candidate = $lines[$current] === '' ? $word : $lines[$current] . ' ' . $word;
+            if (mb_strlen($candidate, 'UTF-8') <= $max_chars) {
+                $lines[$current] = $candidate;
+                continue;
+            }
+            if ($lines[$current] === '') {
+                $lines[$current] = mb_substr($word, 0, $max_chars, 'UTF-8');
+                $current++;
+                continue;
+            }
+            $current++;
+            if ($current > 1) {
+                break;
+            }
+            $lines[$current] = mb_strlen($word, 'UTF-8') > $max_chars ? mb_substr($word, 0, $max_chars, 'UTF-8') : $word;
+        }
+
+        return [trim($lines[0]), trim($lines[1])];
+    }
+}
+
 function computech_render_hero_slide(WP_Post $slide, int $index): void {
     $title = computech_hero_full_title($slide);
     if ($title === '') {
@@ -2851,8 +2903,11 @@ function computech_render_hero_slide(WP_Post $slide, int $index): void {
     $hero_image = computech_attachment_image_data((int) get_post_thumbnail_id($slide), 'full');
     $image = $hero_image['url'];
     $alt = $hero_image['alt'] !== '' ? $hero_image['alt'] : get_the_title($slide);
-    $badge_1 = trim(computech_hero_meta($slide, '_computech_hero_badge_line_1', ''));
-    $badge_2 = trim(computech_hero_meta($slide, '_computech_hero_badge_line_2', ''));
+    $badge_text = trim(computech_hero_meta($slide, '_computech_hero_badge_text', ''));
+    if ($badge_text === '') {
+        $badge_text = trim(computech_hero_meta($slide, '_computech_hero_badge_line_1', '') . ' ' . computech_hero_meta($slide, '_computech_hero_badge_line_2', ''));
+    }
+    [$badge_1, $badge_2] = computech_hero_badge_lines_from_text($badge_text);
     ?>
     <div class="hero-slide <?php echo $index === 0 ? 'is-active' : ''; ?>" data-hero-slide>
         <div class="hero-container">
@@ -3099,6 +3154,11 @@ function computech_save_hero_card(int $post_id): void {
 }
 add_action('save_post_computech_hero_card', 'computech_save_hero_card');
 
+
+function computech_visibility_guide_inline(string $label = 'ظهور الكارت'): string {
+    return '<div class="ct-status-card ct-inline-visibility-guide"><strong>' . esc_html($label) . '</strong><p class="description">Published + Public = يظهر. Draft / Pending / Private / Password protected = لا يظهر.</p></div>';
+}
+
 function computech_visibility_guide_metabox(WP_Post $post): void {
     computech_admin_editor_styles_once();
     ?>
@@ -3119,7 +3179,8 @@ function computech_add_visibility_guide_metaboxes(): void {
         }
     }
 }
-add_action('add_meta_boxes', 'computech_add_visibility_guide_metaboxes', 5);
+// Disabled: visibility guide is shown inside each main data box, not as separate panel.
+// add_action('add_meta_boxes', 'computech_add_visibility_guide_metaboxes', 5);
 
 function computech_get_hero_cards(): array {
     $query = new WP_Query(array(
@@ -3588,6 +3649,7 @@ function computech_need_card_metabox(WP_Post $post): void {
                 <h2>كارت ابدأ من احتياجك</h2>
                 <p>المتاح فقط: الاسم، الوصف، الصورة من Featured Image، الرابط، الترتيب.</p>
             </div>
+            <?php echo computech_visibility_guide_inline('ظهور الكارت'); ?>
         </div>
         <div class="ct-hero-dashboard">
             <section class="ct-admin-section">
@@ -5161,35 +5223,85 @@ function computech_topbar_page_options(int $selected = 0): string {
     return $html;
 }
 
+function computech_topbar_link_type_select(string $name, string $selected): string {
+    $types = array(
+        'none' => 'بدون رابط',
+        'page' => 'صفحة موجودة',
+        'category' => 'قسم منتجات موجود',
+        'custom' => 'رابط خارجي',
+    );
+    if (!array_key_exists($selected, $types)) { $selected = 'none'; }
+    $html = '<select name="' . esc_attr($name) . '" class="ct-topbar-link-type widefat">';
+    foreach ($types as $key => $label) {
+        $html .= '<option value="' . esc_attr($key) . '" ' . selected($selected, $key, false) . '>' . esc_html($label) . '</option>';
+    }
+    return $html . '</select>';
+}
+
 function computech_topbar_item_metabox(WP_Post $post): void {
     computech_admin_editor_styles_once();
-    $page_id = absint(get_post_meta($post->ID, '_computech_topbar_page_id', true));
+    $link_type = sanitize_key((string) get_post_meta($post->ID, '_computech_topbar_link_type', true));
+    if (!in_array($link_type, array('none','page','category','custom'), true)) {
+        $legacy_page = absint(get_post_meta($post->ID, '_computech_topbar_page_id', true));
+        $legacy_url = trim((string) get_post_meta($post->ID, '_computech_topbar_external_url', true));
+        $link_type = $legacy_page ? 'page' : ($legacy_url !== '' ? 'custom' : 'none');
+    }
+    $page_id = (string) get_post_meta($post->ID, '_computech_topbar_page_id', true);
+    $page_selected = (string) get_post_meta($post->ID, '_computech_topbar_page_slug', true) === 'home' ? 'home' : $page_id;
+    $term_id = (string) get_post_meta($post->ID, '_computech_topbar_term_id', true);
     $external_url = esc_url(get_post_meta($post->ID, '_computech_topbar_external_url', true));
-    $new_tab = (string)get_post_meta($post->ID, '_computech_topbar_new_tab', true);
-    $icon_choice = sanitize_key((string)get_post_meta($post->ID, '_computech_topbar_icon_choice', true));
+    $new_tab = (string) get_post_meta($post->ID, '_computech_topbar_new_tab', true);
+    $icon_choice = sanitize_key((string) get_post_meta($post->ID, '_computech_topbar_icon_choice', true));
     wp_nonce_field('computech_save_topbar_item', 'computech_topbar_item_nonce');
     ?>
     <div class="ct-editor ct-hero-admin" dir="rtl">
         <div class="ct-hero-dashboard-head">
             <div>
                 <h2>عنصر شريط المميزات</h2>
-                <p>النص من عنوان WordPress. الأيقونة/الصورة من Featured Image. الظهور من Published/Public فقط. الترتيب من Order.</p>
+                <p>النص من عنوان WordPress. الصورة من Featured Image. الترتيب من Order.</p>
             </div>
+            <?php echo computech_visibility_guide_inline('ظهور الكارت'); ?>
         </div>
-        <div class="ct-admin-grid">
-            <label>رابط صفحة موجودة
-                <select name="computech_topbar_page_id"><?php echo computech_topbar_page_options($page_id); ?></select>
-            </label>
-            <label>رابط خارجي
-                <input type="url" name="computech_topbar_external_url" value="<?php echo esc_attr($external_url); ?>" placeholder="https://example.com">
-            </label>
-            <label>أيقونة جاهزة احتياطية
-                <?php echo computech_admin_icon_select('computech_topbar_icon_choice', $icon_choice); ?>
-            </label>
-            <label class="ct-checkbox"><input type="checkbox" name="computech_topbar_new_tab" value="1" <?php checked($new_tab, '1'); ?>> فتح الرابط في تبويب جديد</label>
+        <div class="ct-hero-dashboard">
+            <section class="ct-admin-section">
+                <div class="ct-admin-section-head"><div><h3>1. الرابط</h3><p>اختر نوع الرابط. الحقول تظهر فورًا حسب الاختيار.</p></div></div>
+                <div class="ct-admin-section-body">
+                    <div class="ct-grid ct-grid-2">
+                        <p class="ct-field"><label>نوع الرابط</label><?php echo computech_topbar_link_type_select('_computech_topbar_link_type', $link_type); ?></p>
+                        <p class="ct-field ct-topbar-page-field"><label>اختيار صفحة</label><select name="_computech_topbar_page_id" class="widefat"><?php echo computech_need_pages_options($page_selected); ?></select></p>
+                        <p class="ct-field ct-topbar-category-field"><label>اختيار قسم منتجات</label><select name="_computech_topbar_term_id" class="widefat"><?php echo computech_hero_product_category_options($term_id); ?></select></p>
+                    </div>
+                    <p class="ct-field ct-topbar-url-field" style="margin-top:14px"><label>رابط خارجي</label><input type="url" name="_computech_topbar_external_url" value="<?php echo esc_attr($external_url); ?>" class="widefat" placeholder="https://example.com"></p>
+                    <p class="ct-field" style="margin-top:14px"><label><input type="checkbox" name="computech_topbar_new_tab" value="1" <?php checked($new_tab, '1'); ?>> فتح الرابط في تبويب جديد</label></p>
+                </div>
+            </section>
+            <section class="ct-admin-section">
+                <div class="ct-admin-section-head"><div><h3>2. الأيقونة</h3><p>لو مفيش Featured Image، يتم استخدام الأيقونة الجاهزة.</p></div></div>
+                <div class="ct-admin-section-body">
+                    <p class="ct-field"><label>أيقونة جاهزة احتياطية</label><?php echo computech_admin_icon_select('computech_topbar_icon_choice', $icon_choice); ?></p>
+                </div>
+            </section>
         </div>
-        <div class="ct-admin-note">الأولوية: صفحة موجودة، ثم رابط خارجي. لو مفيش Featured Image، يتم استخدام الأيقونة الجاهزة.</div>
     </div>
+    <script>
+    (function(){
+        var root = document.currentScript.previousElementSibling;
+        if (!root) { return; }
+        function updateFields(){
+            var select = root.querySelector('.ct-topbar-link-type');
+            var type = select ? select.value : 'none';
+            var pageField = root.querySelector('.ct-topbar-page-field');
+            var urlField = root.querySelector('.ct-topbar-url-field');
+            var categoryField = root.querySelector('.ct-topbar-category-field');
+            if (pageField) { pageField.style.display = type === 'page' ? '' : 'none'; }
+            if (categoryField) { categoryField.style.display = type === 'category' ? '' : 'none'; }
+            if (urlField) { urlField.style.display = type === 'custom' ? '' : 'none'; }
+        }
+        var select = root.querySelector('.ct-topbar-link-type');
+        if (select) { select.addEventListener('change', updateFields); }
+        updateFields();
+    })();
+    </script>
     <?php
 }
 
@@ -5200,8 +5312,14 @@ function computech_save_topbar_item(int $post_id): void {
     if (defined('DOING_AUTOSAVE') && DOING_AUTOSAVE) { return; }
     if (!current_user_can('edit_post', $post_id)) { return; }
 
-    update_post_meta($post_id, '_computech_topbar_page_id', absint($_POST['computech_topbar_page_id'] ?? 0));
-    update_post_meta($post_id, '_computech_topbar_external_url', esc_url_raw(wp_unslash($_POST['computech_topbar_external_url'] ?? '')));
+    $type = sanitize_key(wp_unslash($_POST['_computech_topbar_link_type'] ?? 'none'));
+    $type = in_array($type, array('none','page','category','custom'), true) ? $type : 'none';
+    update_post_meta($post_id, '_computech_topbar_link_type', $type);
+    $page_value = sanitize_text_field(wp_unslash($_POST['_computech_topbar_page_id'] ?? '0'));
+    update_post_meta($post_id, '_computech_topbar_page_id', $page_value === 'home' ? '0' : (string) absint($page_value));
+    update_post_meta($post_id, '_computech_topbar_page_slug', $page_value === 'home' ? 'home' : '');
+    update_post_meta($post_id, '_computech_topbar_term_id', (string) absint($_POST['_computech_topbar_term_id'] ?? 0));
+    update_post_meta($post_id, '_computech_topbar_external_url', esc_url_raw(wp_unslash($_POST['_computech_topbar_external_url'] ?? '')));
     update_post_meta($post_id, '_computech_topbar_icon_choice', sanitize_key(wp_unslash($_POST['computech_topbar_icon_choice'] ?? '')));
     update_post_meta($post_id, '_computech_topbar_new_tab', !empty($_POST['computech_topbar_new_tab']) ? '1' : '0');
 }
@@ -5230,12 +5348,33 @@ function computech_topbar_item_posts(): array {
 }
 
 function computech_topbar_item_url(WP_Post $post): string {
-    $page_id = absint(get_post_meta($post->ID, '_computech_topbar_page_id', true));
-    if ($page_id) {
-        $url = get_permalink($page_id);
-        if ($url) { return (string)$url; }
+    $type = sanitize_key((string) get_post_meta($post->ID, '_computech_topbar_link_type', true));
+    if (!in_array($type, array('none','page','category','custom'), true)) {
+        $type = 'page';
     }
-    return esc_url_raw((string)get_post_meta($post->ID, '_computech_topbar_external_url', true));
+    if ($type === 'page') {
+        if ((string) get_post_meta($post->ID, '_computech_topbar_page_slug', true) === 'home') {
+            return home_url('/');
+        }
+        $page_id = absint(get_post_meta($post->ID, '_computech_topbar_page_id', true));
+        if ($page_id) {
+            $url = get_permalink($page_id);
+            return $url ? (string) $url : '';
+        }
+        return '';
+    }
+    if ($type === 'category') {
+        $term_id = absint(get_post_meta($post->ID, '_computech_topbar_term_id', true));
+        if ($term_id && taxonomy_exists('product_cat')) {
+            $url = get_term_link($term_id, 'product_cat');
+            return is_wp_error($url) ? '' : (string) $url;
+        }
+        return '';
+    }
+    if ($type === 'custom') {
+        return esc_url_raw((string) get_post_meta($post->ID, '_computech_topbar_external_url', true));
+    }
+    return '';
 }
 
 function computech_topbar_item_icon_html(WP_Post $post): string {
@@ -5292,7 +5431,7 @@ function computech_payment_method_metabox(WP_Post $post): void {
     if ($icon === '') { $icon = 'credit_card'; }
     ?>
     <div class="ct-editor ct-hero-admin" dir="rtl">
-        <div class="ct-hero-dashboard-head"><div><h2>طريقة دفع</h2><p>الاسم من عنوان WordPress. الظهور من Published/Public فقط. الترتيب من Order. لا يتم استخدام Featured Image هنا.</p></div></div>
+        <div class="ct-hero-dashboard-head"><div><h2>طريقة دفع</h2><p>الاسم من عنوان WordPress. الترتيب من Order. لا يتم استخدام Featured Image هنا.</p></div><?php echo computech_visibility_guide_inline('ظهور الكارت'); ?></div>
         <div class="ct-admin-grid">
             <label>نوع الأيقونة<select name="_computech_payment_icon_source" class="widefat ct-payment-icon-source"><option value="icon" <?php selected($icon_source, 'icon'); ?>>أيقونة جاهزة</option><option value="image" <?php selected($icon_source, 'image'); ?>>صورة</option></select></label>
             <div class="ct-payment-icon-choice"><label>الأيقونة<?php echo computech_home_extra_icon_select('_computech_payment_icon', $icon); ?></label></div>
@@ -5425,13 +5564,20 @@ function computech_home_offer_banner_metabox(WP_Post $post): void {
     $page_id = computech_section_meta($post, '_computech_offer_page_id', '0');
     $page_selected = computech_section_meta($post, '_computech_offer_page_slug', '') === 'home' ? 'home' : $page_id;
     $color = computech_section_meta($post, '_computech_offer_color', 'main');
+    $icon_source = sanitize_key(computech_section_meta($post, '_computech_offer_icon_source', ''));
+    if (!in_array($icon_source, array('icon', 'image'), true)) {
+        $icon_source = absint(computech_section_meta($post, '_computech_offer_icon_image_id', '0')) ? 'image' : 'icon';
+    }
+    $offer_icon = sanitize_key(computech_section_meta($post, '_computech_offer_icon', 'price'));
+    if ($offer_icon === '') { $offer_icon = 'price'; }
     ?>
     <div class="ct-editor ct-hero-admin" dir="rtl">
         <div class="ct-hero-dashboard-head">
             <div>
                 <h2>بنر ترويجي</h2>
-                <p>العنوان من عنوان WordPress. الصورة من Featured Image. الظهور من Published/Public فقط. استخدم | داخل العنوان للفصل بين السطر الأول والثاني.</p>
+                <p>العنوان من عنوان WordPress. الصورة من Featured Image. استخدم | داخل العنوان للفصل بين السطر الأول والثاني.</p>
             </div>
+            <?php echo computech_visibility_guide_inline('ظهور الكارت'); ?>
         </div>
         <div class="ct-hero-dashboard">
             <section class="ct-admin-section">
@@ -5440,7 +5586,9 @@ function computech_home_offer_banner_metabox(WP_Post $post): void {
                     <p class="ct-field"><label>الوصف</label><textarea name="_computech_offer_desc" rows="3" class="widefat" placeholder="وصف قصير للبانر"><?php echo esc_textarea(computech_section_meta($post, '_computech_offer_desc', '')); ?></textarea></p>
                     <div class="ct-grid ct-grid-2">
                         <p class="ct-field"><label>اللون</label><?php echo computech_home_offer_color_select('_computech_offer_color', $color); ?></p>
-                        <div><?php computech_admin_image_upload_field('صورة الأيقونة', '_computech_offer_icon_image_id', $post->ID, 'اختيار صورة صغيرة تظهر كأيقونة عائمة على البنر.'); ?></div>
+                        <p class="ct-field"><label>نوع الأيقونة</label><select name="_computech_offer_icon_source" class="widefat ct-offer-icon-source"><option value="icon" <?php selected($icon_source, 'icon'); ?>>أيقونة جاهزة</option><option value="image" <?php selected($icon_source, 'image'); ?>>صورة</option></select></p>
+                        <div class="ct-offer-icon-choice"><label class="ct-field-label">الأيقونة الجاهزة</label><?php echo computech_home_extra_icon_select('_computech_offer_icon', $offer_icon); ?></div>
+                        <div class="ct-offer-image-choice"><?php computech_admin_image_upload_field('صورة الأيقونة', '_computech_offer_icon_image_id', $post->ID, 'اختيار صورة صغيرة تظهر كأيقونة عائمة على البنر.'); ?></div>
                     </div>
                 </div>
             </section>
@@ -5478,9 +5626,20 @@ function computech_home_offer_banner_metabox(WP_Post $post): void {
             if (categoryField) { categoryField.style.display = type === 'category' ? '' : 'none'; }
             if (urlField) { urlField.style.display = type === 'custom' ? '' : 'none'; }
         }
+        function updateIconFields(){
+            var source = root.querySelector('.ct-offer-icon-source');
+            var value = source ? source.value : 'icon';
+            var iconField = root.querySelector('.ct-offer-icon-choice');
+            var imageField = root.querySelector('.ct-offer-image-choice');
+            if (iconField) { iconField.style.display = value === 'icon' ? '' : 'none'; }
+            if (imageField) { imageField.style.display = value === 'image' ? '' : 'none'; }
+        }
         var select = root.querySelector('.ct-offer-link-type');
         if (select) { select.addEventListener('change', updateFields); }
+        var iconSource = root.querySelector('.ct-offer-icon-source');
+        if (iconSource) { iconSource.addEventListener('change', updateIconFields); }
         updateFields();
+        updateIconFields();
     })();
     </script>
     <?php
@@ -5509,8 +5668,10 @@ function computech_save_home_offer_banner(int $post_id): void {
     $color = sanitize_key(wp_unslash($_POST['_computech_offer_color'] ?? 'main'));
     $color = array_key_exists($color, computech_home_offer_color_choices()) ? $color : 'main';
     update_post_meta($post_id, '_computech_offer_color', $color);
+    $offer_icon_source = sanitize_key(wp_unslash($_POST['_computech_offer_icon_source'] ?? 'icon'));
+    update_post_meta($post_id, '_computech_offer_icon_source', in_array($offer_icon_source, array('icon','image'), true) ? $offer_icon_source : 'icon');
+    update_post_meta($post_id, '_computech_offer_icon', sanitize_key(wp_unslash($_POST['_computech_offer_icon'] ?? 'price')));
     update_post_meta($post_id, '_computech_offer_icon_image_id', (string) absint($_POST['_computech_offer_icon_image_id'] ?? 0));
-    delete_post_meta($post_id, '_computech_offer_icon');
     delete_post_meta($post_id, '_computech_offer_show');
     delete_post_meta($post_id, '_computech_offer_image');
     delete_post_meta($post_id, '_computech_offer_image_id');
@@ -5577,6 +5738,22 @@ function computech_home_offer_banner_icon_image(WP_Post $post, string $size = 't
     }
     $url = wp_get_attachment_image_url($icon_id, $size);
     return $url ? (string) $url : '';
+}
+
+function computech_home_offer_banner_icon_html(WP_Post $post): string {
+    $source = sanitize_key(computech_section_meta($post, '_computech_offer_icon_source', ''));
+    if (!in_array($source, array('icon', 'image'), true)) {
+        $source = absint(computech_section_meta($post, '_computech_offer_icon_image_id', '0')) ? 'image' : 'icon';
+    }
+    if ($source === 'image') {
+        $url = computech_home_offer_banner_icon_image($post, 'thumbnail');
+        if ($url !== '') {
+            return '<img src="' . esc_url($url) . '" alt="" loading="lazy">';
+        }
+    }
+    $icon = sanitize_key(computech_section_meta($post, '_computech_offer_icon', 'price'));
+    if ($icon === '') { $icon = 'price'; }
+    return computech_home_extra_icon_svg($icon);
 }
 
 function computech_home_offer_banner_title_html(WP_Post $post, bool $main = false): string {
@@ -5753,7 +5930,7 @@ function computech_render_home_offers_section(): void {
         $offers_subtitle = 'اكتشف أفضل العروض على أجهزة الكمبيوتر المستوردة والإكسسوارات الأصلية';
     }
     $main_color = sanitize_key(computech_section_meta($main, '_computech_offer_color', 'main'));
-    $main_icon_img = computech_home_offer_banner_icon_image($main, 'thumbnail');
+    $main_icon_html = computech_home_offer_banner_icon_html($main);
     $main_url = computech_home_offer_banner_url($main);
     $main_desc = computech_home_offer_banner_desc($main);
     $main_image = get_the_post_thumbnail_url($main, 'full');
@@ -5763,7 +5940,7 @@ function computech_render_home_offers_section(): void {
         <div class="offers-container">
             <div class="offers-header"><div class="offers-header-dots"><span class="ohd blue"></span><span class="ohd cyan"></span><span class="ohd pill"></span><span class="ohd green"></span></div><h2 class="offers-heading"><?php echo esc_html($offers_title_before); ?> <span class="offers-heading-blue"><?php echo esc_html($offers_title_highlight); ?></span></h2><?php if ($offers_subtitle !== '') : ?><p class="offers-heading-sub"><?php echo esc_html($offers_subtitle); ?></p><?php endif; ?></div>
             <div class="offer-main-banner offer-color-<?php echo esc_attr($main_color); ?>">
-                <?php if ($main_icon_img !== '') : ?><div class="offer-promo-icon" aria-hidden="true"><img src="<?php echo esc_url($main_icon_img); ?>" alt=""></div><?php endif; ?>
+                <?php if ($main_icon_html !== '') : ?><div class="offer-promo-icon" aria-hidden="true"><?php echo $main_icon_html; ?></div><?php endif; ?>
                 <div class="offer-main-inner">
                     <div class="offer-main-text">
                         <h3 class="offer-main-title"><?php echo computech_home_offer_banner_title_html($main, true); ?></h3>
@@ -5773,7 +5950,7 @@ function computech_render_home_offers_section(): void {
                     <?php if ($main_image) : ?><div class="offer-main-image"><img src="<?php echo esc_url($main_image); ?>" alt="<?php echo esc_attr(get_the_title($main)); ?>"></div><?php endif; ?>
                 </div>
             </div>
-            <?php if ($banners) : ?><div class="offer-dual-row"><?php foreach ($banners as $banner) : $color = sanitize_key(computech_section_meta($banner, '_computech_offer_color', 'blue')); $icon_img = computech_home_offer_banner_icon_image($banner, 'thumbnail'); $desc = computech_home_offer_banner_desc($banner); $url = computech_home_offer_banner_url($banner); $img = get_the_post_thumbnail_url($banner, 'large'); ?><div class="offer-sub-card offer-color-<?php echo esc_attr($color); ?>"><?php if ($icon_img !== '') : ?><div class="offer-sub-float-icon"><img src="<?php echo esc_url($icon_img); ?>" alt=""></div><?php endif; ?><?php if ($img) : ?><div class="offer-sub-image"><img src="<?php echo esc_url($img); ?>" alt="<?php echo esc_attr(get_the_title($banner)); ?>"></div><?php endif; ?><div class="offer-sub-text"><h3 class="offer-sub-title"><?php echo computech_home_offer_banner_title_html($banner, false); ?></h3><?php if ($desc !== '') : ?><p class="offer-sub-desc"><?php echo esc_html($desc); ?></p><?php endif; ?><?php if ($url !== '#') : ?><a href="<?php echo esc_url($url); ?>" class="offer-sub-btn"<?php echo computech_home_offer_banner_target($banner); ?>>اعرف المزيد ←</a><?php endif; ?></div></div><?php endforeach; ?></div><?php endif; ?>
+            <?php if ($banners) : ?><div class="offer-dual-row"><?php foreach ($banners as $banner) : $color = sanitize_key(computech_section_meta($banner, '_computech_offer_color', 'blue')); $icon_html = computech_home_offer_banner_icon_html($banner); $desc = computech_home_offer_banner_desc($banner); $url = computech_home_offer_banner_url($banner); $img = get_the_post_thumbnail_url($banner, 'large'); ?><div class="offer-sub-card offer-color-<?php echo esc_attr($color); ?>"><?php if ($icon_html !== '') : ?><div class="offer-sub-float-icon"><?php echo $icon_html; ?></div><?php endif; ?><?php if ($img) : ?><div class="offer-sub-image"><img src="<?php echo esc_url($img); ?>" alt="<?php echo esc_attr(get_the_title($banner)); ?>"></div><?php endif; ?><div class="offer-sub-text"><h3 class="offer-sub-title"><?php echo computech_home_offer_banner_title_html($banner, false); ?></h3><?php if ($desc !== '') : ?><p class="offer-sub-desc"><?php echo esc_html($desc); ?></p><?php endif; ?><?php if ($url !== '#') : ?><a href="<?php echo esc_url($url); ?>" class="offer-sub-btn"<?php echo computech_home_offer_banner_target($banner); ?>>اعرف المزيد ←</a><?php endif; ?></div></div><?php endforeach; ?></div><?php endif; ?>
         </div>
     </section>
     <?php
@@ -5982,8 +6159,9 @@ function computech_service_metabox(WP_Post $post): void {
         <div class="ct-hero-dashboard-head">
             <div>
                 <h2>خدمة</h2>
-                <p>الاسم من عنوان WordPress. الصورة من Featured Image. الظهور من Published/Public. الترتيب من Order.</p>
+                <p>الاسم من عنوان WordPress. الصورة من Featured Image. الترتيب من Order.</p>
             </div>
+            <?php echo computech_visibility_guide_inline('ظهور الكارت'); ?>
         </div>
         <div class="ct-hero-dashboard">
             <section class="ct-admin-section">

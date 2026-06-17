@@ -15565,3 +15565,50 @@ body.home .contact-section .contact-panel .contact-social-btn span {
 
 /* Computech patch: category icon selector admin */
 .ct-category-icon-choice select { max-width: 260px; }
+
+/* Computech fix: category custom icon image must show, stable size */
+.shop-card-icon .shop-card-icon-img,
+.cat-card-icon-wrap .cat-card-icon-img,
+.cat-feat-card-icon-wrap .cat-card-icon-img {
+    display: block !important;
+    width: 24px !important;
+    height: 24px !important;
+    max-width: 24px !important;
+    max-height: 24px !important;
+    object-fit: contain !important;
+    object-position: center !important;
+    flex: 0 0 24px !important;
+    border-radius: 0 !important;
+}
+
+.shop-card-icon .shop-card-icon-img {
+    width: 26px !important;
+    height: 26px !important;
+    max-width: 26px !important;
+    max-height: 26px !important;
+}
+
+.cat-card-icon-wrap,
+.cat-feat-card-icon-wrap,
+.computech-wc-shop-categories .shop-card-icon {
+    overflow: hidden !important;
+}
+
+/* Computech patch: promo banner icon source image/icon, stable visible size */
+.offer-promo-icon img,
+.offer-sub-float-icon img {
+    display: block !important;
+    width: 100% !important;
+    height: 100% !important;
+    max-width: 100% !important;
+    max-height: 100% !important;
+    object-fit: contain !important;
+    object-position: center !important;
+}
+
+.offer-promo-icon svg,
+.offer-sub-float-icon svg {
+    display: block !important;
+    width: 100% !important;
+    height: 100% !important;
+}
