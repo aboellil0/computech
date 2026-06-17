@@ -84,134 +84,41 @@ $ct_site_name = function_exists('computech_site_name') ? computech_site_name() :
                 <p class="svc-section-subtitle">نقدم مجموعة شاملة من الخدمات لتلبية جميع احتياجاتك التقنية</p>
             </div>
             <div class="services-grid">
-                <!-- Service 1: New Computers -->
-                <div class="svc-card">
-                    <div class="svc-card-icon svc-card-icon-blue">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                            <rect x="2" y="3" width="20" height="14" rx="2" ry="2"/>
-                            <line x1="8" y1="21" x2="16" y2="21"/>
-                            <line x1="12" y1="17" x2="12" y2="21"/>
-                        </svg>
+                <?php $service_posts = function_exists('computech_service_posts') ? computech_service_posts() : array(); ?>
+                <?php if ($service_posts) : ?>
+                    <?php foreach ($service_posts as $service_post) :
+                        $service_url = function_exists('computech_service_url') ? computech_service_url($service_post) : '#';
+                        $service_target = function_exists('computech_service_target') ? computech_service_target($service_post) : '';
+                        $service_desc = function_exists('computech_service_desc') ? computech_service_desc($service_post) : '';
+                        $service_image = get_the_post_thumbnail_url($service_post, 'medium_large');
+                    ?>
+                        <div class="svc-card ct-db-service-card">
+                            <?php if ($service_image) : ?>
+                                <div class="ct-service-card-image">
+                                    <img src="<?php echo esc_url($service_image); ?>" alt="<?php echo esc_attr(get_the_title($service_post)); ?>" loading="lazy">
+                                </div>
+                            <?php endif; ?>
+                            <div class="svc-card-icon ct-service-card-icon">
+                                <?php echo function_exists('computech_service_icon_html') ? computech_service_icon_html($service_post) : ''; ?>
+                            </div>
+                            <h3 class="svc-card-title"><?php echo esc_html(get_the_title($service_post)); ?></h3>
+                            <?php if ($service_desc !== '') : ?><p class="svc-card-desc"><?php echo esc_html($service_desc); ?></p><?php endif; ?>
+                            <?php if ($service_url !== '#') : ?>
+                                <a href="<?php echo esc_url($service_url); ?>" class="svc-card-link"<?php echo $service_target; ?>>اعرف المزيد
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                        <line x1="5" y1="12" x2="19" y2="12"/>
+                                        <polyline points="12 5 19 12 12 19"/>
+                                    </svg>
+                                </a>
+                            <?php endif; ?>
+                        </div>
+                    <?php endforeach; ?>
+                <?php else : ?>
+                    <div class="svc-card ct-db-service-card">
+                        <h3 class="svc-card-title">لا توجد خدمات منشورة</h3>
+                        <p class="svc-card-desc">أضف الخدمات من لوحة التحكم من قسم خدمات.</p>
                     </div>
-                    <h3 class="svc-card-title">بيع أجهزة كمبيوتر جديدة</h3>
-                    <p class="svc-card-desc">نوفر أحدث أجهزة الكمبيوتر المكتبية والمناسبة للألعاب، العمل، الدراسة، والاستخدام اليومي بمواصفات متنوعة.</p>
-                    <a href="<?php echo esc_url(computech_page_url('contact')); ?>" class="svc-card-link">اعرف المزيد
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                            <line x1="5" y1="12" x2="19" y2="12"/>
-                            <polyline points="12 5 19 12 12 19"/>
-                        </svg>
-                    </a>
-                </div>
-
-                <!-- Service 2: Imported Devices -->
-                <div class="svc-card">
-                    <div class="svc-card-icon svc-card-icon-cyan">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                            <circle cx="12" cy="12" r="10"/>
-                            <line x1="2" y1="12" x2="22" y2="12"/>
-                            <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/>
-                        </svg>
-                    </div>
-                    <h3 class="svc-card-title">بيع أجهزة استيراد خارج</h3>
-                    <p class="svc-card-desc">أجهزة مستوردة بحالة ممتازة يتم فحصها بعناية لتقديم أفضل قيمة مقابل السعر.</p>
-                    <a href="<?php echo esc_url(computech_page_url('contact')); ?>" class="svc-card-link">اعرف المزيد
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                            <line x1="5" y1="12" x2="19" y2="12"/>
-                            <polyline points="12 5 19 12 12 19"/>
-                        </svg>
-                    </a>
-                </div>
-
-                <!-- Service 3: Accessories -->
-                <div class="svc-card">
-                    <div class="svc-card-icon svc-card-icon-green">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                            <path d="M3 18v-6a9 9 0 0 1 18 0v6"/>
-                            <path d="M21 19a2 2 0 0 1-2 2h-1a2 2 0 0 1-2-2v-3a2 2 0 0 1 2-2h3zM3 19a2 2 0 0 0 2 2h1a2 2 0 0 0 2-2v-3a2 2 0 0 0-2-2H3z"/>
-                        </svg>
-                    </div>
-                    <h3 class="svc-card-title">بيع إكسسوارات جديدة</h3>
-                    <p class="svc-card-desc">ملحقات أصلية ومتنوعة مثل الكيبورد، الماوس، السماعات، الشاشات، والكابلات.</p>
-                    <a href="<?php echo esc_url(computech_page_url('contact')); ?>" class="svc-card-link">اعرف المزيد
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                            <line x1="5" y1="12" x2="19" y2="12"/>
-                            <polyline points="12 5 19 12 12 19"/>
-                        </svg>
-                    </a>
-                </div>
-
-                <!-- Service 4: Delivery -->
-                <div class="svc-card">
-                    <div class="svc-card-icon svc-card-icon-orange">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                            <rect x="1" y="3" width="15" height="13"/>
-                            <polygon points="16 8 20 8 23 11 23 16 16 16 16 8"/>
-                            <circle cx="5.5" cy="18.5" r="2.5"/>
-                            <circle cx="18.5" cy="18.5" r="2.5"/>
-                        </svg>
-                    </div>
-                    <h3 class="svc-card-title">التوصيل لمكان العميل</h3>
-                    <p class="svc-card-desc">توصيل سريع وآمن حتى باب العميل مع الحفاظ على سلامة الأجهزة والمنتجات.</p>
-                    <a href="<?php echo esc_url(computech_page_url('contact')); ?>" class="svc-card-link">اعرف المزيد
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                            <line x1="5" y1="12" x2="19" y2="12"/>
-                            <polyline points="12 5 19 12 12 19"/>
-                        </svg>
-                    </a>
-                </div>
-
-                <!-- Service 5: Maintenance & Support -->
-                <div class="svc-card">
-                    <div class="svc-card-icon svc-card-icon-purple">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                            <circle cx="12" cy="12" r="3"/>
-                            <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/>
-                        </svg>
-                    </div>
-                    <h3 class="svc-card-title">الصيانة والدعم الفني</h3>
-                    <p class="svc-card-desc">صيانة احترافية وتشخيص أعطال وترقيات ودعم فني للأجهزة والأنظمة.</p>
-                    <a href="<?php echo esc_url(computech_page_url('contact')); ?>" class="svc-card-link">اعرف المزيد
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                            <line x1="5" y1="12" x2="19" y2="12"/>
-                            <polyline points="12 5 19 12 12 19"/>
-                        </svg>
-                    </a>
-                </div>
-
-                <!-- Service 6: After-Sales Service -->
-                <div class="svc-card">
-                    <div class="svc-card-icon svc-card-icon-teal">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
-                            <polyline points="9 12 11 14 15 10"/>
-                        </svg>
-                    </div>
-                    <h3 class="svc-card-title">خدمة ما بعد البيع</h3>
-                    <p class="svc-card-desc">متابعة ودعم بعد الشراء لضمان تجربة استخدام مريحة وموثوقة.</p>
-                    <a href="<?php echo esc_url(computech_page_url('contact')); ?>" class="svc-card-link">اعرف المزيد
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                            <line x1="5" y1="12" x2="19" y2="12"/>
-                            <polyline points="12 5 19 12 12 19"/>
-                        </svg>
-                    </a>
-                </div>
-
-                <!-- Service 7: Pre-Purchase Consultation -->
-                <div class="svc-card svc-card-featured">
-                    <div class="svc-card-icon svc-card-icon-gold">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                            <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
-                        </svg>
-                    </div>
-                    <h3 class="svc-card-title">الاستشارة قبل الشراء</h3>
-                    <p class="svc-card-desc">نساعدك في اختيار الجهاز أو الإكسسوار الأنسب لاستخدامك وميزانيتك.</p>
-                    <a href="<?php echo esc_url(computech_page_url('contact')); ?>" class="svc-card-link">اعرف المزيد
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                            <line x1="5" y1="12" x2="19" y2="12"/>
-                            <polyline points="12 5 19 12 12 19"/>
-                        </svg>
-                    </a>
-                </div>
+                <?php endif; ?>
             </div>
         </div>
     </section>

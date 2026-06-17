@@ -5672,6 +5672,249 @@ function computech_render_home_final_cta_section(): void {
     <?php
 }
 
+
+
+/* ============================================
+   Services CPT
+   Dashboard: خدمات
+   Title / image / visibility use native WordPress fields.
+   ============================================ */
+function computech_register_services_cpt(): void {
+    register_post_type('ct_service', array(
+        'labels' => array(
+            'name' => 'خدمات',
+            'singular_name' => 'خدمة',
+            'menu_name' => 'خدمات',
+            'add_new' => 'إضافة خدمة',
+            'add_new_item' => 'إضافة خدمة جديدة',
+            'edit_item' => 'تعديل خدمة',
+            'new_item' => 'خدمة جديدة',
+            'view_item' => 'عرض الخدمة',
+            'search_items' => 'بحث في الخدمات',
+            'not_found' => 'لا توجد خدمات',
+        ),
+        'public' => false,
+        'show_ui' => true,
+        'show_in_menu' => true,
+        'menu_position' => 59,
+        'menu_icon' => 'dashicons-hammer',
+        'supports' => array('title', 'thumbnail', 'page-attributes'),
+        'capability_type' => 'page',
+        'map_meta_cap' => true,
+        'show_in_rest' => false,
+    ));
+}
+add_action('init', 'computech_register_services_cpt');
+
+function computech_service_link_type_select(string $name, string $selected): string {
+    $types = array(
+        'none' => 'بدون رابط',
+        'page' => 'صفحة موجودة',
+        'custom' => 'رابط خارجي',
+    );
+    $html = '<select name="' . esc_attr($name) . '" class="ct-service-link-type widefat">';
+    foreach ($types as $key => $label) {
+        $html .= '<option value="' . esc_attr($key) . '" ' . selected($selected, $key, false) . '>' . esc_html($label) . '</option>';
+    }
+    return $html . '</select>';
+}
+
+function computech_service_icon_select(string $name, string $selected): string {
+    $html = '<select name="' . esc_attr($name) . '" class="widefat">';
+    foreach (computech_home_extra_icon_choices() as $key => $icon) {
+        $html .= '<option value="' . esc_attr($key) . '" ' . selected($selected, $key, false) . '>' . esc_html($icon['label']) . '</option>';
+    }
+    return $html . '</select>';
+}
+
+function computech_add_service_metaboxes(): void {
+    add_meta_box('ct_service_data', 'بيانات الخدمة', 'computech_service_metabox', 'ct_service', 'normal', 'high');
+}
+add_action('add_meta_boxes', 'computech_add_service_metaboxes');
+
+function computech_service_metabox(WP_Post $post): void {
+    computech_admin_editor_styles_once();
+    wp_nonce_field('computech_save_service', 'computech_service_nonce');
+    $desc = (string)get_post_meta($post->ID, '_computech_service_desc', true);
+    $icon = sanitize_key((string)get_post_meta($post->ID, '_computech_service_icon', true));
+    if ($icon === '') { $icon = 'support'; }
+    $color = (string)get_post_meta($post->ID, '_computech_service_icon_color', true);
+    if ($color === '') { $color = '#2563eb'; }
+    $link_type = sanitize_key((string)get_post_meta($post->ID, '_computech_service_link_type', true));
+    if (!in_array($link_type, array('none','page','custom'), true)) { $link_type = 'none'; }
+    $page_id = (string)get_post_meta($post->ID, '_computech_service_page_id', true);
+    $url = (string)get_post_meta($post->ID, '_computech_service_url', true);
+    $new_tab = (string)get_post_meta($post->ID, '_computech_service_new_tab', true);
+    ?>
+    <div class="ct-editor ct-hero-admin" dir="rtl">
+        <div class="ct-hero-dashboard-head">
+            <div>
+                <h2>خدمة</h2>
+                <p>الاسم من عنوان WordPress. الصورة من Featured Image. الظهور من Published/Public. الترتيب من Order.</p>
+            </div>
+        </div>
+        <div class="ct-hero-dashboard">
+            <section class="ct-admin-section">
+                <div class="ct-admin-section-head"><div><h3>1. بيانات الخدمة</h3></div></div>
+                <div class="ct-admin-section-body">
+                    <p class="ct-field"><label>الوصف</label><textarea name="_computech_service_desc" rows="4" class="widefat" placeholder="وصف الخدمة"><?php echo esc_textarea($desc); ?></textarea></p>
+                    <div class="ct-grid ct-grid-2">
+                        <p class="ct-field"><label>الأيقونة</label><?php echo computech_service_icon_select('_computech_service_icon', $icon); ?></p>
+                        <p class="ct-field"><label>لون الأيقونة</label><input type="color" name="_computech_service_icon_color" value="<?php echo esc_attr($color); ?>" class="widefat"></p>
+                    </div>
+                </div>
+            </section>
+            <section class="ct-admin-section">
+                <div class="ct-admin-section-head"><div><h3>2. الرابط</h3><p>اختار صفحة موجودة أو رابط خارجي.</p></div></div>
+                <div class="ct-admin-section-body">
+                    <div class="ct-grid ct-grid-2">
+                        <p class="ct-field"><label>نوع الرابط</label><?php echo computech_service_link_type_select('_computech_service_link_type', $link_type); ?></p>
+                        <p class="ct-field ct-service-page-field"><label>اختيار صفحة</label><select name="_computech_service_page_id" class="widefat"><?php echo computech_need_pages_options($page_id); ?></select></p>
+                    </div>
+                    <p class="ct-field ct-service-url-field" style="margin-top:14px"><label>رابط خارجي</label><input type="url" name="_computech_service_url" value="<?php echo esc_attr($url); ?>" class="widefat" placeholder="https://example.com"></p>
+                    <p class="ct-field" style="margin-top:14px"><label><input type="checkbox" name="_computech_service_new_tab" value="1" <?php checked($new_tab, '1'); ?>> فتح في تبويب جديد</label></p>
+                </div>
+            </section>
+            <section class="ct-admin-section">
+                <div class="ct-admin-section-head"><div><h3>3. الصورة والظهور</h3></div></div>
+                <div class="ct-admin-section-body">
+                    <div class="ct-admin-note">الصورة من Featured Image. الخدمة تظهر فقط لو Published + Public. استخدم Order لترتيب الخدمات.</div>
+                </div>
+            </section>
+        </div>
+    </div>
+    <script>
+    (function(){
+        var root = document.currentScript.previousElementSibling;
+        if (!root) { return; }
+        function updateFields(){
+            var select = root.querySelector('.ct-service-link-type');
+            var type = select ? select.value : 'none';
+            var pageField = root.querySelector('.ct-service-page-field');
+            var urlField = root.querySelector('.ct-service-url-field');
+            if (pageField) { pageField.style.display = type === 'page' ? '' : 'none'; }
+            if (urlField) { urlField.style.display = type === 'custom' ? '' : 'none'; }
+        }
+        var select = root.querySelector('.ct-service-link-type');
+        if (select) { select.addEventListener('change', updateFields); }
+        updateFields();
+    })();
+    </script>
+    <?php
+}
+
+function computech_save_service(int $post_id): void {
+    if (!isset($_POST['computech_service_nonce']) || !wp_verify_nonce(sanitize_text_field(wp_unslash($_POST['computech_service_nonce'])), 'computech_save_service')) {
+        return;
+    }
+    if (defined('DOING_AUTOSAVE') && DOING_AUTOSAVE) { return; }
+    if (!current_user_can('edit_post', $post_id)) { return; }
+
+    update_post_meta($post_id, '_computech_service_desc', sanitize_textarea_field(wp_unslash($_POST['_computech_service_desc'] ?? '')));
+    $icon = sanitize_key(wp_unslash($_POST['_computech_service_icon'] ?? 'support'));
+    $icons = computech_home_extra_icon_choices();
+    update_post_meta($post_id, '_computech_service_icon', array_key_exists($icon, $icons) ? $icon : 'support');
+    $color = sanitize_hex_color(wp_unslash($_POST['_computech_service_icon_color'] ?? '#2563eb')) ?: '#2563eb';
+    update_post_meta($post_id, '_computech_service_icon_color', $color);
+    $type = sanitize_key(wp_unslash($_POST['_computech_service_link_type'] ?? 'none'));
+    $type = in_array($type, array('none','page','custom'), true) ? $type : 'none';
+    update_post_meta($post_id, '_computech_service_link_type', $type);
+    update_post_meta($post_id, '_computech_service_page_id', (string)absint($_POST['_computech_service_page_id'] ?? 0));
+    update_post_meta($post_id, '_computech_service_url', esc_url_raw(wp_unslash($_POST['_computech_service_url'] ?? '')));
+    update_post_meta($post_id, '_computech_service_new_tab', !empty($_POST['_computech_service_new_tab']) ? '1' : '0');
+}
+add_action('save_post_ct_service', 'computech_save_service');
+
+function computech_seed_services_posts(): void {
+    if (get_option('computech_services_seeded', '0') === '1') { return; }
+    if (get_posts(array('post_type' => 'ct_service', 'post_status' => 'any', 'posts_per_page' => 1, 'fields' => 'ids', 'no_found_rows' => true))) {
+        update_option('computech_services_seeded', '1', false);
+        return;
+    }
+    $contact = get_page_by_path('contact');
+    $contact_id = $contact instanceof WP_Post ? (int)$contact->ID : 0;
+    $defaults = array(
+        array('بيع أجهزة كمبيوتر جديدة','نوفر أحدث أجهزة الكمبيوتر المكتبية والمناسبة للألعاب، العمل، الدراسة، والاستخدام اليومي بمواصفات متنوعة.','card','#2563eb'),
+        array('بيع أجهزة استيراد خارج','أجهزة مستوردة بحالة ممتازة يتم فحصها بعناية لتقديم أفضل قيمة مقابل السعر.','delivery','#0891b2'),
+        array('بيع إكسسوارات جديدة','ملحقات أصلية ومتنوعة مثل الكيبورد، الماوس، السماعات، الشاشات، والكابلات.','support','#16a34a'),
+        array('التوصيل لمكان العميل','توصيل سريع وآمن حتى باب العميل مع الحفاظ على سلامة الأجهزة والمنتجات.','delivery','#f97316'),
+        array('الصيانة والدعم الفني','صيانة احترافية وتشخيص أعطال وترقيات ودعم فني للأجهزة والأنظمة.','search','#7c3aed'),
+        array('خدمة ما بعد البيع','متابعة ودعم بعد الشراء لضمان تجربة استخدام مريحة وموثوقة.','shield','#0d9488'),
+        array('الاستشارة قبل الشراء','نساعدك في اختيار الجهاز أو الإكسسوار الأنسب لاستخدامك وميزانيتك.','whatsapp','#f59e0b'),
+    );
+    foreach ($defaults as $index => $item) {
+        $post_id = wp_insert_post(array(
+            'post_type' => 'ct_service',
+            'post_status' => 'publish',
+            'post_title' => $item[0],
+            'menu_order' => $index + 1,
+        ), true);
+        if (!is_wp_error($post_id) && $post_id) {
+            $post_id = (int)$post_id;
+            update_post_meta($post_id, '_computech_service_desc', $item[1]);
+            update_post_meta($post_id, '_computech_service_icon', $item[2]);
+            update_post_meta($post_id, '_computech_service_icon_color', $item[3]);
+            if ($contact_id > 0) {
+                update_post_meta($post_id, '_computech_service_link_type', 'page');
+                update_post_meta($post_id, '_computech_service_page_id', (string)$contact_id);
+            } else {
+                update_post_meta($post_id, '_computech_service_link_type', 'custom');
+                update_post_meta($post_id, '_computech_service_url', computech_page_url('contact'));
+            }
+        }
+    }
+    update_option('computech_services_seeded', '1', false);
+}
+add_action('init', 'computech_seed_services_posts', 30);
+
+function computech_service_posts(): array {
+    $posts = get_posts(array(
+        'post_type' => 'ct_service',
+        'post_status' => 'publish',
+        'posts_per_page' => -1,
+        'orderby' => array('menu_order' => 'ASC', 'date' => 'DESC'),
+        'order' => 'ASC',
+        'post_password' => '',
+        'no_found_rows' => true,
+        'suppress_filters' => false,
+    ));
+    return array_values(array_filter($posts, static function($post): bool {
+        return $post instanceof WP_Post && $post->post_status === 'publish' && $post->post_password === '' && trim(get_the_title($post)) !== '';
+    }));
+}
+
+function computech_service_url(WP_Post $post): string {
+    $type = sanitize_key((string)get_post_meta($post->ID, '_computech_service_link_type', true));
+    if ($type === 'page') {
+        $page_id = absint(get_post_meta($post->ID, '_computech_service_page_id', true));
+        $url = $page_id ? get_permalink($page_id) : '';
+        return $url ? (string)$url : '#';
+    }
+    if ($type === 'custom') {
+        $url = (string)get_post_meta($post->ID, '_computech_service_url', true);
+        return $url !== '' ? $url : '#';
+    }
+    return '#';
+}
+
+function computech_service_target(WP_Post $post): string {
+    return (string)get_post_meta($post->ID, '_computech_service_new_tab', true) === '1' ? ' target="_blank" rel="noopener"' : '';
+}
+
+function computech_service_desc(WP_Post $post): string {
+    $desc = trim((string)get_post_meta($post->ID, '_computech_service_desc', true));
+    if ($desc !== '') { return $desc; }
+    if ($post->post_excerpt !== '') { return $post->post_excerpt; }
+    return wp_strip_all_tags($post->post_content);
+}
+
+function computech_service_icon_html(WP_Post $post): string {
+    $icon = sanitize_key((string)get_post_meta($post->ID, '_computech_service_icon', true));
+    if ($icon === '') { $icon = 'support'; }
+    $color = sanitize_hex_color((string)get_post_meta($post->ID, '_computech_service_icon_color', true)) ?: '#2563eb';
+    return '<span class="ct-service-icon-inner" style="color:' . esc_attr($color) . '">' . computech_home_extra_icon_svg($icon) . '</span>';
+}
+
 // Computech categories/products architecture layer.
 require_once get_template_directory() . '/inc/computech-architecture.php';
 require_once get_template_directory() . '/inc/computech-woocommerce.php';

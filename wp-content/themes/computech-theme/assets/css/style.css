@@ -14715,3 +14715,65 @@ body.home .needs-section.computech-dynamic-needs .need-card-image img {
     object-fit: contain;
     display: block;
 }
+
+/* Services CPT cards */
+.ct-db-service-card {
+    display: flex;
+    flex-direction: column;
+    min-height: 360px;
+    overflow: hidden;
+}
+.ct-service-card-image {
+    width: 100%;
+    height: 150px;
+    border-radius: 18px;
+    background: #f8fafc;
+    border: 1px solid rgba(226, 232, 240, .9);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    margin-bottom: 18px;
+}
+.ct-service-card-image img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    display: block;
+}
+.ct-service-card-icon {
+    color: inherit;
+}
+.ct-service-icon-inner {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    height: 100%;
+}
+.ct-service-icon-inner svg {
+    width: 26px;
+    height: 26px;
+    color: currentColor;
+}
+.ct-db-service-card .svc-card-title {
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    min-height: 58px;
+}
+.ct-db-service-card .svc-card-desc {
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    min-height: 76px;
+}
+.ct-db-service-card .svc-card-link {
+    margin-top: auto;
+}
+@media (max-width: 767px) {
+    .ct-db-service-card { min-height: auto; }
+    .ct-service-card-image { height: 130px; }
+}
