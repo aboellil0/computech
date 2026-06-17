@@ -902,6 +902,7 @@ function computech_prepare_primary_nav_tree(): array {
     }
 
     computech_attach_product_categories_to_shop_menu($roots, $children);
+    computech_attach_services_to_services_menu($roots, $children);
 
     usort($roots, static function ($a, $b): int {
         return ((int) $a->menu_order) <=> ((int) $b->menu_order);
@@ -1052,6 +1053,87 @@ function computech_attach_product_categories_to_shop_menu(array $roots, array &$
     $add_terms(0, $shop_item_id, 10000);
 }
 
+
+function computech_is_services_nav_item($item): bool {
+    $title = trim(wp_strip_all_tags((string) ($item->title ?? '')));
+    $normalized = preg_replace('/\s+/u', '', $title);
+
+    if ($normalized === 'الخدمات' || strtolower($normalized) === 'services') {
+        return true;
+    }
+
+    $url_path = trim((string) wp_parse_url((string) ($item->url ?? ''), PHP_URL_PATH), '/');
+    return $url_path !== '' && strpos($url_path, 'services') !== false;
+}
+
+function computech_make_service_nav_item(WP_Post $service, int $parent_id, int $order): object {
+    $service_url = function_exists('computech_service_url') ? computech_service_url($service) : '#';
+    if ($service_url === '') {
+        $service_url = '#';
+    }
+
+    return (object) array(
+        'ID' => 920000000 + absint($service->ID),
+        'db_id' => 920000000 + absint($service->ID),
+        'menu_item_parent' => $parent_id,
+        'menu_order' => $order,
+        'title' => get_the_title($service),
+        'url' => $service_url,
+        'target' => function_exists('computech_service_target') && trim(computech_service_target($service)) !== '' ? '_blank' : '',
+        'xfn' => function_exists('computech_service_target') && trim(computech_service_target($service)) !== '' ? 'noopener' : '',
+        'classes' => array('menu-item', 'menu-item-type-post_type', 'menu-item-object-ct_service', 'computech-auto-service'),
+    );
+}
+
+function computech_attach_services_to_services_menu(array $roots, array &$children): void {
+    if (!post_type_exists('ct_service') || !function_exists('computech_service_posts')) {
+        return;
+    }
+
+    $services_item = null;
+    foreach ($roots as $root) {
+        if (computech_is_services_nav_item($root)) {
+            $services_item = $root;
+            break;
+        }
+    }
+
+    if (!$services_item) {
+        return;
+    }
+
+    $services_item_id = computech_nav_item_id($services_item);
+    if ($services_item_id <= 0) {
+        return;
+    }
+
+    $services = computech_service_posts();
+    if (!$services) {
+        return;
+    }
+
+    if (empty($children[$services_item_id])) {
+        $children[$services_item_id] = array();
+    }
+
+    $existing_url_map = computech_existing_menu_child_url_map($children, $services_item_id);
+    $order = 20000;
+    foreach ($services as $service) {
+        if (!($service instanceof WP_Post)) {
+            continue;
+        }
+
+        $service_url = function_exists('computech_service_url') ? computech_service_url($service) : '#';
+        $normalized_url = untrailingslashit((string) $service_url);
+        if ($normalized_url !== '' && isset($existing_url_map[$normalized_url])) {
+            continue;
+        }
+
+        $children[$services_item_id][] = computech_make_service_nav_item($service, $services_item_id, $order);
+        $order++;
+    }
+}
+
 function computech_nav_item_id($item): int {
     if (isset($item->ID)) {
         return absint($item->ID);
@@ -1169,7 +1251,7 @@ function computech_render_wp_nav_menu_item($item, array $children, array $args =
 
     echo '<li' . $li_class_attr . '>';
     echo '<a href="' . $href . '" class="' . esc_attr($link_class) . '"' . $target . $rel . ($has_children ? ' aria-haspopup="true" aria-expanded="false"' : '') . '>';
-    echo '<span>' . esc_html($title) . '</span>';
+    echo '<span class="nav-label-text">' . esc_html($title) . '</span>';
     if ($has_children) {
         computech_render_nav_arrow();
     }
@@ -1238,7 +1320,7 @@ function computech_render_primary_links(string $class = 'nav-link'): void {
         }
 
         $more_label = computech_header_label('more_menu_label', 'المزيد');
-        echo '<li class="nav-more"><button class="' . esc_attr($class . ($extra_active ? ' active' : '')) . ' nav-more-toggle" type="button" aria-haspopup="true" aria-expanded="false">' . esc_html($more_label) . ' <svg class="dropdown-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg></button><ul class="nav-more-menu">';
+        echo '<li class="nav-more"><button class="' . esc_attr($class . ($extra_active ? ' active' : '')) . ' nav-more-toggle" type="button" aria-haspopup="true" aria-expanded="false"><span class="nav-label-text">' . esc_html($more_label) . '</span> <svg class="dropdown-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg></button><ul class="nav-more-menu">';
         foreach ($extra as $item) {
             $more_args = array(
                 'link_class' => 'nav-more-link',
