@@ -617,11 +617,8 @@ function computech_get_primary_nav_menu_items(): array {
         return array();
     }
 
-    // Render the top level items only to keep the existing header layout stable.
-    $items = array_values(array_filter($items, static function ($item): bool {
-        return empty($item->menu_item_parent) || (string) $item->menu_item_parent === '0';
-    }));
-
+    // Keep all WordPress menu items. Children must not be filtered out,
+    // otherwise Appearance > Menus subitems disappear from the frontend.
     usort($items, static function ($a, $b): int {
         return ((int) $a->menu_order) <=> ((int) $b->menu_order);
     });
@@ -645,6 +642,16 @@ function computech_prepare_primary_nav_tree(): array {
             $roots[] = $item;
         }
     }
+
+    usort($roots, static function ($a, $b): int {
+        return ((int) $a->menu_order) <=> ((int) $b->menu_order);
+    });
+    foreach ($children as &$child_items) {
+        usort($child_items, static function ($a, $b): int {
+            return ((int) $a->menu_order) <=> ((int) $b->menu_order);
+        });
+    }
+    unset($child_items);
 
     return array(
         'roots' => $roots,
