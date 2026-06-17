@@ -14611,3 +14611,107 @@ body.home .needs-section.computech-dynamic-needs .need-card-image img {
         font-size: 13px;
     }
 }
+
+/* Promo banner color + icon image controls */
+.offer-main-banner.offer-color-main,
+.offer-sub-card.offer-color-main {
+    --offer-accent: #2563eb;
+    --offer-soft-a: #ffffff;
+    --offer-soft-b: #ffffff;
+    --offer-soft-c: #f8fbff;
+}
+.offer-main-banner.offer-color-blue,
+.offer-sub-card.offer-color-blue { --offer-accent: #2563eb; --offer-soft-a: #dbeafe; --offer-soft-b: #eff6ff; --offer-soft-c: #c7d8fe; }
+.offer-main-banner.offer-color-green,
+.offer-sub-card.offer-color-green { --offer-accent: #16a34a; --offer-soft-a: #dcfce7; --offer-soft-b: #ecfdf5; --offer-soft-c: #bbf7d0; }
+.offer-main-banner.offer-color-orange,
+.offer-sub-card.offer-color-orange { --offer-accent: #f97316; --offer-soft-a: #ffedd5; --offer-soft-b: #fff7ed; --offer-soft-c: #fed7aa; }
+.offer-main-banner.offer-color-purple,
+.offer-sub-card.offer-color-purple { --offer-accent: #7c3aed; --offer-soft-a: #ede9fe; --offer-soft-b: #f5f3ff; --offer-soft-c: #ddd6fe; }
+.offer-main-banner.offer-color-dark,
+.offer-sub-card.offer-color-dark { --offer-accent: #0f172a; --offer-soft-a: #e2e8f0; --offer-soft-b: #f8fafc; --offer-soft-c: #cbd5e1; }
+
+.offer-main-banner[class*="offer-color-"] {
+    background: linear-gradient(135deg, var(--offer-soft-a) 0%, var(--offer-soft-b) 54%, var(--offer-soft-c) 100%);
+}
+.offer-main-banner.offer-color-main {
+    background: #ffffff;
+}
+.offer-main-banner[class*="offer-color-"] .offer-main-title {
+    color: #0f172a;
+}
+.offer-main-banner[class*="offer-color-"] .offer-main-title span {
+    color: var(--offer-accent, #2563eb);
+}
+.offer-main-banner[class*="offer-color-"] .offer-main-btn,
+.offer-sub-card[class*="offer-color-"] .offer-sub-btn {
+    background: var(--offer-accent, #2563eb);
+    color: #fff;
+}
+.offer-promo-icon img,
+.offer-sub-float-icon img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    display: block;
+}
+.offer-promo-icon {
+    padding: 10px;
+    background: #fff;
+}
+.offer-sub-float-icon {
+    width: 54px;
+    height: 54px;
+    padding: 10px;
+    border-radius: 16px;
+    background: #fff;
+    box-shadow: 0 10px 25px rgba(15, 23, 42, 0.08);
+}
+.offer-sub-card[class*="offer-color-"] {
+    background: linear-gradient(135deg, var(--offer-soft-a) 0%, var(--offer-soft-b) 52%, var(--offer-soft-c) 100%);
+}
+.offer-sub-card[class*="offer-color-"] .offer-sub-title {
+    color: #0f172a;
+}
+
+
+/* Final CTA buttons safe layout */
+.contact-cta-actions {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-top: 18px;
+}
+.contact-cta-actions.is-static {
+    flex-wrap: wrap;
+    justify-content: flex-start;
+}
+.contact-cta-actions.is-slider {
+    flex-wrap: nowrap;
+    width: max-content;
+    min-width: 200%;
+    animation: computech-cta-buttons-marquee 26s linear infinite;
+}
+.contact-cta-strip.has-button-slider {
+    overflow: hidden;
+}
+.contact-cta-actions.is-slider:hover {
+    animation-play-state: paused;
+}
+@keyframes computech-cta-buttons-marquee {
+    0% { transform: translateX(0); }
+    100% { transform: translateX(-50%); }
+}
+@media (max-width: 900px) {
+    .contact-cta-actions.is-static {
+        justify-content: center;
+    }
+}
+
+/* Payment method posts: featured image icon safety */
+.payment-icon img {
+    width: 24px;
+    height: 24px;
+    object-fit: contain;
+    display: block;
+}
