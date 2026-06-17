@@ -250,6 +250,10 @@ input {
     border-radius: 2px;
 }
 
+.nav-more-toggle.active::after {
+    left: 34px;
+}
+
 .dropdown-arrow {
     width: 12px;
     height: 12px;
@@ -11077,7 +11081,7 @@ body.admin-bar .main-header {
         display: block !important;
         flex: 1 1 auto !important;
         min-width: 0 !important;
-        overflow: hidden !important;
+        overflow: visible !important;
     }
 
     .main-header .header-actions {
@@ -11143,6 +11147,28 @@ body.admin-bar .main-header {
 
     .main-header .mobile-menu-btn {
         display: none !important;
+    }
+
+    .site-breadcrumb,
+    .about-breadcrumb,
+    .services-breadcrumb,
+    .cat-breadcrumb,
+    .prod-breadcrumb,
+    .pd-breadcrumb,
+    .contact-breadcrumb {
+        position: sticky;
+        top: 72px;
+        z-index: 3;
+    }
+
+    body.admin-bar .site-breadcrumb,
+    body.admin-bar .about-breadcrumb,
+    body.admin-bar .services-breadcrumb,
+    body.admin-bar .cat-breadcrumb,
+    body.admin-bar .prod-breadcrumb,
+    body.admin-bar .pd-breadcrumb,
+    body.admin-bar .contact-breadcrumb {
+        top: 104px;
     }
 }
 
@@ -12257,6 +12283,15 @@ body.home .hero-cards-container > .quick-card {
 .nav-more {
     position: relative;
     list-style: none;
+}
+
+.nav-more::after {
+    content: '';
+    position: absolute;
+    top: 100%;
+    right: 0;
+    left: 0;
+    height: 10px;
 }
 
 .nav-more-toggle {

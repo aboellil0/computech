@@ -82,3 +82,30 @@ Applied in this version:
 - Category archive breadcrumbs now start with: الرئيسية / أقسام المتجر / category path.
 - Product breadcrumbs use Primary Category path under أقسام المتجر when a primary category exists.
 - Taxonomy category pages query products with include_children=true, so parent categories show products assigned to descendants.
+
+PRODUCT DASHBOARD EDITOR FIX
+----------------------------
+Applied in this version:
+- Products now use the Classic WordPress edit screen, not Gutenberg/block editor.
+- Reason: the product architecture fields are WordPress meta boxes. Gutenberg was collapsing them into a bottom "Meta Boxes" drawer, which made the product fields look missing.
+- The product edit screen now directly shows:
+  - Pricing
+  - Product gallery
+  - Primary category
+  - Visibility
+  - Featured products settings
+  - Card display fields
+  - Specs
+  - Warranty/support
+  - Buttons/actions
+- Adding, editing, deleting products and assigning categories is still done from Dashboard > منتجات كمبيوتيك.
+
+MAIN HEADER NAVIGATION UPDATE
+-----------------------------
+Applied in this version:
+- The main header navigation no longer reads links from the custom Computech settings page.
+- The main header navigation now reads only from the native WordPress menu location: primary / القائمة الرئيسية.
+- To edit header links, go to Appearance > Menus, create or edit a menu, then assign it to: القائمة الرئيسية.
+- Menu item add/edit/delete/order is now controlled by WordPress Nav Menus and saved in the WordPress database.
+- The same WordPress menu is used for desktop and mobile navigation.
+- The custom Computech settings page still controls top bar, logo, search, cart, and WhatsApp only.
