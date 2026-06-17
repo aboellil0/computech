@@ -10,6 +10,10 @@ if (!defined('ABSPATH')) {
 function computech_setup(): void {
     add_theme_support('title-tag');
     add_theme_support('post-thumbnails');
+    add_theme_support('woocommerce');
+    add_theme_support('wc-product-gallery-zoom');
+    add_theme_support('wc-product-gallery-lightbox');
+    add_theme_support('wc-product-gallery-slider');
     add_theme_support('custom-logo', array('height' => 80, 'width' => 220, 'flex-width' => true, 'flex-height' => true));
     add_theme_support('html5', array('search-form', 'comment-form', 'comment-list', 'gallery', 'caption', 'style', 'script'));
     register_nav_menus(array('primary' => __('القائمة الرئيسية', 'computech')));
@@ -213,40 +217,10 @@ function computech_enqueue_assets(): void {
 add_action('wp_enqueue_scripts', 'computech_enqueue_assets');
 
 function computech_register_products_cpt(): void {
-    register_post_type('products', array(
-        'labels' => array(
-            'name' => 'المنتجات',
-            'singular_name' => 'منتج',
-            'add_new_item' => 'إضافة منتج جديد',
-            'edit_item' => 'تعديل المنتج',
-            'new_item' => 'منتج جديد',
-            'view_item' => 'عرض المنتج',
-            'search_items' => 'بحث في المنتجات',
-            'not_found' => 'لا توجد منتجات',
-            'menu_name' => sprintf('منتجات %s', computech_site_name()),
-        ),
-        'public' => true,
-        'menu_icon' => 'dashicons-desktop',
-        'supports' => array('title', 'editor', 'thumbnail', 'excerpt', 'page-attributes'),
-        'taxonomies' => array('product_category'),
-        'rewrite' => array('slug' => 'product', 'with_front' => false),
-        'has_archive' => false,
-        // Use the Classic editor for products so the full architecture metaboxes are visible and editable.
-        'show_in_rest' => false,
-    ));
-
-    register_taxonomy('product_category', 'products', array(
-        'labels' => array(
-            'name' => 'أقسام المنتجات',
-            'singular_name' => 'قسم المنتج',
-            'menu_name' => 'أقسام المنتجات',
-        ),
-        'public' => true,
-        'hierarchical' => true,
-        'rewrite' => array('slug' => 'product-category', 'with_front' => false),
-        'show_in_rest' => true,
-    ));
+    // Products/categories are controlled by WooCommerce only.
+    // Old custom CPT/taxonomy disabled intentionally.
 }
+
 add_action('init', 'computech_register_products_cpt');
 
 /**
@@ -413,12 +387,12 @@ function computech_social_url(string $platform): string {
 function computech_products_url(string $category = '', string $status = ''): string {
     $args = array();
     if ($category !== '') {
-        $args['category'] = $category;
+        $args['product_cat'] = $category;
     }
     if ($status !== '') {
-        $args['status'] = $status;
+        $args['stock_status'] = $status;
     }
-    $url = computech_page_url('products');
+    $url = function_exists('computech_wc_products_page_url') ? computech_wc_products_page_url() : computech_page_url('products');
     return $args ? add_query_arg($args, $url) : $url;
 }
 
@@ -432,11 +406,11 @@ function computech_is_active_page(string $slug): bool {
         return true;
     }
 
-    if ($slug === 'categories' && is_tax('product_category')) {
+    if ($slug === 'categories' && (is_tax('product_cat') || is_tax('product_category'))) {
         return true;
     }
 
-    if ($slug === 'products' && is_singular('products')) {
+    if ($slug === 'products' && (is_singular('product') || is_singular('products') || is_post_type_archive('product'))) {
         return true;
     }
 
@@ -1381,7 +1355,7 @@ function computech_hero_button_style_select(string $name, string $selected): str
 }
 
 function computech_hero_product_category_options(string $selected = ''): string {
-    $terms = get_terms(array('taxonomy' => 'product_category', 'hide_empty' => false));
+    $terms = get_terms(array('taxonomy' => 'product_cat', 'hide_empty' => false));
     $html = '<option value="0">اختر قسم</option>';
     if (!is_wp_error($terms)) {
         foreach ($terms as $term) {
@@ -1819,12 +1793,12 @@ function computech_hero_link_url_from_data(WP_Post $slide, array $item): string 
     if ($type === 'category') {
         $term_id = absint($item['term_id'] ?? 0);
         if ($term_id) {
-            $url = get_term_link($term_id, 'product_category');
+            $url = get_term_link($term_id, 'product_cat');
             if (!is_wp_error($url)) {
                 return (string) $url;
             }
         }
-        return computech_page_url('categories');
+        return function_exists('computech_wc_products_page_url') ? computech_wc_products_page_url() : computech_page_url('categories');
     }
     if ($type === 'custom') {
         return esc_url_raw((string) ($item['url'] ?? ''));
@@ -4152,3 +4126,4 @@ function computech_render_home_final_cta_section(): void {
 
 // Computech categories/products architecture layer.
 require_once get_template_directory() . '/inc/computech-architecture.php';
+require_once get_template_directory() . '/inc/computech-woocommerce.php';
