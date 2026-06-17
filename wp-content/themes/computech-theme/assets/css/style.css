@@ -13054,3 +13054,11 @@ body.home .computech-dynamic-shop-row > .shop-card {
         padding: 0 10px 0 0 !important;
     }
 }
+
+/* Hero dashboard update: keep description max two lines */
+.computech-dynamic-hero .hero-description {
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}

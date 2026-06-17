@@ -1254,15 +1254,15 @@ function computech_admin_image_upload_field(string $label, string $meta_key, int
 function computech_register_hero_slides_cpt(): void {
     register_post_type('computech_hero_slide', array(
         'labels' => array(
-            'name' => 'Hero Section',
-            'singular_name' => 'Hero Section',
-            'menu_name' => 'Hero Section',
-            'add_new_item' => 'إضافة Hero Section',
-            'edit_item' => 'تعديل Hero Section',
-            'new_item' => 'Hero Section',
-            'view_item' => 'عرض Hero Section',
-            'search_items' => 'بحث في Hero Section',
-            'not_found' => 'لا يوجد Hero Section',
+            'name' => 'سلايدر الرئيسية',
+            'singular_name' => 'شريحة سلايدر الرئيسية',
+            'menu_name' => 'سلايدر الرئيسية',
+            'add_new_item' => 'إضافة شريحة جديدة',
+            'edit_item' => 'تعديل شريحة',
+            'new_item' => 'شريحة جديدة',
+            'view_item' => 'عرض الشريحة',
+            'search_items' => 'بحث في الشرائح',
+            'not_found' => 'لا توجد شرائح',
         ),
         'public' => false,
         'show_ui' => true,
@@ -1280,11 +1280,13 @@ function computech_default_hero_slide_meta(): array {
     // Empty dashboard defaults only. The front end reads saved Hero Section posts/meta.
     return array(
         '_computech_hero_show' => '1',
+        '_computech_hero_title' => '',
         '_computech_hero_title_line_1' => '',
         '_computech_hero_title_highlight' => '',
         '_computech_hero_title_line_3' => '',
         '_computech_hero_description' => '',
         '_computech_hero_features' => '',
+        '_computech_hero_tags' => array(),
         '_computech_hero_primary_text' => '',
         '_computech_hero_primary_link_type' => 'none',
         '_computech_hero_primary_page_slug' => '',
@@ -1311,7 +1313,7 @@ function computech_seed_default_hero_slides(): void {
 }
 
 function computech_add_hero_slide_metaboxes(): void {
-    add_meta_box('computech_hero_slide_data', 'بيانات Hero Section', 'computech_hero_slide_metabox', 'computech_hero_slide', 'normal', 'high');
+    add_meta_box('computech_hero_slide_data', 'بيانات سلايدر الرئيسية', 'computech_hero_slide_metabox', 'computech_hero_slide', 'normal', 'high');
 }
 add_action('add_meta_boxes', 'computech_add_hero_slide_metaboxes');
 
@@ -1428,6 +1430,93 @@ function computech_get_hero_buttons(WP_Post $slide): array {
         ));
     }
     return $buttons ?: computech_default_hero_buttons();
+}
+
+
+function computech_hero_full_title(WP_Post $slide): string {
+    $title = trim(computech_hero_meta($slide, '_computech_hero_title', ''));
+    if ($title !== '') {
+        return $title;
+    }
+
+    $parts = array_filter(array_map('trim', array(
+        computech_hero_meta($slide, '_computech_hero_title_line_1', ''),
+        computech_hero_meta($slide, '_computech_hero_title_highlight', ''),
+        computech_hero_meta($slide, '_computech_hero_title_line_3', ''),
+    )));
+
+    return trim(implode(' ', $parts));
+}
+
+function computech_normalize_hero_tag(array $tag): array {
+    return array(
+        'show' => !empty($tag['show']) ? '1' : '0',
+        'text' => sanitize_text_field((string) ($tag['text'] ?? '')),
+    );
+}
+
+function computech_get_hero_tags(WP_Post $slide): array {
+    $stored = get_post_meta($slide->ID, '_computech_hero_tags', true);
+    $tags = array();
+
+    if (is_array($stored)) {
+        foreach ($stored as $tag) {
+            if (!is_array($tag)) {
+                continue;
+            }
+            $clean = computech_normalize_hero_tag($tag);
+            if ($clean['text'] !== '') {
+                $tags[] = $clean;
+            }
+        }
+    }
+
+    if ($tags) {
+        return $tags;
+    }
+
+    $legacy = array_values(array_filter(array_map('trim', preg_split('/\r\n|\r|\n/', computech_hero_meta($slide, '_computech_hero_features', '')))));
+    foreach ($legacy as $text) {
+        $tags[] = array('show' => '1', 'text' => $text);
+    }
+
+    return $tags;
+}
+
+function computech_get_hero_display_tags(WP_Post $slide): array {
+    $selected = array();
+    foreach (computech_get_hero_tags($slide) as $tag) {
+        $tag = computech_normalize_hero_tag($tag);
+        if ($tag['show'] !== '1' || $tag['text'] === '') {
+            continue;
+        }
+        $selected[] = $tag['text'];
+        if (count($selected) >= 4) {
+            break;
+        }
+    }
+    return $selected;
+}
+
+function computech_hero_tag_row_html(array $tag, $index): string {
+    $tag = computech_normalize_hero_tag($tag);
+    $base = '_computech_hero_tags[' . $index . ']';
+    ob_start();
+    ?>
+    <div class="ct-hero-repeat-row" data-hero-tag-row>
+        <div class="ct-hero-repeat-head">
+            <div class="ct-hero-repeat-title"><span class="ct-drag-handle">#</span><span>كلمة دليلية</span></div>
+            <div class="ct-repeat-actions">
+                <label><input type="checkbox" name="<?php echo esc_attr($base); ?>[show]" value="1" <?php checked($tag['show'], '1'); ?>> تظهر في الواجهة</label>
+                <button type="button" class="button-link-delete" data-remove-hero-tag>حذف</button>
+            </div>
+        </div>
+        <div class="ct-hero-repeat-grid" style="grid-template-columns:1fr;">
+            <p class="ct-field"><label>النص</label><input type="text" name="<?php echo esc_attr($base); ?>[text]" value="<?php echo esc_attr($tag['text']); ?>" class="widefat" placeholder="مثال: أجهزة جديدة"></p>
+        </div>
+    </div>
+    <?php
+    return (string) ob_get_clean();
 }
 
 function computech_admin_editor_styles_once(): void {
@@ -1555,12 +1644,12 @@ function computech_hero_slide_metabox(WP_Post $post): void {
     <div class="ct-editor ct-hero-admin" dir="rtl">
         <div class="ct-hero-dashboard-head">
             <div>
-                <h2>ترتيب محتوى Hero Section</h2>
-                <p>رتبتلك الحقول حسب طريقة تعديل الأدمن: حالة الهيرو، النص، الأزرار، الصورة، البادج، وواتساب.</p>
+                <h2>سلايدر الرئيسية</h2>
+                <p>أضف، عدّل، أو احذف شرائح الهيرو من هنا. كل شريحة لها نفس الحقول.</p>
             </div>
             <div class="ct-status-card">
-                <label><input type="checkbox" name="_computech_hero_show" value="1" <?php checked(computech_hero_meta($post, '_computech_hero_show', '1'), '1'); ?>> إظهار Hero Section</label>
-                <p class="description">لو اتقفلت، الهيرو مش هيظهر في الصفحة الرئيسية.</p>
+                <label><input type="checkbox" name="_computech_hero_show" value="1" <?php checked(computech_hero_meta($post, '_computech_hero_show', '1'), '1'); ?>> إظهار الشريحة</label>
+                <p class="description">لو اتقفلت، الشريحة مش هتظهر في سلايدر الرئيسية.</p>
             </div>
         </div>
 
@@ -1568,19 +1657,29 @@ function computech_hero_slide_metabox(WP_Post $post): void {
             <section class="ct-admin-section">
                 <div class="ct-admin-section-head">
                     <div>
-                        <h3>1. النص الرئيسي</h3>
-                        <p>هنا النصوص اللي بتظهر في الجزء الكبير من الهيرو.</p>
+                        <h3>1. محتوى الشريحة</h3>
+                        <p>كل شريحة لها نفس الحقول: عنوان، وصف، كلمات دليلية، صورة، وأزرار.</p>
                     </div>
                 </div>
                 <div class="ct-admin-section-body">
-                    <div class="ct-grid ct-grid-3">
-                        <p class="ct-field"><label>سطر العنوان الأول</label><input type="text" name="_computech_hero_title_line_1" value="<?php echo esc_attr(computech_hero_meta($post, '_computech_hero_title_line_1', $defaults['_computech_hero_title_line_1'])); ?>" class="widefat"></p>
-                        <p class="ct-field"><label>الكلمة / السطر المميز باللون</label><input type="text" name="_computech_hero_title_highlight" value="<?php echo esc_attr(computech_hero_meta($post, '_computech_hero_title_highlight', $defaults['_computech_hero_title_highlight'])); ?>" class="widefat"></p>
-                        <p class="ct-field"><label>سطر العنوان الثالث</label><input type="text" name="_computech_hero_title_line_3" value="<?php echo esc_attr(computech_hero_meta($post, '_computech_hero_title_line_3', $defaults['_computech_hero_title_line_3'])); ?>" class="widefat"></p>
+                    <div class="ct-grid ct-grid-2">
+                        <p class="ct-field"><label>عنوان الشريحة</label><input type="text" name="_computech_hero_title" value="<?php echo esc_attr(computech_hero_full_title($post)); ?>" class="widefat" placeholder="كل ما تحتاجه لعالم الكمبيوتر في مكان واحد"></p>
+                        <p class="ct-field"><label>الوصف القصير</label><textarea name="_computech_hero_description" rows="3" class="widefat" maxlength="220"><?php echo esc_textarea(computech_hero_meta($post, '_computech_hero_description', $defaults['_computech_hero_description'])); ?></textarea><span class="ct-help">يفضل ألا يزيد عن سطرين في الواجهة.</span></p>
                     </div>
-                    <div class="ct-grid ct-grid-2" style="margin-top:14px">
-                        <p class="ct-field"><label>الوصف</label><textarea name="_computech_hero_description" rows="4" class="widefat"><?php echo esc_textarea(computech_hero_meta($post, '_computech_hero_description', $defaults['_computech_hero_description'])); ?></textarea><span class="ct-help">يفضل وصف قصير وواضح؛ التصميم يحمي النص الطويل لكن الأفضل مايزيدش قوي.</span></p>
-                        <p class="ct-field"><label>Feature Pills / البادجات الصغيرة</label><textarea name="_computech_hero_features" rows="4" class="widefat"><?php echo esc_textarea(computech_hero_meta($post, '_computech_hero_features', $defaults['_computech_hero_features'])); ?></textarea><span class="ct-help">اكتب كل badge في سطر منفصل.</span></p>
+                    <div class="ct-admin-section" style="margin-top:14px; box-shadow:none;">
+                        <div class="ct-admin-section-head">
+                            <div>
+                                <h3>الكلمات الدليلية Tags</h3>
+                                <p>أضف أي عدد كلمات. علّم فقط على التي تظهر. الواجهة تعرض أول 4 كلمات مفعلة فقط.</p>
+                            </div>
+                            <button type="button" class="button button-primary ct-add-button" id="ct-add-hero-tag">+ إضافة كلمة</button>
+                        </div>
+                        <div class="ct-admin-section-body">
+                            <div id="ct-hero-tags-list" class="ct-repeat-list">
+                                <?php $hero_tags = computech_get_hero_tags($post); foreach ($hero_tags as $i => $tag) { echo computech_hero_tag_row_html($tag, (int) $i); } ?>
+                            </div>
+                            <template id="ct-hero-tag-template"><?php echo computech_hero_tag_row_html(array('show' => '1', 'text' => ''), '__INDEX__'); ?></template>
+                        </div>
                     </div>
                 </div>
             </section>
@@ -1604,14 +1703,14 @@ function computech_hero_slide_metabox(WP_Post $post): void {
             <section class="ct-admin-section">
                 <div class="ct-admin-section-head">
                     <div>
-                        <h3>3. الصورة والبادج العائم</h3>
-                        <p>ارفع صورة الهيرو من هنا، وسيتم أخذ Alt Text وTitle من بيانات الصورة داخل Media Library تلقائيًا.</p>
+                        <h3>3. صورة الشريحة</h3>
+                        <p>ارفع صورة الشريحة من هنا، وسيتم أخذ Alt Text وTitle من بيانات الصورة داخل Media Library تلقائيًا.</p>
                     </div>
                 </div>
                 <div class="ct-admin-section-body">
                     <div class="ct-note"><span>ℹ️</span><div>ارفع أو اختر صورة الهيرو من Media Library. الواجهة ستستخدم Alt Text وTitle من بيانات الصورة تلقائيًا بدل إدخالهم يدويًا.</div></div>
                     <div class="ct-grid ct-grid-2">
-                        <?php computech_admin_image_upload_field('صورة Hero Section', '_computech_hero_image_id', $post->ID, 'اختار صورة الهيرو من Media Library. عدّل Alt Text من صفحة الصورة نفسها لو محتاج SEO أفضل.'); ?>
+                        <?php computech_admin_image_upload_field('صورة الشريحة', '_computech_hero_image_id', $post->ID, 'اختار صورة الشريحة من Media Library. عدّل Alt Text من صفحة الصورة نفسها لو محتاج SEO أفضل.'); ?>
                         <div class="ct-grid ct-grid-1">
                             <p class="ct-field"><label>السطر الأول في البادج العائم</label><input type="text" name="_computech_hero_badge_line_1" value="<?php echo esc_attr(computech_hero_meta($post, '_computech_hero_badge_line_1', $defaults['_computech_hero_badge_line_1'])); ?>" class="widefat"></p>
                             <p class="ct-field"><label>السطر الثاني في البادج العائم</label><input type="text" name="_computech_hero_badge_line_2" value="<?php echo esc_attr(computech_hero_meta($post, '_computech_hero_badge_line_2', $defaults['_computech_hero_badge_line_2'])); ?>" class="widefat"></p>
@@ -1635,6 +1734,31 @@ function computech_hero_slide_metabox(WP_Post $post): void {
     </div>
     <script>
     (function(){
+        var tagList = document.getElementById('ct-hero-tags-list');
+        var addTagBtn = document.getElementById('ct-add-hero-tag');
+        var tagTemplate = document.getElementById('ct-hero-tag-template');
+        if (tagList && addTagBtn && tagTemplate) {
+            function bindTags(scope) {
+                (scope || tagList).querySelectorAll('[data-remove-hero-tag]').forEach(function(btn){
+                    if (btn.dataset.bound === '1') { return; }
+                    btn.dataset.bound = '1';
+                    btn.addEventListener('click', function(){
+                        var row = btn.closest('[data-hero-tag-row]');
+                        if (row) { row.remove(); }
+                    });
+                });
+            }
+            bindTags(tagList);
+            addTagBtn.addEventListener('click', function(){
+                var index = Date.now();
+                var wrapper = document.createElement('div');
+                wrapper.innerHTML = tagTemplate.innerHTML.replace(/__INDEX__/g, index);
+                var row = wrapper.firstElementChild;
+                tagList.appendChild(row);
+                bindTags(row);
+            });
+        }
+
         var list = document.getElementById('ct-hero-buttons-list');
         var addBtn = document.getElementById('ct-add-hero-button');
         var template = document.getElementById('ct-hero-button-template');
@@ -1693,6 +1817,7 @@ function computech_save_hero_slide(int $post_id): void {
     }
 
     $text_fields = array(
+        '_computech_hero_title',
         '_computech_hero_title_line_1',
         '_computech_hero_title_highlight',
         '_computech_hero_title_line_3',
@@ -1745,6 +1870,24 @@ function computech_save_hero_slide(int $post_id): void {
             }
         }
     }
+    $hero_tags = array();
+    $tag_rows = $_POST['_computech_hero_tags'] ?? array();
+    if (is_array($tag_rows)) {
+        foreach ($tag_rows as $row) {
+            if (!is_array($row)) {
+                continue;
+            }
+            $clean = computech_normalize_hero_tag(array(
+                'show' => !empty($row['show']) ? '1' : '0',
+                'text' => sanitize_text_field(wp_unslash($row['text'] ?? '')),
+            ));
+            if ($clean['text'] !== '') {
+                $hero_tags[] = $clean;
+            }
+        }
+    }
+    update_post_meta($post_id, '_computech_hero_tags', $hero_tags);
+
     update_post_meta($post_id, '_computech_hero_buttons', $hero_buttons);
 
     update_post_meta($post_id, '_computech_hero_image_id', (string) absint($_POST['_computech_hero_image_id'] ?? 0));
@@ -1849,14 +1992,12 @@ function computech_render_hero_buttons(WP_Post $slide): void {
 }
 
 function computech_render_hero_slide(WP_Post $slide, int $index): void {
-    $title_1 = trim(computech_hero_meta($slide, '_computech_hero_title_line_1', ''));
-    $highlight = trim(computech_hero_meta($slide, '_computech_hero_title_highlight', ''));
-    $title_3 = trim(computech_hero_meta($slide, '_computech_hero_title_line_3', ''));
-    if ($title_1 === '' && $highlight === '' && $title_3 === '') {
+    $title = computech_hero_full_title($slide);
+    if ($title === '') {
         return;
     }
     $description = computech_hero_meta($slide, '_computech_hero_description', '');
-    $features = array_values(array_filter(array_map('trim', preg_split('/\r\n|\r|\n/', computech_hero_meta($slide, '_computech_hero_features', '')))));
+    $features = computech_get_hero_display_tags($slide);
     $hero_image = computech_post_image_data((int) $slide->ID, '_computech_hero_image_id', 'full', '_computech_hero_image_url');
     $image = $hero_image['url'];
     $alt = $hero_image['alt'] !== '' ? $hero_image['alt'] : get_the_title($slide);
@@ -1867,11 +2008,7 @@ function computech_render_hero_slide(WP_Post $slide, int $index): void {
         <div class="hero-container">
             <div class="hero-content">
                 <div class="hero-decorative-dots"><span class="h-dot blue"></span><span class="h-dot cyan"></span><span class="h-dot green"></span></div>
-                <h1 class="hero-headline">
-                    <?php if ($title_1 !== '') : ?><?php echo esc_html($title_1); ?><br><?php endif; ?>
-                    <?php if ($highlight !== '') : ?><span class="headline-highlight"><?php echo esc_html($highlight); ?></span><br><?php endif; ?>
-                    <?php if ($title_3 !== '') : ?><?php echo esc_html($title_3); ?><?php endif; ?>
-                </h1>
+                <h1 class="hero-headline"><?php echo esc_html($title); ?></h1>
                 <?php if (trim($description) !== '') : ?><p class="hero-description"><?php echo esc_html($description); ?></p><?php endif; ?>
                 <?php if ($features) : ?>
                     <div class="hero-feature-pills">
@@ -1909,12 +2046,7 @@ function computech_render_home_hero_section(): void {
     }
 
     $slides = array_values(array_filter($slides, static function ($slide): bool {
-        return $slide instanceof WP_Post
-            && (
-                trim(computech_hero_meta($slide, '_computech_hero_title_line_1', '')) !== ''
-                || trim(computech_hero_meta($slide, '_computech_hero_title_highlight', '')) !== ''
-                || trim(computech_hero_meta($slide, '_computech_hero_title_line_3', '')) !== ''
-            );
+        return $slide instanceof WP_Post && computech_hero_full_title($slide) !== '';
     }));
 
     if (!$slides) {
