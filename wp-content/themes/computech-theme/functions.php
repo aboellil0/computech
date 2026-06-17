@@ -730,6 +730,8 @@ function computech_prepare_primary_nav_tree(): array {
         }
     }
 
+    computech_attach_product_categories_to_shop_menu($roots, $children);
+
     usort($roots, static function ($a, $b): int {
         return ((int) $a->menu_order) <=> ((int) $b->menu_order);
     });
@@ -744,6 +746,139 @@ function computech_prepare_primary_nav_tree(): array {
         'roots' => $roots,
         'children' => $children,
     );
+}
+
+
+function computech_is_shop_categories_nav_item($item): bool {
+    $title = trim(wp_strip_all_tags((string) ($item->title ?? '')));
+    $normalized = preg_replace('/\s+/u', '', $title);
+
+    if ($normalized === 'أقسامالمتجر' || $normalized === 'اقسامالمتجر') {
+        return true;
+    }
+
+    $url_path = trim((string) wp_parse_url((string) ($item->url ?? ''), PHP_URL_PATH), '/');
+    return $url_path !== '' && (strpos($url_path, 'categories') !== false || strpos($url_path, 'product-category') !== false);
+}
+
+function computech_make_product_category_nav_item(WP_Term $term, int $parent_id, int $order): object {
+    $term_link = get_term_link($term);
+    if (is_wp_error($term_link)) {
+        $term_link = '#';
+    }
+
+    return (object) array(
+        'ID' => 900000000 + absint($term->term_id),
+        'db_id' => 900000000 + absint($term->term_id),
+        'menu_item_parent' => $parent_id,
+        'menu_order' => $order,
+        'title' => $term->name,
+        'url' => $term_link,
+        'target' => '',
+        'xfn' => '',
+        'classes' => array('menu-item', 'menu-item-type-taxonomy', 'menu-item-object-product_cat', 'computech-auto-product-cat'),
+    );
+}
+
+function computech_existing_menu_child_url_map(array $children, int $parent_id): array {
+    $urls = array();
+    if (empty($children[$parent_id])) {
+        return $urls;
+    }
+
+    foreach ($children[$parent_id] as $child) {
+        $url = trim((string) ($child->url ?? ''));
+        $child_id = computech_nav_item_id($child);
+        if ($url !== '' && $child_id > 0) {
+            $urls[untrailingslashit($url)] = $child_id;
+        }
+    }
+
+    return $urls;
+}
+
+function computech_attach_product_categories_to_shop_menu(array $roots, array &$children): void {
+    if (!taxonomy_exists('product_cat')) {
+        return;
+    }
+
+    $shop_item = null;
+    foreach ($roots as $root) {
+        if (computech_is_shop_categories_nav_item($root)) {
+            $shop_item = $root;
+            break;
+        }
+    }
+
+    if (!$shop_item) {
+        return;
+    }
+
+    $shop_item_id = computech_nav_item_id($shop_item);
+    if ($shop_item_id <= 0) {
+        return;
+    }
+
+    $terms = get_terms(array(
+        'taxonomy' => 'product_cat',
+        'hide_empty' => false,
+        'orderby' => 'name',
+        'order' => 'ASC',
+        'exclude' => array(get_option('default_product_cat')),
+    ));
+
+    if (is_wp_error($terms) || empty($terms)) {
+        return;
+    }
+
+    $existing_url_map = computech_existing_menu_child_url_map($children, $shop_item_id);
+    $terms_by_parent = array();
+    foreach ($terms as $term) {
+        if (!($term instanceof WP_Term)) {
+            continue;
+        }
+        $parent = absint($term->parent);
+        if (!isset($terms_by_parent[$parent])) {
+            $terms_by_parent[$parent] = array();
+        }
+        $terms_by_parent[$parent][] = $term;
+    }
+
+    if (empty($children[$shop_item_id])) {
+        $children[$shop_item_id] = array();
+    }
+
+    $add_terms = static function (int $term_parent, int $menu_parent_id, int $base_order) use (&$add_terms, &$children, $terms_by_parent, $existing_url_map): void {
+        if (empty($terms_by_parent[$term_parent])) {
+            return;
+        }
+
+        $order = $base_order;
+        foreach ($terms_by_parent[$term_parent] as $term) {
+            $term_link = get_term_link($term);
+            if (is_wp_error($term_link)) {
+                $term_link = '#';
+            }
+
+            $normalized_url = untrailingslashit((string) $term_link);
+            $auto_id = 900000000 + absint($term->term_id);
+            $render_parent_id = $auto_id;
+
+            if (isset($existing_url_map[$normalized_url])) {
+                $render_parent_id = absint($existing_url_map[$normalized_url]);
+            } else {
+                if (empty($children[$menu_parent_id])) {
+                    $children[$menu_parent_id] = array();
+                }
+                $children[$menu_parent_id][] = computech_make_product_category_nav_item($term, $menu_parent_id, $order);
+            }
+
+            $add_terms(absint($term->term_id), $render_parent_id, $order + 1000);
+            $order++;
+        }
+    };
+
+    $add_terms(0, $shop_item_id, 10000);
 }
 
 function computech_nav_item_id($item): int {
@@ -987,6 +1122,42 @@ function computech_admin_menu(): void {
     add_submenu_page('computech-settings', 'الهيدر', 'الهيدر', computech_admin_capability(), 'computech-settings', 'computech_settings_page');
 }
 add_action('admin_menu', 'computech_admin_menu');
+
+function computech_reorder_general_admin_submenus(): void {
+    global $submenu;
+
+    if (empty($submenu['computech-settings']) || !is_array($submenu['computech-settings'])) {
+        return;
+    }
+
+    $wanted_order = array(
+        'computech-settings' => 0,
+        'edit.php?post_type=computech_need_card' => 1,
+    );
+
+    usort($submenu['computech-settings'], static function ($a, $b) use ($wanted_order): int {
+        $a_slug = isset($a[2]) ? (string) $a[2] : '';
+        $b_slug = isset($b[2]) ? (string) $b[2] : '';
+        $a_order = $wanted_order[$a_slug] ?? 100;
+        $b_order = $wanted_order[$b_slug] ?? 100;
+
+        if ($a_order === $b_order) {
+            return 0;
+        }
+
+        return $a_order <=> $b_order;
+    });
+
+    foreach ($submenu['computech-settings'] as &$item) {
+        if (isset($item[2]) && $item[2] === 'computech-settings') {
+            $item[0] = 'الهيدر';
+            break;
+        }
+    }
+    unset($item);
+}
+add_action('admin_menu', 'computech_reorder_general_admin_submenus', 999);
+
 
 function computech_admin_assets(string $hook): void {
     if ($hook !== 'toplevel_page_computech-settings' && strpos($hook, 'computech-settings') === false) {
@@ -2708,9 +2879,37 @@ function computech_add_customer_need_card_metaboxes(): void {
 }
 add_action('add_meta_boxes', 'computech_add_customer_need_card_metaboxes');
 
+
+function computech_need_pages_options(string $selected = ''): string {
+    $pages = get_pages(array('sort_column' => 'menu_order,post_title', 'post_status' => 'publish'));
+    $html = '<option value="0">اختر صفحة</option>';
+    foreach ($pages as $page) {
+        $html .= '<option value="' . esc_attr((string) $page->ID) . '" ' . selected($selected, (string) $page->ID, false) . '>' . esc_html($page->post_title) . '</option>';
+    }
+    return $html;
+}
+
+function computech_need_link_type_select(string $name, string $selected): string {
+    $types = array(
+        'none' => 'بدون رابط',
+        'page' => 'صفحة موجودة',
+        'category' => 'قسم منتجات موجود',
+        'custom' => 'رابط خارجي',
+    );
+    $html = '<select name="' . esc_attr($name) . '" class="ct-need-link-type widefat">';
+    foreach ($types as $key => $label) {
+        $html .= '<option value="' . esc_attr($key) . '" ' . selected($selected, $key, false) . '>' . esc_html($label) . '</option>';
+    }
+    $html .= '</select>';
+    return $html;
+}
+
 function computech_need_card_metabox(WP_Post $post): void {
     wp_nonce_field('computech_save_need_card', 'computech_need_card_nonce');
     computech_admin_editor_styles_once();
+    $link_type = computech_section_meta($post, '_computech_need_link_type', 'custom');
+    $page_id = computech_section_meta($post, '_computech_need_page_id', '0');
+    $term_id = computech_section_meta($post, '_computech_need_term_id', '0');
     ?>
     <div class="ct-editor ct-hero-admin" dir="rtl">
         <div class="ct-hero-dashboard-head">
@@ -2729,13 +2928,31 @@ function computech_need_card_metabox(WP_Post $post): void {
                 </div>
                 <div class="ct-admin-section-body">
                     <p class="ct-field"><label>الوصف</label><textarea name="_computech_need_text" rows="3" class="widefat" placeholder="وصف قصير لا يزيد عن سطرين"><?php echo esc_textarea(computech_section_meta($post, '_computech_need_text', '')); ?></textarea></p>
-                    <p class="ct-field"><label>الرابط</label><input type="url" name="_computech_need_url" value="<?php echo esc_attr(computech_section_meta($post, '_computech_need_url', '')); ?>" class="widefat" placeholder="https://example.com أو /product-category/laptops/"></p>
                 </div>
             </section>
             <section class="ct-admin-section">
                 <div class="ct-admin-section-head">
                     <div>
-                        <h3>2. الصورة</h3>
+                        <h3>2. الرابط</h3>
+                        <p>اختار صفحة موجودة، قسم منتجات موجود، أو رابط خارجي.</p>
+                    </div>
+                </div>
+                <div class="ct-admin-section-body">
+                    <div class="ct-grid ct-grid-2">
+                        <p class="ct-field"><label>نوع الرابط</label><?php echo computech_need_link_type_select('_computech_need_link_type', $link_type); ?></p>
+                        <p class="ct-field ct-need-page-field"><label>اختيار صفحة</label><select name="_computech_need_page_id" class="widefat"><?php echo computech_need_pages_options($page_id); ?></select></p>
+                    </div>
+                    <div class="ct-conditional-fields" style="margin-top:14px">
+                        <p class="ct-field ct-need-category-field"><label>اختيار قسم منتجات</label><select name="_computech_need_term_id" class="widefat"><?php echo computech_hero_product_category_options($term_id); ?></select></p>
+                        <p class="ct-field ct-need-url-field"><label>رابط خارجي</label><input type="url" name="_computech_need_url" value="<?php echo esc_attr(computech_section_meta($post, '_computech_need_url', '')); ?>" class="widefat" placeholder="https://example.com"></p>
+                    </div>
+                    <p class="ct-field" style="margin-top:14px"><label><input type="checkbox" name="_computech_need_new_tab" value="1" <?php checked(computech_section_meta($post, '_computech_need_new_tab', '0'), '1'); ?>> فتح في تبويب جديد</label></p>
+                </div>
+            </section>
+            <section class="ct-admin-section">
+                <div class="ct-admin-section-head">
+                    <div>
+                        <h3>3. الصورة</h3>
                         <p>اختار صورة ثابتة للكارت.</p>
                     </div>
                 </div>
@@ -2745,6 +2962,25 @@ function computech_need_card_metabox(WP_Post $post): void {
             </section>
         </div>
     </div>
+    <script>
+    (function(){
+        var root = document.currentScript.previousElementSibling;
+        if (!root) { return; }
+        function updateFields(){
+            var typeSelect = root.querySelector('.ct-need-link-type');
+            var type = typeSelect ? typeSelect.value : 'none';
+            var pageField = root.querySelector('.ct-need-page-field');
+            var categoryField = root.querySelector('.ct-need-category-field');
+            var urlField = root.querySelector('.ct-need-url-field');
+            if (pageField) { pageField.style.display = type === 'page' ? '' : 'none'; }
+            if (categoryField) { categoryField.style.display = type === 'category' ? '' : 'none'; }
+            if (urlField) { urlField.style.display = type === 'custom' ? '' : 'none'; }
+        }
+        var select = root.querySelector('.ct-need-link-type');
+        if (select) { select.addEventListener('change', updateFields); }
+        updateFields();
+    })();
+    </script>
     <?php
 }
 
@@ -2760,7 +2996,13 @@ function computech_save_need_card(int $post_id): void {
     }
     update_post_meta($post_id, '_computech_need_show', '1');
     update_post_meta($post_id, '_computech_need_text', sanitize_textarea_field(wp_unslash($_POST['_computech_need_text'] ?? '')));
+    $type = sanitize_key(wp_unslash($_POST['_computech_need_link_type'] ?? 'none'));
+    $type = in_array($type, array('none', 'page', 'category', 'custom'), true) ? $type : 'none';
+    update_post_meta($post_id, '_computech_need_link_type', $type);
+    update_post_meta($post_id, '_computech_need_page_id', (string) absint($_POST['_computech_need_page_id'] ?? 0));
+    update_post_meta($post_id, '_computech_need_term_id', (string) absint($_POST['_computech_need_term_id'] ?? 0));
     update_post_meta($post_id, '_computech_need_url', esc_url_raw(wp_unslash($_POST['_computech_need_url'] ?? '')));
+    update_post_meta($post_id, '_computech_need_new_tab', !empty($_POST['_computech_need_new_tab']) ? '1' : '0');
     update_post_meta($post_id, '_computech_need_image_id', (string) absint($_POST['_computech_need_image_id'] ?? 0));
 }
 add_action('save_post_computech_need_card', 'computech_save_need_card');
@@ -3038,11 +3280,14 @@ function computech_render_customer_needs_section(): void {
                     }
                     $title = get_the_title($card);
                     $text = computech_section_meta($card, '_computech_need_text', '');
-                    $url = computech_section_meta($card, '_computech_need_url', '');
-                    if ($url === '') {
+                    $link_type = computech_section_meta($card, '_computech_need_link_type', '');
+                    if ($link_type !== '') {
                         $url = computech_section_link_url($card, '_computech_need');
+                        $target = computech_section_link_target($card, '_computech_need');
+                    } else {
+                        $url = computech_section_meta($card, '_computech_need_url', '');
+                        $target = '';
                     }
-                    $target = '';
                     $need_image = computech_post_image_data((int) $card->ID, '_computech_need_image_id', 'full', '_computech_need_image_url');
                     $image = $need_image['url'];
                     $alt = $need_image['alt'] !== '' ? $need_image['alt'] : $title;
