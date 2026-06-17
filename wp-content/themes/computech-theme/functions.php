@@ -643,6 +643,11 @@ function computech_get_primary_nav_menu_items(): array {
         return array();
     }
 
+    // Render the top level items only to keep the existing header layout stable.
+    $items = array_values(array_filter($items, static function ($item): bool {
+        return empty($item->menu_item_parent) || (string) $item->menu_item_parent === '0';
+    }));
+
     usort($items, static function ($a, $b): int {
         return ((int) $a->menu_order) <=> ((int) $b->menu_order);
     });
