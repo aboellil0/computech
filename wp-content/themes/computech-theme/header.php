@@ -42,8 +42,8 @@ $computech_whatsapp_url = $computech_whatsapp_number !== '' ? computech_whatsapp
 
             <div class="header-actions">
                 <?php if (computech_header_bool('show_search')) : ?>
-                    <form class="search-box" role="search" method="get" action="<?php echo esc_url(computech_page_url('products')); ?>">
-                        <input type="text" name="s" placeholder="<?php echo esc_attr(computech_header_setting('search_placeholder', '')); ?>" class="search-input" value="<?php echo esc_attr(get_search_query()); ?>">
+                    <form class="search-box" role="search" method="get" action="<?php echo esc_url(function_exists('computech_wc_products_page_url') ? computech_wc_products_page_url() : computech_page_url('products')); ?>">
+                        <input type="text" name="<?php echo esc_attr(function_exists('computech_wc_product_search_query_var') ? computech_wc_product_search_query_var() : 's'); ?>" placeholder="<?php echo esc_attr(computech_header_setting('search_placeholder', '')); ?>" class="search-input" value="<?php echo esc_attr(function_exists('computech_wc_get_request') ? computech_wc_get_request(function_exists('computech_wc_product_search_query_var') ? computech_wc_product_search_query_var() : 's', get_search_query()) : get_search_query()); ?>">
                         <button class="search-btn" aria-label="<?php echo esc_attr($computech_search_label); ?>" type="submit">
                             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
                         </button>
@@ -52,14 +52,14 @@ $computech_whatsapp_url = $computech_whatsapp_number !== '' ? computech_whatsapp
                 <?php if (computech_header_bool('show_account') || computech_header_bool('show_cart')) : ?>
                     <div class="action-icons">
                         <?php if (computech_header_bool('show_account')) : ?>
-                            <a href="<?php echo esc_url(computech_page_url('about')); ?>" class="action-icon user-icon" aria-label="<?php echo esc_attr($computech_account_label); ?>">
+                            <a href="<?php echo esc_url(function_exists('wc_get_page_permalink') ? wc_get_page_permalink('myaccount') : computech_page_url('about')); ?>" class="action-icon user-icon" aria-label="<?php echo esc_attr($computech_account_label); ?>">
                                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
                             </a>
                         <?php endif; ?>
                         <?php if (computech_header_bool('show_cart')) : ?>
-                            <a href="<?php echo esc_url(computech_page_url('products')); ?>" class="action-icon cart-icon" aria-label="<?php echo esc_attr($computech_cart_label); ?>">
+                            <a href="<?php echo esc_url(function_exists('wc_get_cart_url') ? wc_get_cart_url() : computech_page_url('products')); ?>" class="action-icon cart-icon" aria-label="<?php echo esc_attr($computech_cart_label); ?>">
                                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg>
-                                <span class="cart-badge">0</span>
+                                <span class="cart-badge"><?php echo esc_html(function_exists('WC') && WC()->cart ? (string) WC()->cart->get_cart_contents_count() : '0'); ?></span>
                             </a>
                         <?php endif; ?>
                     </div>
@@ -76,8 +76,8 @@ $computech_whatsapp_url = $computech_whatsapp_number !== '' ? computech_whatsapp
                     <button class="mobile-menu-close" aria-label="<?php echo esc_attr($computech_mobile_close_label); ?>" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
                 </div>
                 <?php if (computech_header_bool('show_search')) : ?>
-                    <form class="mobile-search" role="search" method="get" action="<?php echo esc_url(computech_page_url('products')); ?>">
-                        <input type="text" name="s" placeholder="<?php echo esc_attr(computech_header_setting('search_placeholder', '')); ?>" value="<?php echo esc_attr(get_search_query()); ?>">
+                    <form class="mobile-search" role="search" method="get" action="<?php echo esc_url(function_exists('computech_wc_products_page_url') ? computech_wc_products_page_url() : computech_page_url('products')); ?>">
+                        <input type="text" name="<?php echo esc_attr(function_exists('computech_wc_product_search_query_var') ? computech_wc_product_search_query_var() : 's'); ?>" placeholder="<?php echo esc_attr(computech_header_setting('search_placeholder', '')); ?>" value="<?php echo esc_attr(function_exists('computech_wc_get_request') ? computech_wc_get_request(function_exists('computech_wc_product_search_query_var') ? computech_wc_product_search_query_var() : 's', get_search_query()) : get_search_query()); ?>">
                         <button aria-label="<?php echo esc_attr($computech_search_label); ?>" type="submit"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg></button>
                     </form>
                 <?php endif; ?>
