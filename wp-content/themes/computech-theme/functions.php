@@ -669,6 +669,25 @@ function computech_render_header_icon(array $item, string $class = 'benefit-icon
 }
 
 function computech_render_header_topbar(): void {
+    $posts = function_exists('computech_topbar_item_posts') ? computech_topbar_item_posts() : array();
+
+    if ($posts) {
+        echo '<div class="benefits-strip computech-topbar" data-count="' . esc_attr((string) count($posts)) . '"><div class="benefits-slider" data-topbar-slider><div class="benefits-track">';
+        foreach ($posts as $post) {
+            $url = computech_topbar_item_url($post);
+            $target = !empty(get_post_meta($post->ID, '_computech_topbar_new_tab', true)) ? ' target="_blank" rel="noopener"' : '';
+            $tag = $url !== '' ? 'a' : 'div';
+            $attrs = $url !== '' ? ' href="' . esc_url($url) . '"' . $target : '';
+            echo '<' . $tag . ' class="benefit-item topbar-slide"' . $attrs . '>';
+            echo computech_topbar_item_icon_html($post);
+            echo '<span class="benefit-text">' . esc_html(get_the_title($post)) . '</span>';
+            echo '</' . $tag . '>';
+        }
+        echo '</div></div></div>';
+        return;
+    }
+
+    // Backward compatibility for old saved option rows until posts are created/seeded.
     $items = computech_get_visible_topbar_items();
     if (!$items) {
         return;
@@ -1130,10 +1149,15 @@ function computech_admin_menu(): void {
         computech_register_payment_methods_cpt();
     }
 
+    if (function_exists('computech_register_topbar_items_cpt') && !post_type_exists('ct_topbar_item')) {
+        computech_register_topbar_items_cpt();
+    }
+
     add_menu_page('General', 'General', computech_admin_capability(), 'computech-settings', 'computech_settings_page', 'dashicons-admin-generic', 58);
     add_submenu_page('computech-settings', 'الهيدر', 'الهيدر', computech_admin_capability(), 'computech-settings', 'computech_settings_page');
 
     // Explicit submenus. Post type slugs must stay <= 20 chars.
+    add_submenu_page('computech-settings', 'شريط المميزات', 'شريط المميزات', computech_admin_capability(), 'edit.php?post_type=ct_topbar_item');
     add_submenu_page('computech-settings', 'طرق الدفع المتاحة', 'طرق الدفع المتاحة', computech_admin_capability(), 'edit.php?post_type=ct_pay_method');
     add_submenu_page('computech-settings', 'عروض وبنرات', 'عروض وبنرات', computech_admin_capability(), 'edit.php?post_type=ct_offer_banner');
 }
@@ -1148,9 +1172,10 @@ function computech_reorder_general_admin_submenus(): void {
 
     $wanted_order = array(
         'computech-settings' => 0,
-        'edit.php?post_type=computech_need_card' => 1,
-        'edit.php?post_type=ct_pay_method' => 2,
-        'edit.php?post_type=ct_offer_banner' => 3,
+        'edit.php?post_type=ct_topbar_item' => 1,
+        'edit.php?post_type=computech_need_card' => 2,
+        'edit.php?post_type=ct_pay_method' => 3,
+        'edit.php?post_type=ct_offer_banner' => 4,
     );
 
     usort($submenu['computech-settings'], static function ($a, $b) use ($wanted_order): int {
@@ -1193,7 +1218,11 @@ add_action('admin_menu', 'computech_reorder_general_admin_submenus', 999);
 
 
 function computech_admin_assets(string $hook): void {
-    if ($hook !== 'toplevel_page_computech-settings' && strpos($hook, 'computech-settings') === false) {
+    if (
+        $hook !== 'toplevel_page_computech-settings'
+        && strpos($hook, 'computech-settings') === false
+        && strpos($hook, 'computech-topbar-settings') === false
+    ) {
         return;
     }
     wp_enqueue_media();
@@ -1241,11 +1270,25 @@ function computech_handle_settings_save(): void {
 
     update_option('computech_header_settings', $settings);
     update_option('computech_header_logo_id', absint($_POST['header_logo_id'] ?? 0));
-    update_option('computech_header_topbar_items', computech_sanitize_topbar_items_from_post(isset($_POST['topbar']) && is_array($_POST['topbar']) ? $_POST['topbar'] : array()));
-
     add_settings_error('computech_messages', 'computech_saved', 'تم حفظ إعدادات الهيدر بنجاح.', 'updated');
 }
 add_action('admin_init', 'computech_handle_settings_save');
+
+function computech_handle_topbar_settings_save(): void {
+    if (!isset($_POST['computech_topbar_settings_nonce'])) {
+        return;
+    }
+    if (!wp_verify_nonce(sanitize_text_field(wp_unslash($_POST['computech_topbar_settings_nonce'])), 'computech_save_topbar_settings')) {
+        wp_die(esc_html__('طلب غير آمن. برجاء إعادة تحميل الصفحة والمحاولة مرة أخرى.', 'computech'));
+    }
+    if (!current_user_can(computech_admin_capability())) {
+        wp_die(esc_html__('غير مسموح لك بتعديل شريط المميزات.', 'computech'));
+    }
+
+    update_option('computech_header_topbar_items', computech_sanitize_topbar_items_from_post(isset($_POST['topbar']) && is_array($_POST['topbar']) ? $_POST['topbar'] : array()));
+    add_settings_error('computech_topbar_messages', 'computech_topbar_saved', 'تم حفظ شريط المميزات بنجاح.', 'updated');
+}
+add_action('admin_init', 'computech_handle_topbar_settings_save');
 
 function computech_admin_icon_select(string $name, string $selected): string {
     $html = '<select name="' . esc_attr($name) . '" class="ct-icon-choice"><option value="">بدون أيقونة جاهزة</option>';
@@ -1254,6 +1297,98 @@ function computech_admin_icon_select(string $name, string $selected): string {
     }
     $html .= '</select>';
     return $html;
+}
+
+function computech_topbar_settings_page(): void {
+    if (!current_user_can(computech_admin_capability())) {
+        wp_die(esc_html__('غير مسموح لك بالدخول إلى شريط المميزات.', 'computech'));
+    }
+    computech_seed_header_database_options();
+    $topbar_items = computech_get_topbar_items();
+    settings_errors('computech_topbar_messages');
+    ?>
+    <div class="wrap computech-admin-wrap" dir="rtl">
+        <h1>شريط المميزات</h1>
+        <p>من هنا الأدمن يقدر يضيف، يعدل، يحذف عناصر شريط المميزات أعلى الهيدر. لو مفيش عناصر ظاهرة، الشريط يختفي تلقائيًا.</p>
+        <form method="post">
+            <?php wp_nonce_field('computech_save_topbar_settings', 'computech_topbar_settings_nonce'); ?>
+            <div class="ct-panel">
+                <h2>Top Bar - شريط المميزات</h2>
+                <p>مفيش حد أقصى للعناصر. أي عدد هيتعرض كسلايدر.</p>
+                <div id="ct-topbar-list">
+                    <?php foreach ($topbar_items as $i => $item) : $preview = !empty($item['icon_id']) ? wp_get_attachment_image_url((int) $item['icon_id'], 'thumbnail') : ''; ?>
+                        <div class="ct-row ct-topbar-row">
+                            <div class="ct-row-head"><strong>عنصر شريط المميزات</strong><button type="button" class="button-link-delete ct-remove-row">حذف</button></div>
+                            <label><input type="checkbox" name="topbar[<?php echo esc_attr((string) $i); ?>][show]" value="1" <?php checked(!empty($item['show'])); ?>> إظهار العنصر</label>
+                            <label>النص<input type="text" name="topbar[<?php echo esc_attr((string) $i); ?>][text]" value="<?php echo esc_attr($item['text']); ?>" placeholder="مثال: توصيل سريع لجميع المدن"></label>
+                            <label>رابط اختياري<input type="url" name="topbar[<?php echo esc_attr((string) $i); ?>][link]" value="<?php echo esc_attr($item['link']); ?>" placeholder="https://example.com"></label>
+                            <label>اختيار أيقونة جاهزة<?php echo computech_admin_icon_select('topbar[' . esc_attr((string) $i) . '][icon_choice]', $item['icon_choice']); ?></label>
+                            <input type="hidden" class="ct-icon-id" name="topbar[<?php echo esc_attr((string) $i); ?>][icon_id]" value="<?php echo esc_attr((string) $item['icon_id']); ?>">
+                            <div class="ct-icon-preview"><?php if ($preview) : ?><img src="<?php echo esc_url($preview); ?>" alt=""><?php else : ?><span>لا توجد أيقونة مرفوعة</span><?php endif; ?></div>
+                            <button type="button" class="button ct-upload-icon">رفع أيقونة خاصة</button>
+                            <button type="button" class="button ct-remove-icon">إزالة الأيقونة المرفوعة</button>
+                        </div>
+                    <?php endforeach; ?>
+                </div>
+                <button type="button" class="button button-secondary" id="ct-add-topbar">+ إضافة عنصر</button>
+            </div>
+            <?php submit_button('حفظ شريط المميزات'); ?>
+        </form>
+    </div>
+
+    <template id="ct-topbar-template">
+        <div class="ct-row ct-topbar-row">
+            <div class="ct-row-head"><strong>عنصر شريط المميزات</strong><button type="button" class="button-link-delete ct-remove-row">حذف</button></div>
+            <label><input type="checkbox" name="topbar[__i__][show]" value="1" checked> إظهار العنصر</label>
+            <label>النص<input type="text" name="topbar[__i__][text]" value="" placeholder="مثال: توصيل سريع لجميع المدن"></label>
+            <label>رابط اختياري<input type="url" name="topbar[__i__][link]" value="" placeholder="https://example.com"></label>
+            <label>اختيار أيقونة جاهزة<?php echo computech_admin_icon_select('topbar[__i__][icon_choice]', ''); ?></label>
+            <input type="hidden" class="ct-icon-id" name="topbar[__i__][icon_id]" value="0">
+            <div class="ct-icon-preview"><span>لا توجد أيقونة مرفوعة</span></div>
+            <button type="button" class="button ct-upload-icon">رفع أيقونة خاصة</button>
+            <button type="button" class="button ct-remove-icon">إزالة الأيقونة المرفوعة</button>
+        </div>
+    </template>
+
+    <style>
+        .computech-admin-wrap { max-width: 1120px; }
+        .ct-panel { background:#fff; border:1px solid #dcdcde; border-radius:14px; padding:18px; margin:18px 0; box-shadow:0 6px 20px rgba(0,0,0,.03); }
+        .ct-panel h2 { margin-top:0; }
+        .ct-row { border:1px solid #e5e7eb; border-radius:12px; padding:14px; margin:12px 0; background:#f9fafb; display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:12px; align-items:end; }
+        .ct-row-head { grid-column:1 / -1; display:flex; justify-content:space-between; align-items:center; }
+        .ct-row label, .ct-panel label { display:block; font-weight:700; margin:8px 0; }
+        .ct-row input[type=text], .ct-row input[type=url], .ct-row select { width:100%; margin-top:6px; }
+        .ct-icon-preview { width:120px; height:70px; display:flex; align-items:center; justify-content:center; background:#fff; border:1px dashed #ccd0d4; border-radius:10px; margin:10px 0; overflow:hidden; color:#64748b; font-size:12px; text-align:center; }
+        .ct-icon-preview img { max-width:100%; max-height:100%; object-fit:contain; }
+        @media (max-width: 782px) { .ct-row { grid-template-columns:1fr; } }
+    </style>
+    <script>
+    (function($){
+        var topIndex = <?php echo (int) count($topbar_items); ?>;
+        $('#ct-add-topbar').on('click', function(){
+            var html = $('#ct-topbar-template').html().replaceAll('__i__', topIndex++);
+            $('#ct-topbar-list').append(html);
+        });
+        $(document).on('click', '.ct-remove-row', function(){ $(this).closest('.ct-row').remove(); });
+        $(document).on('click', '.ct-upload-icon', function(e){
+            e.preventDefault();
+            var row = $(this).closest('.ct-row');
+            var frame = wp.media({ title:'اختر أيقونة', button:{ text:'استخدام الأيقونة' }, multiple:false });
+            frame.on('select', function(){
+                var file = frame.state().get('selection').first().toJSON();
+                row.find('.ct-icon-id').val(file.id);
+                row.find('.ct-icon-preview').html('<img src="' + (file.sizes && file.sizes.thumbnail ? file.sizes.thumbnail.url : file.url) + '" alt="">');
+            });
+            frame.open();
+        });
+        $(document).on('click', '.ct-remove-icon', function(){
+            var row = $(this).closest('.ct-row');
+            row.find('.ct-icon-id').val('0');
+            row.find('.ct-icon-preview').html('<span>لا توجد أيقونة مرفوعة</span>');
+        });
+    })(jQuery);
+    </script>
+    <?php
 }
 
 function computech_settings_page(): void {
@@ -1270,7 +1405,7 @@ function computech_settings_page(): void {
     ?>
     <div class="wrap computech-admin-wrap" dir="rtl">
         <h1>الهيدر</h1>
-        <p>من هنا الأدمن يقدر يعدل الشريط العلوي، اللوجو، البحث، السلة، والواتساب. روابط الـ Main Header يتم تعديلها من المظهر ← القوائم وليس من هذه الصفحة.</p>
+        <p>من هنا الأدمن يقدر يعدل اللوجو، البحث، السلة، والواتساب. شريط المميزات له صفحة منفصلة داخل General. روابط الـ Main Header يتم تعديلها من المظهر ← القوائم وليس من هذه الصفحة.</p>
         <form method="post">
             <?php wp_nonce_field('computech_save_header_settings', 'computech_header_settings_nonce'); ?>
 
@@ -1281,27 +1416,6 @@ function computech_settings_page(): void {
                 <div class="ct-logo-preview" id="ct-header-logo-preview"><?php if ($logo_url) : ?><img src="<?php echo esc_url($logo_url); ?>" alt=""><?php else : ?><span>لا يوجد لوجو مخصص من هذه الصفحة</span><?php endif; ?></div>
                 <button type="button" class="button" data-ct-media="logo">اختيار / تغيير اللوجو</button>
                 <button type="button" class="button" data-ct-remove-logo>إزالة اللوجو</button>
-            </div>
-
-            <div class="ct-panel">
-                <h2>Top Bar - شريط المميزات</h2>
-                <p>مفيش حد أقصى للعناصر. أي عدد هيتعرض كسلايدر. لو مفيش عناصر ظاهرة، الشريط يختفي تلقائيًا.</p>
-                <div id="ct-topbar-list">
-                    <?php foreach ($topbar_items as $i => $item) : $preview = !empty($item['icon_id']) ? wp_get_attachment_image_url((int) $item['icon_id'], 'thumbnail') : ''; ?>
-                        <div class="ct-row ct-topbar-row">
-                            <div class="ct-row-head"><strong>عنصر Top Bar</strong><button type="button" class="button-link-delete ct-remove-row">حذف</button></div>
-                            <label><input type="checkbox" name="topbar[<?php echo esc_attr((string) $i); ?>][show]" value="1" <?php checked(!empty($item['show'])); ?>> إظهار العنصر</label>
-                            <label>النص<input type="text" name="topbar[<?php echo esc_attr((string) $i); ?>][text]" value="<?php echo esc_attr($item['text']); ?>" placeholder="مثال: توصيل سريع لجميع المدن"></label>
-                            <label>رابط اختياري<input type="url" name="topbar[<?php echo esc_attr((string) $i); ?>][link]" value="<?php echo esc_attr($item['link']); ?>" placeholder="https://example.com"></label>
-                            <label>اختيار أيقونة جاهزة<?php echo computech_admin_icon_select('topbar[' . esc_attr((string) $i) . '][icon_choice]', $item['icon_choice']); ?></label>
-                            <input type="hidden" class="ct-icon-id" name="topbar[<?php echo esc_attr((string) $i); ?>][icon_id]" value="<?php echo esc_attr((string) $item['icon_id']); ?>">
-                            <div class="ct-icon-preview"><?php if ($preview) : ?><img src="<?php echo esc_url($preview); ?>" alt=""><?php else : ?><span>لا توجد أيقونة مرفوعة</span><?php endif; ?></div>
-                            <button type="button" class="button ct-upload-icon">رفع أيقونة خاصة</button>
-                            <button type="button" class="button ct-remove-icon">إزالة الأيقونة المرفوعة</button>
-                        </div>
-                    <?php endforeach; ?>
-                </div>
-                <button type="button" class="button button-secondary" id="ct-add-topbar">+ إضافة عنصر Top Bar</button>
             </div>
 
             <div class="ct-panel">
@@ -1318,20 +1432,6 @@ function computech_settings_page(): void {
             <?php submit_button('حفظ إعدادات الهيدر'); ?>
         </form>
     </div>
-
-    <template id="ct-topbar-template">
-        <div class="ct-row ct-topbar-row">
-            <div class="ct-row-head"><strong>عنصر Top Bar</strong><button type="button" class="button-link-delete ct-remove-row">حذف</button></div>
-            <label><input type="checkbox" name="topbar[__i__][show]" value="1" checked> إظهار العنصر</label>
-            <label>النص<input type="text" name="topbar[__i__][text]" value="" placeholder="مثال: توصيل سريع لجميع المدن"></label>
-            <label>رابط اختياري<input type="url" name="topbar[__i__][link]" value="" placeholder="https://example.com"></label>
-            <label>اختيار أيقونة جاهزة<?php echo computech_admin_icon_select('topbar[__i__][icon_choice]', ''); ?></label>
-            <input type="hidden" class="ct-icon-id" name="topbar[__i__][icon_id]" value="0">
-            <div class="ct-icon-preview"><span>لا توجد أيقونة مرفوعة</span></div>
-            <button type="button" class="button ct-upload-icon">رفع أيقونة خاصة</button>
-            <button type="button" class="button ct-remove-icon">إزالة الأيقونة المرفوعة</button>
-        </div>
-    </template>
 
     <style>
         .computech-admin-wrap { max-width: 1120px; }
@@ -1392,7 +1492,7 @@ function computech_settings_page(): void {
    ============================================ */
 function computech_admin_enqueue_media_tools($hook): void {
     $screen = function_exists('get_current_screen') ? get_current_screen() : null;
-    $post_types = array('computech_hero_slide', 'computech_hero_card', 'computech_need_card', 'computech_home_cat_card', 'ct_offer_banner', 'ct_pay_method');
+    $post_types = array('computech_hero_slide', 'computech_hero_card', 'computech_need_card', 'computech_home_cat_card', 'ct_offer_banner', 'ct_pay_method', 'ct_topbar_item');
     if ($screen && !empty($screen->post_type) && in_array($screen->post_type, $post_types, true)) {
         wp_enqueue_media();
     }
@@ -4464,6 +4564,165 @@ function computech_home_extra_icon_select(string $name, string $selected): strin
 
 
 
+
+
+/* ============================================
+   Header Top Bar Items CPT
+   Title / image / visibility use native WordPress fields.
+   ============================================ */
+function computech_register_topbar_items_cpt(): void {
+    register_post_type('ct_topbar_item', array(
+        'labels' => array(
+            'name' => 'شريط المميزات',
+            'singular_name' => 'عنصر شريط المميزات',
+            'menu_name' => 'شريط المميزات',
+            'add_new_item' => 'إضافة عنصر جديد',
+            'edit_item' => 'تعديل عنصر',
+            'new_item' => 'عنصر جديد',
+            'search_items' => 'بحث في شريط المميزات',
+            'not_found' => 'لا توجد عناصر',
+        ),
+        'public' => false,
+        'show_ui' => true,
+        'show_in_menu' => 'computech-settings',
+        'supports' => array('title', 'thumbnail', 'page-attributes'),
+        'capability_type' => 'page',
+        'map_meta_cap' => true,
+        'show_in_rest' => false,
+    ));
+}
+add_action('init', 'computech_register_topbar_items_cpt');
+
+function computech_add_topbar_item_metaboxes(): void {
+    add_meta_box('ct_topbar_item_data', 'بيانات عنصر شريط المميزات', 'computech_topbar_item_metabox', 'ct_topbar_item', 'normal', 'high');
+}
+add_action('add_meta_boxes', 'computech_add_topbar_item_metaboxes');
+
+function computech_topbar_page_options(int $selected = 0): string {
+    $pages = get_pages(array('sort_column' => 'menu_order,post_title', 'post_status' => 'publish'));
+    $html = '<option value="0">بدون صفحة</option>';
+    foreach ($pages as $page) {
+        $html .= '<option value="' . esc_attr((string)$page->ID) . '" ' . selected($selected, (int)$page->ID, false) . '>' . esc_html($page->post_title) . '</option>';
+    }
+    return $html;
+}
+
+function computech_topbar_item_metabox(WP_Post $post): void {
+    computech_admin_editor_styles_once();
+    $page_id = absint(get_post_meta($post->ID, '_computech_topbar_page_id', true));
+    $external_url = esc_url(get_post_meta($post->ID, '_computech_topbar_external_url', true));
+    $new_tab = (string)get_post_meta($post->ID, '_computech_topbar_new_tab', true);
+    $icon_choice = sanitize_key((string)get_post_meta($post->ID, '_computech_topbar_icon_choice', true));
+    wp_nonce_field('computech_save_topbar_item', 'computech_topbar_item_nonce');
+    ?>
+    <div class="ct-editor ct-hero-admin" dir="rtl">
+        <div class="ct-hero-dashboard-head">
+            <div>
+                <h2>عنصر شريط المميزات</h2>
+                <p>النص من عنوان WordPress. الأيقونة/الصورة من Featured Image. الظهور من Published/Public فقط. الترتيب من Order.</p>
+            </div>
+        </div>
+        <div class="ct-admin-grid">
+            <label>رابط صفحة موجودة
+                <select name="computech_topbar_page_id"><?php echo computech_topbar_page_options($page_id); ?></select>
+            </label>
+            <label>رابط خارجي
+                <input type="url" name="computech_topbar_external_url" value="<?php echo esc_attr($external_url); ?>" placeholder="https://example.com">
+            </label>
+            <label>أيقونة جاهزة احتياطية
+                <?php echo computech_admin_icon_select('computech_topbar_icon_choice', $icon_choice); ?>
+            </label>
+            <label class="ct-checkbox"><input type="checkbox" name="computech_topbar_new_tab" value="1" <?php checked($new_tab, '1'); ?>> فتح الرابط في تبويب جديد</label>
+        </div>
+        <div class="ct-admin-note">الأولوية: صفحة موجودة، ثم رابط خارجي. لو مفيش Featured Image، يتم استخدام الأيقونة الجاهزة.</div>
+    </div>
+    <?php
+}
+
+function computech_save_topbar_item(int $post_id): void {
+    if (!isset($_POST['computech_topbar_item_nonce']) || !wp_verify_nonce(sanitize_text_field(wp_unslash($_POST['computech_topbar_item_nonce'])), 'computech_save_topbar_item')) {
+        return;
+    }
+    if (defined('DOING_AUTOSAVE') && DOING_AUTOSAVE) { return; }
+    if (!current_user_can('edit_post', $post_id)) { return; }
+
+    update_post_meta($post_id, '_computech_topbar_page_id', absint($_POST['computech_topbar_page_id'] ?? 0));
+    update_post_meta($post_id, '_computech_topbar_external_url', esc_url_raw(wp_unslash($_POST['computech_topbar_external_url'] ?? '')));
+    update_post_meta($post_id, '_computech_topbar_icon_choice', sanitize_key(wp_unslash($_POST['computech_topbar_icon_choice'] ?? '')));
+    update_post_meta($post_id, '_computech_topbar_new_tab', !empty($_POST['computech_topbar_new_tab']) ? '1' : '0');
+}
+add_action('save_post_ct_topbar_item', 'computech_save_topbar_item');
+
+function computech_seed_topbar_item_posts(): void {
+    if (get_option('computech_topbar_items_seeded', '0') === '1') {
+        return;
+    }
+    if (get_posts(array('post_type' => 'ct_topbar_item', 'post_status' => 'any', 'posts_per_page' => 1, 'fields' => 'ids', 'no_found_rows' => true))) {
+        update_option('computech_topbar_items_seeded', '1', false);
+        return;
+    }
+
+    $legacy_items = computech_get_topbar_items();
+    foreach ($legacy_items as $index => $item) {
+        $title = trim((string)($item['text'] ?? ''));
+        if ($title === '') { continue; }
+        $post_id = wp_insert_post(array(
+            'post_type' => 'ct_topbar_item',
+            'post_status' => !empty($item['show']) ? 'publish' : 'draft',
+            'post_title' => $title,
+            'menu_order' => $index + 1,
+        ), true);
+        if (!is_wp_error($post_id) && $post_id) {
+            $post_id = (int)$post_id;
+            $icon_id = absint($item['icon_id'] ?? 0);
+            if ($icon_id) {
+                set_post_thumbnail($post_id, $icon_id);
+            }
+            update_post_meta($post_id, '_computech_topbar_external_url', esc_url_raw((string)($item['link'] ?? '')));
+            update_post_meta($post_id, '_computech_topbar_icon_choice', sanitize_key((string)($item['icon_choice'] ?? '')));
+        }
+    }
+    update_option('computech_topbar_items_seeded', '1', false);
+}
+add_action('admin_init', 'computech_seed_topbar_item_posts', 35);
+
+function computech_topbar_item_posts(): array {
+    $posts = get_posts(array(
+        'post_type' => 'ct_topbar_item',
+        'post_status' => 'publish',
+        'posts_per_page' => -1,
+        'orderby' => array('menu_order' => 'ASC', 'date' => 'DESC'),
+        'order' => 'ASC',
+        'post_password' => '',
+        'no_found_rows' => true,
+    ));
+
+    return array_values(array_filter($posts, static function ($post): bool {
+        return $post instanceof WP_Post && $post->post_status === 'publish' && $post->post_password === '' && trim(get_the_title($post)) !== '';
+    }));
+}
+
+function computech_topbar_item_url(WP_Post $post): string {
+    $page_id = absint(get_post_meta($post->ID, '_computech_topbar_page_id', true));
+    if ($page_id) {
+        $url = get_permalink($page_id);
+        if ($url) { return (string)$url; }
+    }
+    return esc_url_raw((string)get_post_meta($post->ID, '_computech_topbar_external_url', true));
+}
+
+function computech_topbar_item_icon_html(WP_Post $post): string {
+    $image = get_the_post_thumbnail_url($post, 'thumbnail');
+    if ($image) {
+        return '<span class="benefit-icon-frame"><img src="' . esc_url($image) . '" alt="" loading="lazy"></span>';
+    }
+    $choice = sanitize_key((string)get_post_meta($post->ID, '_computech_topbar_icon_choice', true));
+    $icons = computech_header_icon_choices();
+    if ($choice !== '' && isset($icons[$choice])) {
+        return '<span class="benefit-icon-frame">' . $icons[$choice]['svg'] . '</span>';
+    }
+    return '';
+}
 
 /* ============================================
    Home Payment Methods CPT
