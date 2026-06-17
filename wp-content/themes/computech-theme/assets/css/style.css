@@ -15554,3 +15554,14 @@ body.home .contact-section .contact-panel .contact-social-btn span {
         padding: 34px 20px !important;
     }
 }
+
+/* Computech patch: Site Identity logo inside map card */
+.map-biz-logo img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    display: block;
+}
+
+/* Computech patch: category icon selector admin */
+.ct-category-icon-choice select { max-width: 260px; }

@@ -72,10 +72,26 @@ function computech_wc_term_image(int $term_id, string $size = 'large'): array {
     return array('url' => $url ?: '', 'alt' => $alt);
 }
 
+function computech_wc_category_icon_choices(): array {
+    return array('desktop'=>'كمبيوتر','globe'=>'استيراد','tag'=>'عروض','gaming'=>'ألعاب','work'=>'عمل','accessories'=>'إكسسوارات','maintenance'=>'صيانة','offer'=>'نجمة');
+}
+
+function computech_wc_category_icon_select(string $name, string $selected): string {
+    $html = '<select name="' . esc_attr($name) . '" class="widefat">';
+    foreach (computech_wc_category_icon_choices() as $key => $label) {
+        $html .= '<option value="' . esc_attr($key) . '" ' . selected($selected, $key, false) . '>' . esc_html($label) . '</option>';
+    }
+    return $html . '</select>';
+}
+
 function computech_wc_term_icon(int $term_id, string $size = 'thumbnail'): array {
-    // Category has one real image only: native WooCommerce thumbnail.
-    // Icons are rendered as theme SVG, not uploaded category images.
-    return array('url' => '', 'alt' => '');
+    $source = get_term_meta($term_id, '_computech_wc_cat_icon_source', true);
+    if ($source !== 'icon') {
+        return array('url' => '', 'alt' => '', 'icon' => '');
+    }
+    $icon = sanitize_key((string) get_term_meta($term_id, '_computech_wc_cat_icon_choice', true));
+    if ($icon === '') { $icon = 'desktop'; }
+    return array('url' => '', 'alt' => '', 'icon' => $icon);
 }
 
 function computech_wc_category_product_count(int $term_id): int {
@@ -128,6 +144,7 @@ function computech_wc_term_card_item(WP_Term $term, string $context = 'shop'): a
         'alt' => $image['alt'] !== '' ? $image['alt'] : $term->name,
         'icon_url' => $icon['url'],
         'icon_alt' => $icon['alt'] !== '' ? $icon['alt'] : $term->name,
+        'icon' => isset($icon['icon']) ? $icon['icon'] : '',
         'pill' => $badge,
         'link_text' => $button,
     );
@@ -209,6 +226,11 @@ function computech_wc_get_category_items(string $section = 'shop', int $limit = 
 function computech_wc_render_category_icon(array $item, string $class = 'cat-card-icon-img'): void {
     if (!empty($item['icon_url'])) {
         echo '<img class="' . esc_attr($class) . '" src="' . esc_url($item['icon_url']) . '" alt="' . esc_attr((string) ($item['icon_alt'] ?? '')) . '" loading="lazy">';
+        return;
+    }
+    $selected_icon = sanitize_key((string) ($item['icon'] ?? ''));
+    if ($selected_icon !== '' && function_exists('computech_section_icon_svg')) {
+        echo computech_section_icon_svg($selected_icon);
         return;
     }
     if (function_exists('computech_section_icon_svg')) {
@@ -424,15 +446,14 @@ function computech_wc_product_specs(WC_Product $product, int $limit = 0): array 
 }
 
 function computech_wc_product_highlights(WC_Product $product, int $limit = 4): array {
-    $specs = computech_wc_product_specs($product, $limit);
+    $terms = get_the_terms($product->get_id(), 'product_tag');
     $out = array();
-    foreach ($specs as $spec) {
-        $value = trim((string) ($spec['value'] ?? ''));
-        if ($value !== '') {
-            $out[] = $value;
-        }
-        if (count($out) >= $limit) {
-            break;
+    if (!is_wp_error($terms) && is_array($terms)) {
+        foreach ($terms as $term) {
+            if ($term instanceof WP_Term && trim($term->name) !== '') {
+                $out[] = $term->name;
+            }
+            if (count($out) >= $limit) { break; }
         }
     }
     return $out;
@@ -481,9 +502,9 @@ function computech_wc_product_card($product_or_post = null): void {
 
     $product_id = $product->get_id();
     $title = $product->get_name();
-    $subtitle = wp_strip_all_tags($product->get_short_description());
+    $subtitle = wp_strip_all_tags((string) get_post_meta($product_id, '_computech_wc_short_desc', true));
     if ($subtitle === '') {
-        $subtitle = wp_trim_words(wp_strip_all_tags($product->get_description()), 10, '...');
+        $subtitle = wp_strip_all_tags($product->get_short_description());
     }
     $image_id = $product->get_image_id();
     $image_url = $image_id ? wp_get_attachment_image_url($image_id, 'large') : wc_placeholder_img_src('large');
@@ -763,20 +784,23 @@ function computech_wc_category_fields_markup(?WP_Term $term = null): void {
         $is_featured = $new_featured !== '' ? ((string) $new_featured === '1') : computech_wc_bool_term_meta($term_id, '_computech_wc_show_featured_categories', false);
     }
     $featured_order = $term_id ? computech_wc_term_meta($term_id, '_computech_wc_featured_order', '0') : '0';
+    $icon_source = $term_id ? computech_wc_term_meta($term_id, '_computech_wc_cat_icon_source', 'image') : 'image';
+    if (!in_array($icon_source, array('image','icon'), true)) { $icon_source = 'image'; }
+    $icon_choice = $term_id ? computech_wc_term_meta($term_id, '_computech_wc_cat_icon_choice', 'desktop') : 'desktop';
 
     if ($term) {
         ?>
         <tr class="form-field"><th scope="row">Computech Visibility</th><td><select name="_computech_wc_category_visibility"><option value="visible" <?php selected($visibility, 'visible'); ?>>Visible</option><option value="hidden" <?php selected($visibility, 'hidden'); ?>>Hidden</option></select></td></tr>
         <tr class="form-field"><th scope="row">Is Featured</th><td><label><input type="checkbox" name="_computech_wc_is_featured" value="1" <?php checked($is_featured); ?>> Yes</label><p class="description">Shows this category inside الأقسام المميزة.</p></td></tr>
         <tr class="form-field"><th scope="row">Featured Order</th><td><input type="number" name="_computech_wc_featured_order" value="<?php echo esc_attr($featured_order); ?>" min="0" step="1"><p class="description">Used only in الأقسام المميزة.</p></td></tr>
-        <tr class="form-field"><th scope="row">Category Image</th><td><p class="description">Use the native WooCommerce thumbnail image below. Category cards need one image only.</p></td></tr>
+        <tr class="form-field"><th scope="row">Category Icon</th><td><select name="_computech_wc_cat_icon_source" class="ct-category-icon-source widefat"><option value="image" <?php selected($icon_source, 'image'); ?>>استخدم صورة القسم</option><option value="icon" <?php selected($icon_source, 'icon'); ?>>استخدم أيقونة جاهزة</option></select><div class="ct-category-icon-choice" style="margin-top:10px"><?php echo computech_wc_category_icon_select('_computech_wc_cat_icon_choice', $icon_choice); ?></div><p class="description">صورة القسم من WooCommerce thumbnail. لو اخترت أيقونة جاهزة تظهر الأيقونة بدل الافتراضي.</p></td></tr>
         <?php
     } else {
         ?>
         <div class="form-field"><label>Computech Visibility</label><select name="_computech_wc_category_visibility"><option value="visible">Visible</option><option value="hidden">Hidden</option></select></div>
         <div class="form-field"><label><input type="checkbox" name="_computech_wc_is_featured" value="1"> Is Featured</label><p>Shows this category inside الأقسام المميزة.</p></div>
         <div class="form-field"><label>Featured Order</label><input type="number" name="_computech_wc_featured_order" value="0" min="0" step="1"></div>
-        <div class="form-field"><p class="description">Set one native WooCommerce thumbnail image for this category.</p></div>
+        <div class="form-field"><label>Category Icon</label><select name="_computech_wc_cat_icon_source" class="ct-category-icon-source widefat"><option value="image">استخدم صورة القسم</option><option value="icon">استخدم أيقونة جاهزة</option></select><div class="ct-category-icon-choice" style="margin-top:10px"><?php echo computech_wc_category_icon_select('_computech_wc_cat_icon_choice', 'desktop'); ?></div></div>
         <?php
     }
 }
@@ -787,6 +811,9 @@ function computech_wc_save_category_fields(int $term_id): void {
     update_term_meta($term_id, '_computech_wc_category_visibility', isset($_POST['_computech_wc_category_visibility']) ? sanitize_text_field(wp_unslash($_POST['_computech_wc_category_visibility'])) : 'visible');
     update_term_meta($term_id, '_computech_wc_is_featured', !empty($_POST['_computech_wc_is_featured']) ? '1' : '0');
     update_term_meta($term_id, '_computech_wc_featured_order', (string) absint($_POST['_computech_wc_featured_order'] ?? 0));
+    $icon_source = sanitize_key(wp_unslash($_POST['_computech_wc_cat_icon_source'] ?? 'image'));
+    update_term_meta($term_id, '_computech_wc_cat_icon_source', in_array($icon_source, array('image','icon'), true) ? $icon_source : 'image');
+    update_term_meta($term_id, '_computech_wc_cat_icon_choice', sanitize_key(wp_unslash($_POST['_computech_wc_cat_icon_choice'] ?? 'desktop')));
     update_term_meta($term_id, 'display_type', '');
 
     foreach (array(
@@ -814,6 +841,12 @@ function computech_wc_admin_media_script(string $hook): void {
 jQuery(function($){
     $('#display_type').val('');
     $('#display_type').closest('tr,.form-field').hide();
+    function ctToggleCatIcon(){
+        var v = $('.ct-category-icon-source').val() || 'image';
+        $('.ct-category-icon-choice').toggle(v === 'icon');
+    }
+    $(document).on('change', '.ct-category-icon-source', ctToggleCatIcon);
+    ctToggleCatIcon();
 });
 JS;
     wp_add_inline_script('jquery-core', $script);
@@ -847,6 +880,7 @@ function computech_wc_product_metabox_html(WP_Post $post): void {
             <p><label style="display:block;font-weight:700;margin-bottom:6px">Featured Order</label><input type="number" name="_computech_wc_featured_order" value="<?php echo esc_attr($featured_order); ?>" class="widefat" min="0" step="1"></p>
             <p><label style="display:block;font-weight:700;margin-bottom:6px">Status</label><select name="_computech_wc_condition" class="widefat"><option value="new" <?php selected($condition, 'new'); ?>>جديد</option><option value="imported" <?php selected($condition, 'imported'); ?>>استيراد</option></select></p>
         </div>
+        <p><label style="display:block;font-weight:700;margin-bottom:6px">Product short description</label><textarea name="_computech_wc_short_desc" rows="3" class="widefat" placeholder="وصف قصير نص فقط بدون صور"><?php echo esc_textarea((string) get_post_meta($post->ID, '_computech_wc_short_desc', true)); ?></textarea><span class="description">نص فقط. يستخدم في كروت المنتجات.</span></p>
         <div class="computech-specs-editor">
             <h3 style="margin:0 0 8px">مواصفات المنتج</h3>
             <p class="description">أضف أي عدد من المواصفات. مثال: المعالج / Intel Core i9-14900K.</p>
@@ -907,6 +941,7 @@ function computech_wc_save_product_fields(int $post_id): void {
     update_post_meta($post_id, '_computech_wc_featured_order', absint($_POST['_computech_wc_featured_order'] ?? 0));
     $condition = sanitize_key(wp_unslash($_POST['_computech_wc_condition'] ?? 'new'));
     update_post_meta($post_id, '_computech_wc_condition', in_array($condition, array('new', 'imported'), true) ? $condition : 'new');
+    update_post_meta($post_id, '_computech_wc_short_desc', sanitize_textarea_field(wp_unslash($_POST['_computech_wc_short_desc'] ?? '')));
 
     $spec_labels = isset($_POST['_computech_wc_spec_label']) && is_array($_POST['_computech_wc_spec_label']) ? wp_unslash($_POST['_computech_wc_spec_label']) : array();
     $spec_values = isset($_POST['_computech_wc_spec_value']) && is_array($_POST['_computech_wc_spec_value']) ? wp_unslash($_POST['_computech_wc_spec_value']) : array();

@@ -20,6 +20,7 @@ $footer_contact_title = 'تواصل معنا';
     <footer class="site-footer">
         <div class="footer-bg-decor"><div class="fbd-circuit fbd-circuit-bl"></div><div class="fbd-circuit fbd-circuit-br"></div></div>
         <div class="footer-container">
+            <?php if (function_exists('computech_footer_bool') ? computech_footer_bool('show_newsletter', true) : true) : ?>
             <div class="footer-newsletter">
                 <div class="footer-newsletter-text">
                     <?php if ($newsletter_title !== '') : ?><h3 class="footer-newsletter-title"><?php echo esc_html($newsletter_title); ?></h3><?php endif; ?>
@@ -35,6 +36,7 @@ $footer_contact_title = 'تواصل معنا';
                 <div class="footer-newsletter-icon"><svg viewBox="0 0 80 80" fill="none" stroke="rgba(255,255,255,0.15)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="8" y="16" width="64" height="48" rx="6"/><polyline points="72,16 40,44 8,16"/></svg></div>
             </div>
             <div class="footer-divider"></div>
+            <?php endif; ?>
 
             <div class="footer-columns">
                 <div class="footer-col footer-col-brand">
