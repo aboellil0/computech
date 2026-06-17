@@ -13,12 +13,12 @@
 <?php wp_body_open(); ?>
 <?php
 $computech_logo_label = computech_site_text(computech_header_label('logo_aria_label', computech_site_name()));
-$computech_nav_label = computech_header_label('nav_aria_label', '');
-$computech_search_label = computech_header_label('search_button_label', '');
-$computech_cart_label = computech_header_label('cart_label', '');
-$computech_mobile_menu_label = computech_header_label('mobile_menu_button_label', '');
-$computech_mobile_menu_title = computech_header_label('mobile_menu_title', '');
-$computech_mobile_close_label = computech_header_label('mobile_menu_close_label', '');
+$computech_nav_label = computech_header_label('nav_aria_label', 'القائمة الرئيسية');
+$computech_search_label = computech_header_label('search_button_label', 'بحث');
+$computech_cart_label = computech_header_label('cart_label', 'السلة');
+$computech_mobile_menu_label = computech_header_label('mobile_menu_button_label', 'القائمة');
+$computech_mobile_menu_title = computech_header_label('mobile_menu_title', 'القائمة');
+$computech_mobile_close_label = computech_header_label('mobile_menu_close_label', 'إغلاق');
 $computech_whatsapp_number = computech_business_whatsapp_number();
 $computech_whatsapp_url = $computech_whatsapp_number !== '' ? computech_whatsapp_url(computech_header_setting('whatsapp_message', '')) : '';
 ?>
@@ -42,10 +42,11 @@ $computech_whatsapp_url = $computech_whatsapp_number !== '' ? computech_whatsapp
             <div class="header-actions">
                 <?php if (computech_header_bool('show_search')) : ?>
                     <form class="search-box" role="search" method="get" action="<?php echo esc_url(function_exists('computech_wc_products_page_url') ? computech_wc_products_page_url() : computech_page_url('products')); ?>">
-                        <input type="text" name="<?php echo esc_attr(function_exists('computech_wc_product_search_query_var') ? computech_wc_product_search_query_var() : 's'); ?>" placeholder="<?php echo esc_attr(computech_header_setting('search_placeholder', '')); ?>" class="search-input" value="<?php echo esc_attr(function_exists('computech_wc_get_request') ? computech_wc_get_request(function_exists('computech_wc_product_search_query_var') ? computech_wc_product_search_query_var() : 's', get_search_query()) : get_search_query()); ?>">
+                        <input type="text" name="<?php echo esc_attr(function_exists('computech_wc_product_search_query_var') ? computech_wc_product_search_query_var() : 's'); ?>" placeholder="<?php echo esc_attr(computech_header_setting('search_placeholder', '')); ?>" class="search-input computech-live-search-input" autocomplete="off" value="<?php echo esc_attr(function_exists('computech_wc_get_request') ? computech_wc_get_request(function_exists('computech_wc_product_search_query_var') ? computech_wc_product_search_query_var() : 's', get_search_query()) : get_search_query()); ?>">
                         <button class="search-btn" aria-label="<?php echo esc_attr($computech_search_label); ?>" type="submit">
                             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
                         </button>
+                        <div class="computech-live-search-results" aria-live="polite"></div>
                     </form>
                 <?php endif; ?>
                 <?php if (computech_header_bool('show_cart')) : ?>
@@ -71,8 +72,9 @@ $computech_whatsapp_url = $computech_whatsapp_number !== '' ? computech_whatsapp
                 </div>
                 <?php if (computech_header_bool('show_search')) : ?>
                     <form class="mobile-search" role="search" method="get" action="<?php echo esc_url(function_exists('computech_wc_products_page_url') ? computech_wc_products_page_url() : computech_page_url('products')); ?>">
-                        <input type="text" name="<?php echo esc_attr(function_exists('computech_wc_product_search_query_var') ? computech_wc_product_search_query_var() : 's'); ?>" placeholder="<?php echo esc_attr(computech_header_setting('search_placeholder', '')); ?>" value="<?php echo esc_attr(function_exists('computech_wc_get_request') ? computech_wc_get_request(function_exists('computech_wc_product_search_query_var') ? computech_wc_product_search_query_var() : 's', get_search_query()) : get_search_query()); ?>">
+                        <input type="text" name="<?php echo esc_attr(function_exists('computech_wc_product_search_query_var') ? computech_wc_product_search_query_var() : 's'); ?>" placeholder="<?php echo esc_attr(computech_header_setting('search_placeholder', '')); ?>" class="computech-live-search-input" autocomplete="off" value="<?php echo esc_attr(function_exists('computech_wc_get_request') ? computech_wc_get_request(function_exists('computech_wc_product_search_query_var') ? computech_wc_product_search_query_var() : 's', get_search_query()) : get_search_query()); ?>">
                         <button aria-label="<?php echo esc_attr($computech_search_label); ?>" type="submit"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg></button>
+                        <div class="computech-live-search-results" aria-live="polite"></div>
                     </form>
                 <?php endif; ?>
                 <ul class="mobile-nav-list">

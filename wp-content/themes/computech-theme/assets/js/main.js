@@ -93,6 +93,140 @@
         });
     }
 
+    /* WooCommerce cart count: instant header badge update after AJAX add-to-cart */
+    function updateCartBadges(count) {
+        document.querySelectorAll('.cart-badge').forEach(function (badge) {
+            badge.textContent = String(count || 0);
+        });
+    }
+
+    function refreshCartCount() {
+        if (!window.computechTheme || !computechTheme.ajaxUrl || !computechTheme.cartNonce) { return; }
+        var data = new FormData();
+        data.append('action', 'computech_cart_count');
+        data.append('nonce', computechTheme.cartNonce);
+        fetch(computechTheme.ajaxUrl, {
+            method: 'POST',
+            credentials: 'same-origin',
+            body: data
+        }).then(function (response) {
+            return response.json();
+        }).then(function (payload) {
+            if (payload && payload.success && payload.data && typeof payload.data.count !== 'undefined') {
+                updateCartBadges(payload.data.count);
+            }
+        }).catch(function () {});
+    }
+
+    if (window.jQuery) {
+        window.jQuery(document.body).on('added_to_cart removed_from_cart wc_fragments_loaded wc_fragments_refreshed', function (event, fragments) {
+            if (fragments && fragments['span.cart-badge']) {
+                var temp = document.createElement('div');
+                temp.innerHTML = fragments['span.cart-badge'];
+                var badge = temp.querySelector('.cart-badge');
+                if (badge) {
+                    updateCartBadges(badge.textContent.trim());
+                    return;
+                }
+            }
+            refreshCartCount();
+        });
+    }
+
+    /* Header live product search: 3 WooCommerce products below search bar */
+    function escapeHtml(value) {
+        return String(value || '').replace(/[&<>'"]/g, function (char) {
+            return ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#039;', '"': '&quot;' })[char];
+        });
+    }
+
+    function setupLiveSearch(form) {
+        var input = form.querySelector('.computech-live-search-input');
+        var results = form.querySelector('.computech-live-search-results');
+        if (!input || !results || !window.computechTheme || !computechTheme.ajaxUrl || !computechTheme.liveSearchNonce) { return; }
+
+        var controller = null;
+        var timer = null;
+
+        function hideResults() {
+            results.classList.remove('is-visible');
+            results.innerHTML = '';
+        }
+
+        function renderResults(items) {
+            if (!items || !items.length) {
+                results.innerHTML = '<div class="computech-live-search-empty">لا توجد منتجات</div>';
+                results.classList.add('is-visible');
+                return;
+            }
+
+            results.innerHTML = items.slice(0, 3).map(function (item) {
+                var image = item.image ? '<span class="computech-live-search-img"><img src="' + escapeHtml(item.image) + '" alt=""></span>' : '<span class="computech-live-search-img computech-live-search-placeholder"></span>';
+                var price = item.price ? '<span class="computech-live-search-price">' + escapeHtml(item.price) + '</span>' : '';
+                return '<a class="computech-live-search-item" href="' + escapeHtml(item.url) + '">' + image + '<span class="computech-live-search-text"><strong>' + escapeHtml(item.title) + '</strong>' + price + '</span></a>';
+            }).join('');
+            results.classList.add('is-visible');
+        }
+
+        function runSearch() {
+            var term = input.value.trim();
+            if (!term) {
+                hideResults();
+                return;
+            }
+
+            if (controller) {
+                controller.abort();
+            }
+            controller = new AbortController();
+
+            var url = new URL(computechTheme.ajaxUrl);
+            url.searchParams.set('action', 'computech_live_product_search');
+            url.searchParams.set('nonce', computechTheme.liveSearchNonce);
+            url.searchParams.set('term', term);
+
+            results.innerHTML = '<div class="computech-live-search-empty">جاري البحث...</div>';
+            results.classList.add('is-visible');
+
+            fetch(url.toString(), {
+                method: 'GET',
+                credentials: 'same-origin',
+                signal: controller.signal
+            }).then(function (response) {
+                return response.json();
+            }).then(function (payload) {
+                if (payload && payload.success && payload.data) {
+                    renderResults(payload.data.items || []);
+                } else {
+                    hideResults();
+                }
+            }).catch(function (error) {
+                if (error.name !== 'AbortError') {
+                    hideResults();
+                }
+            });
+        }
+
+        input.addEventListener('input', function () {
+            clearTimeout(timer);
+            timer = setTimeout(runSearch, 140);
+        });
+
+        input.addEventListener('focus', function () {
+            if (input.value.trim()) {
+                runSearch();
+            }
+        });
+
+        document.addEventListener('click', function (event) {
+            if (!form.contains(event.target)) {
+                hideResults();
+            }
+        });
+    }
+
+    document.querySelectorAll('.search-box, .mobile-search').forEach(setupLiveSearch);
+
     /* Nav link active state */
     const navLinks = document.querySelectorAll('.nav-link');
 

@@ -13062,3 +13062,490 @@ body.home .computech-dynamic-shop-row > .shop-card {
     -webkit-box-orient: vertical;
     overflow: hidden;
 }
+
+/* Header live WooCommerce search */
+.search-box,
+.mobile-search {
+    position: relative;
+    overflow: visible;
+}
+
+.computech-live-search-results {
+    position: absolute;
+    top: calc(100% + 8px);
+    right: 0;
+    width: min(340px, 88vw);
+    background: var(--color-white);
+    border: 1px solid var(--color-gray-200);
+    border-radius: 18px;
+    box-shadow: 0 18px 45px rgba(15, 23, 42, 0.14);
+    padding: 8px;
+    display: none;
+    z-index: 9999;
+}
+
+.computech-live-search-results.is-visible {
+    display: block;
+}
+
+.computech-live-search-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 9px;
+    border-radius: 14px;
+    text-decoration: none;
+    color: var(--color-navy);
+    transition: var(--transition);
+}
+
+.computech-live-search-item:hover {
+    background: rgba(37, 99, 235, 0.07);
+    color: var(--color-primary);
+}
+
+.computech-live-search-img {
+    width: 44px;
+    height: 44px;
+    border-radius: 12px;
+    background: var(--color-gray-100);
+    flex: 0 0 44px;
+    overflow: hidden;
+    display: grid;
+    place-items: center;
+}
+
+.computech-live-search-img img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+}
+
+.computech-live-search-text {
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+    text-align: right;
+}
+
+.computech-live-search-text strong {
+    font-size: 13px;
+    line-height: 1.35;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.computech-live-search-price {
+    font-size: 12px;
+    color: var(--color-gray-500);
+}
+
+.computech-live-search-empty {
+    padding: 12px;
+    font-size: 13px;
+    color: var(--color-gray-500);
+    text-align: center;
+}
+
+.mobile-search .computech-live-search-results {
+    width: 100%;
+    right: 0;
+    left: auto;
+}
+
+/* ============================================
+   Hero fixed height + formal smooth slider motion
+   ============================================ */
+.computech-dynamic-hero {
+    min-height: auto !important;
+    padding-top: 40px;
+    padding-bottom: 54px;
+}
+
+.computech-dynamic-hero .hero-slides-shell {
+    position: relative;
+    z-index: 1;
+    height: 560px;
+    max-width: 1400px;
+    margin: 0 auto;
+    overflow: hidden;
+}
+
+.computech-dynamic-hero .hero-slide {
+    position: absolute;
+    inset: 0;
+    display: block !important;
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: none;
+    transform: translateX(-18px);
+    transition:
+        opacity 0.72s cubic-bezier(0.22, 1, 0.36, 1),
+        transform 0.72s cubic-bezier(0.22, 1, 0.36, 1),
+        visibility 0s linear 0.72s;
+    will-change: opacity, transform;
+}
+
+.computech-dynamic-hero .hero-slide.is-active {
+    opacity: 1;
+    visibility: visible;
+    pointer-events: auto;
+    transform: translateX(0);
+    transition-delay: 0s;
+}
+
+.computech-dynamic-hero .hero-container {
+    height: 100%;
+    max-width: 1400px;
+    min-height: 0;
+    align-items: center;
+}
+
+.computech-dynamic-hero .hero-content {
+    min-width: 0;
+}
+
+.computech-dynamic-hero .hero-image-wrapper {
+    flex: 0 0 48%;
+    width: 48%;
+    height: 420px;
+    max-height: 420px;
+    min-height: 420px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: visible;
+    min-width: 0;
+}
+
+.computech-dynamic-hero .hero-image {
+    width: 100%;
+    height: 100%;
+    max-width: 100%;
+    max-height: 100%;
+    object-fit: contain;
+    object-position: center;
+    display: block;
+}
+
+.computech-dynamic-hero .hero-image-glow {
+    width: 70%;
+    height: 48px;
+}
+
+@media (max-width: 1200px) {
+    .computech-dynamic-hero .hero-slides-shell {
+        height: 540px;
+    }
+
+    .computech-dynamic-hero .hero-image-wrapper {
+        height: 380px;
+        max-height: 380px;
+        min-height: 380px;
+    }
+}
+
+@media (max-width: 1024px) {
+    .computech-dynamic-hero .hero-slides-shell {
+        height: 720px;
+    }
+
+    .computech-dynamic-hero .hero-container {
+        justify-content: center;
+        gap: 24px;
+    }
+
+    .computech-dynamic-hero .hero-image-wrapper {
+        flex: 0 0 auto;
+        width: 100%;
+        max-width: 560px;
+        height: 330px;
+        max-height: 330px;
+        min-height: 330px;
+    }
+}
+
+@media (max-width: 768px) {
+    .computech-dynamic-hero {
+        padding-top: 24px;
+        padding-bottom: 38px;
+    }
+
+    .computech-dynamic-hero .hero-slides-shell {
+        height: 640px;
+    }
+
+    .computech-dynamic-hero .hero-container {
+        gap: 18px;
+    }
+
+    .computech-dynamic-hero .hero-image-wrapper {
+        height: 250px;
+        max-height: 250px;
+        min-height: 250px;
+        max-width: 420px;
+    }
+}
+
+@media (max-width: 480px) {
+    .computech-dynamic-hero .hero-slides-shell {
+        height: 600px;
+    }
+
+    .computech-dynamic-hero .hero-image-wrapper {
+        height: 210px;
+        max-height: 210px;
+        min-height: 210px;
+    }
+}
+
+/* =========================================================
+   Fixed size for "ابدأ من احتياجك" cards and images
+   Keeps uploaded image dimensions from changing card/section height
+   ========================================================= */
+body.home .computech-dynamic-needs .needs-grid {
+    align-items: stretch !important;
+}
+
+body.home .computech-dynamic-needs .need-card {
+    min-height: 260px !important;
+    height: 100% !important;
+    box-sizing: border-box !important;
+    grid-template-columns: minmax(0, 1.05fr) 220px !important;
+    align-items: center !important;
+}
+
+body.home .computech-dynamic-needs .need-card-text {
+    min-height: 180px !important;
+    justify-content: center !important;
+}
+
+body.home .computech-dynamic-needs .need-card-title {
+    display: -webkit-box !important;
+    -webkit-line-clamp: 2 !important;
+    -webkit-box-orient: vertical !important;
+    overflow: hidden !important;
+}
+
+body.home .computech-dynamic-needs .need-card-desc {
+    display: -webkit-box !important;
+    -webkit-line-clamp: 2 !important;
+    -webkit-box-orient: vertical !important;
+    overflow: hidden !important;
+}
+
+body.home .computech-dynamic-needs .need-card-image {
+    width: 220px !important;
+    height: 190px !important;
+    max-width: 220px !important;
+    max-height: 190px !important;
+    min-width: 220px !important;
+    min-height: 190px !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    overflow: hidden !important;
+}
+
+body.home .computech-dynamic-needs .need-card-image img {
+    width: 100% !important;
+    height: 100% !important;
+    max-width: 100% !important;
+    max-height: 100% !important;
+    object-fit: contain !important;
+    object-position: center !important;
+    display: block !important;
+}
+
+@media (max-width: 991px) {
+    body.home .computech-dynamic-needs .need-card {
+        grid-template-columns: minmax(0, 1fr) 190px !important;
+        min-height: 245px !important;
+    }
+
+    body.home .computech-dynamic-needs .need-card-image {
+        width: 190px !important;
+        height: 170px !important;
+        max-width: 190px !important;
+        max-height: 170px !important;
+        min-width: 190px !important;
+        min-height: 170px !important;
+    }
+}
+
+@media (max-width: 640px) {
+    body.home .computech-dynamic-needs .need-card {
+        grid-template-columns: 1fr !important;
+        min-height: 360px !important;
+    }
+
+    body.home .computech-dynamic-needs .need-card-text {
+        min-height: 150px !important;
+    }
+
+    body.home .computech-dynamic-needs .need-card-image {
+        width: min(240px, 78vw) !important;
+        height: 180px !important;
+        max-width: min(240px, 78vw) !important;
+        max-height: 180px !important;
+        min-width: 0 !important;
+        min-height: 180px !important;
+    }
+}
+
+/* =========================================================
+   FIX: stable needs cards without squeezing text
+   - 3 cards per row on desktop
+   - fixed image box
+   - image size never changes card layout
+   ========================================================= */
+body.home .computech-dynamic-needs .needs-grid,
+body.home .needs-section.computech-dynamic-needs .needs-grid {
+    display: grid !important;
+    grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+    gap: clamp(18px, 2vw, 28px) !important;
+    align-items: stretch !important;
+    justify-content: initial !important;
+    direction: rtl !important;
+}
+
+body.home .computech-dynamic-needs .needs-grid > .need-card,
+body.home .needs-section.computech-dynamic-needs .needs-grid > .need-card {
+    width: auto !important;
+    min-width: 0 !important;
+    max-width: none !important;
+    flex: none !important;
+}
+
+body.home .computech-dynamic-needs .need-card,
+body.home .needs-section.computech-dynamic-needs .need-card {
+    min-height: 250px !important;
+    height: 100% !important;
+    padding: clamp(20px, 2vw, 28px) !important;
+    display: grid !important;
+    grid-template-columns: minmax(0, 1fr) 170px !important;
+    gap: clamp(16px, 2vw, 24px) !important;
+    align-items: center !important;
+    overflow: hidden !important;
+    box-sizing: border-box !important;
+}
+
+body.home .computech-dynamic-needs .need-card-text,
+body.home .needs-section.computech-dynamic-needs .need-card-text {
+    width: 100% !important;
+    min-width: 0 !important;
+    min-height: 0 !important;
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: flex-start !important;
+    justify-content: center !important;
+    gap: 10px !important;
+    text-align: right !important;
+}
+
+body.home .computech-dynamic-needs .need-card-icon,
+body.home .needs-section.computech-dynamic-needs .need-card-icon {
+    width: 48px !important;
+    height: 48px !important;
+    flex: 0 0 48px !important;
+}
+
+body.home .computech-dynamic-needs .need-card-title,
+body.home .needs-section.computech-dynamic-needs .need-card-title {
+    width: 100% !important;
+    margin: 0 !important;
+    white-space: normal !important;
+    word-break: normal !important;
+    overflow-wrap: normal !important;
+    display: -webkit-box !important;
+    -webkit-line-clamp: 2 !important;
+    -webkit-box-orient: vertical !important;
+    overflow: hidden !important;
+}
+
+body.home .computech-dynamic-needs .need-card-desc,
+body.home .needs-section.computech-dynamic-needs .need-card-desc {
+    width: 100% !important;
+    margin: 0 !important;
+    white-space: normal !important;
+    word-break: normal !important;
+    overflow-wrap: normal !important;
+    display: -webkit-box !important;
+    -webkit-line-clamp: 2 !important;
+    -webkit-box-orient: vertical !important;
+    overflow: hidden !important;
+}
+
+body.home .computech-dynamic-needs .need-card-link,
+body.home .needs-section.computech-dynamic-needs .need-card-link {
+    width: auto !important;
+    white-space: normal !important;
+}
+
+body.home .computech-dynamic-needs .need-card-image,
+body.home .needs-section.computech-dynamic-needs .need-card-image {
+    width: 170px !important;
+    height: 155px !important;
+    min-width: 170px !important;
+    max-width: 170px !important;
+    min-height: 155px !important;
+    max-height: 155px !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    justify-self: center !important;
+    overflow: hidden !important;
+    position: relative !important;
+}
+
+body.home .computech-dynamic-needs .need-card-image img,
+body.home .needs-section.computech-dynamic-needs .need-card-image img {
+    width: 100% !important;
+    height: 100% !important;
+    max-width: 100% !important;
+    max-height: 100% !important;
+    object-fit: contain !important;
+    object-position: center !important;
+    display: block !important;
+}
+
+@media (max-width: 1180px) {
+    body.home .computech-dynamic-needs .needs-grid,
+    body.home .needs-section.computech-dynamic-needs .needs-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    }
+}
+
+@media (max-width: 760px) {
+    body.home .computech-dynamic-needs .needs-grid,
+    body.home .needs-section.computech-dynamic-needs .needs-grid {
+        grid-template-columns: 1fr !important;
+    }
+
+    body.home .computech-dynamic-needs .need-card,
+    body.home .needs-section.computech-dynamic-needs .need-card {
+        max-width: 520px !important;
+        margin-inline: auto !important;
+        grid-template-columns: minmax(0, 1fr) !important;
+        min-height: auto !important;
+    }
+
+    body.home .computech-dynamic-needs .need-card-text,
+    body.home .needs-section.computech-dynamic-needs .need-card-text {
+        align-items: center !important;
+        text-align: center !important;
+    }
+
+    body.home .computech-dynamic-needs .need-card-image,
+    body.home .needs-section.computech-dynamic-needs .need-card-image {
+        width: min(260px, 76vw) !important;
+        max-width: min(260px, 76vw) !important;
+        min-width: 0 !important;
+        height: 175px !important;
+        min-height: 175px !important;
+        max-height: 175px !important;
+    }
+}
