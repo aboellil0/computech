@@ -13549,3 +13549,52 @@ body.home .needs-section.computech-dynamic-needs .need-card-image img {
         max-height: 175px !important;
     }
 }
+
+/* ============================================
+   HEADER DROPDOWN HOVER STABILITY FIX
+   Keeps nested submenus open while moving pointer
+   ============================================ */
+.main-header .nav-sub-menu .menu-item-has-children,
+.main-header .nav-more-menu .menu-item-has-children {
+    position: relative !important;
+}
+
+.main-header .nav-sub-menu .menu-item-has-children::after {
+    content: '' !important;
+    position: absolute !important;
+    top: -8px !important;
+    bottom: -8px !important;
+    right: 100% !important;
+    width: 14px !important;
+    display: block !important;
+    background: transparent !important;
+    z-index: 10070 !important;
+    pointer-events: auto !important;
+}
+
+.main-header .nav-sub-menu .nav-sub-menu {
+    top: -8px !important;
+    right: calc(100% + 6px) !important;
+    z-index: 10080 !important;
+}
+
+.main-header .nav-sub-menu .menu-item-has-children:hover > .nav-sub-menu,
+.main-header .nav-sub-menu .menu-item-has-children:focus-within > .nav-sub-menu,
+.main-header .nav-sub-menu .menu-item-has-children.submenu-open > .nav-sub-menu {
+    opacity: 1 !important;
+    visibility: visible !important;
+    pointer-events: auto !important;
+    transform: translateX(0) !important;
+}
+
+.main-header .nav-sub-menu,
+.main-header .nav-more-menu,
+.main-header .nav-sub-menu .nav-sub-menu {
+    transition: opacity .18s ease, visibility .18s ease, transform .18s ease !important;
+}
+
+.main-header .nav-sub-link,
+.main-header .nav-more-sub-link {
+    position: relative !important;
+    z-index: 10090 !important;
+}
