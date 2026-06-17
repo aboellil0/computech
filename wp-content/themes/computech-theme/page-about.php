@@ -3,6 +3,7 @@
  * Template Name: صفحة من نحن - كمبيوتيك
  */
 get_header();
+$ct_site_name = function_exists('computech_site_name') ? computech_site_name() : get_bloginfo('name');
 ?>
 <?php computech_breadcrumbs('من نحن'); ?>
     <!-- ============================================
@@ -23,7 +24,7 @@ get_header();
         <div class="about-container about-hero-inner">
             <div class="about-hero-content">
                 <h1 class="about-hero-title">من نحن</h1>
-                <p class="about-hero-subtitle">كمبيوتيك وجهتك الموثوقة لأجهزة الكمبيوتر، الاستيراد الخارجي، الإكسسوارات، الصيانة والدعم الفني.</p>
+                <p class="about-hero-subtitle"><?php echo esc_html($ct_site_name); ?> وجهتك الموثوقة لأجهزة الكمبيوتر، الاستيراد الخارجي، الإكسسوارات، الصيانة والدعم الفني.</p>
                 <div class="about-hero-stats">
                     <div class="about-stat-card">
                         <div class="about-stat-icon">
@@ -61,7 +62,7 @@ get_header();
             </div>
             <div class="about-hero-image">
                 <div class="about-hero-image-glow"></div>
-                <img src="<?php echo esc_url(get_template_directory_uri()); ?>/assets/images/hero-computer-setup.png" alt="كمبيوتيك - حلول الكمبيوتر والإلكترونيات" class="about-hero-img">
+                <img src="<?php echo esc_url(get_template_directory_uri()); ?>/assets/images/hero-computer-setup.png" alt="<?php echo esc_html($ct_site_name); ?> - حلول الكمبيوتر والإلكترونيات" class="about-hero-img">
             </div>
         </div>
     </section>
@@ -74,8 +75,8 @@ get_header();
             <div class="about-intro-inner">
                 <div class="about-intro-text">
                     <span class="about-section-badge">تعرف علينا</span>
-                    <h2 class="about-section-title">نبذة عن كمبيوتيك</h2>
-                    <p class="about-intro-desc">كمبيوتيك شركة متخصصة في بيع أجهزة الكمبيوتر الجديدة، أجهزة الاستيراد الخارجي، اللابتوبات، الإكسسوارات، ومكونات الكمبيوتر، مع توفير خدمات الصيانة والدعم الفني والاستشارة قبل الشراء. نهدف إلى تقديم حلول تقنية موثوقة تناسب احتياجات العملاء المختلفة بجودة عالية وتجربة شراء مريحة.</p>
+                    <h2 class="about-section-title">نبذة عن <?php echo esc_html($ct_site_name); ?></h2>
+                    <p class="about-intro-desc"><?php echo esc_html($ct_site_name); ?> شركة متخصصة في بيع أجهزة الكمبيوتر الجديدة، أجهزة الاستيراد الخارجي، اللابتوبات، الإكسسوارات، ومكونات الكمبيوتر، مع توفير خدمات الصيانة والدعم الفني والاستشارة قبل الشراء. نهدف إلى تقديم حلول تقنية موثوقة تناسب احتياجات العملاء المختلفة بجودة عالية وتجربة شراء مريحة.</p>
                     <div class="about-intro-chips">
                         <span class="about-chip">
                             <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -112,7 +113,7 @@ get_header();
                 </div>
                 <div class="about-intro-image">
                     <div class="about-intro-image-card">
-                        <img src="<?php echo esc_url(get_template_directory_uri()); ?>/assets/images/service-maintenance-support.png" alt="خدمات كمبيوتيك" class="about-intro-img">
+                        <img src="<?php echo esc_url(get_template_directory_uri()); ?>/assets/images/service-maintenance-support.png" alt="خدمات <?php echo esc_html($ct_site_name); ?>" class="about-intro-img">
                     </div>
                 </div>
             </div>
@@ -208,7 +209,7 @@ get_header();
         <div class="about-container">
             <div class="about-why-header">
                 <span class="about-section-badge">مميزاتنا</span>
-                <h2 class="about-section-title">لماذا تختار كمبيوتيك؟</h2>
+                <h2 class="about-section-title">لماذا تختار <?php echo esc_html($ct_site_name); ?>؟</h2>
             </div>
             <div class="about-why-grid">
                 <div class="about-why-card">
@@ -335,7 +336,7 @@ get_header();
                     <span class="about-trust-stat-text">دعم قبل وبعد البيع</span>
                 </div>
             </div>
-            <p class="about-trust-desc">نحرص في كمبيوتيك على بناء علاقة طويلة المدى مع عملائنا من خلال الشفافية، جودة المنتجات، سرعة الاستجابة، والالتزام بتقديم حلول مناسبة لكل احتياج.</p>
+            <p class="about-trust-desc">نحرص في <?php echo esc_html($ct_site_name); ?> على بناء علاقة طويلة المدى مع عملائنا من خلال الشفافية، جودة المنتجات، سرعة الاستجابة، والالتزام بتقديم حلول مناسبة لكل احتياج.</p>
         </div>
     </section>
 <?php get_footer(); ?>

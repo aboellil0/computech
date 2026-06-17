@@ -9,13 +9,14 @@ $newsletter_title = trim((string) ($footer_settings['newsletter_title'] ?? ''));
 $newsletter_subtitle = trim((string) ($footer_settings['newsletter_subtitle'] ?? ''));
 $newsletter_placeholder = trim((string) ($footer_settings['newsletter_placeholder'] ?? ''));
 $newsletter_button = trim((string) ($footer_settings['newsletter_button_label'] ?? ''));
-$footer_logo_text = trim((string) ($footer_settings['footer_logo_text'] ?? ''));
-$brand_description = trim((string) ($footer_settings['brand_description'] ?? ''));
+$footer_logo_text = trim(computech_site_text((string) ($footer_settings['footer_logo_text'] ?? '')));
+if ($footer_logo_text === '') { $footer_logo_text = computech_site_name(); }
+$brand_description = trim(computech_site_text((string) ($footer_settings['brand_description'] ?? '')));
 $quick_title = trim((string) ($footer_settings['quick_links_title'] ?? ''));
 $category_title = trim((string) ($footer_settings['category_links_title'] ?? ''));
 $service_title = trim((string) ($footer_settings['service_links_title'] ?? ''));
 $contact_title = trim((string) ($footer_settings['contact_title'] ?? ''));
-$copyright_text = trim((string) ($footer_settings['copyright_text'] ?? ''));
+$copyright_text = trim(computech_site_text((string) ($footer_settings['copyright_text'] ?? '')));
 ?>
     <footer class="site-footer">
         <div class="footer-bg-decor"><div class="fbd-circuit fbd-circuit-bl"></div><div class="fbd-circuit fbd-circuit-br"></div></div>

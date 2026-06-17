@@ -3,6 +3,14 @@
  * Template Name: صفحة تواصل معنا - كمبيوتيك
  */
 get_header();
+$ct_site_name = function_exists('computech_site_name') ? computech_site_name() : get_bloginfo('name');
+$ct_phone = function_exists('computech_business_phone') ? computech_business_phone() : '';
+$ct_whatsapp_number = function_exists('computech_business_whatsapp_number') ? computech_business_whatsapp_number() : '';
+$ct_whatsapp_display = $ct_whatsapp_number !== '' ? '+' . $ct_whatsapp_number : '';
+$ct_email = function_exists('computech_business_email') ? computech_business_email() : get_option('admin_email', '');
+$ct_address = function_exists('computech_business_address') ? computech_business_address() : '';
+$ct_hours = function_exists('computech_business_hours') ? computech_business_hours() : '';
+$ct_map_embed = function_exists('computech_business_map_embed_url') ? computech_business_map_embed_url() : '';
 ?>
 <?php computech_breadcrumbs('تواصل معنا'); ?>
     <!-- ============================================
@@ -24,7 +32,7 @@ get_header();
             <div class="contact-hero-content">
                 <span class="contact-section-badge">تواصل معنا</span>
                 <h1 class="contact-hero-title">نحن هنا لمساعدتك</h1>
-                <p class="contact-hero-subtitle">فريق كمبيوتيك متاح للإجابة على استفساراتك وتقديم الدعم الفني والاستشارات. تواصل معنا بالطريقة التي تناسبك.</p>
+                <p class="contact-hero-subtitle">فريق <?php echo esc_html($ct_site_name); ?> متاح للإجابة على استفساراتك وتقديم الدعم الفني والاستشارات. تواصل معنا بالطريقة التي تناسبك.</p>
                 <div class="contact-hero-pills">
                     <span class="contact-pill">رد سريع</span>
                     <span class="contact-pill">دعم فني</span>
@@ -96,7 +104,7 @@ get_header();
                                 <polyline points="22 4 12 14.01 9 11.01"/>
                             </svg>
                             <h3>تم إرسال رسالتك بنجاح!</h3>
-                            <p>شكراً لتواصلك مع كمبيوتيك. سنعود إليك في أقرب وقت ممكن.</p>
+                            <p>شكراً لتواصلك مع <?php echo esc_html($ct_site_name); ?>. سنعود إليك في أقرب وقت ممكن.</p>
                         </div>
                     </div>
                 </div>
@@ -111,8 +119,8 @@ get_header();
                         </div>
                         <div class="contact-info-details">
                             <h3 class="contact-info-title">الهاتف</h3>
-                            <p class="contact-info-value">+966 11 123 4567</p>
-                            <p class="contact-info-desc">السبت - الخميس، 9:00 ص - 9:00 م</p>
+                            <p class="contact-info-value"><?php echo esc_html($ct_phone); ?></p>
+                            <p class="contact-info-desc"><?php echo esc_html($ct_hours); ?></p>
                         </div>
                     </div>
                     <div class="contact-info-card">
@@ -123,7 +131,7 @@ get_header();
                         </div>
                         <div class="contact-info-details">
                             <h3 class="contact-info-title">واتساب</h3>
-                            <p class="contact-info-value">+966 50 123 4567</p>
+                            <p class="contact-info-value"><?php echo esc_html($ct_whatsapp_display); ?></p>
                             <p class="contact-info-desc">نخدمك عبر واتساب على مدار الساعة</p>
                         </div>
                     </div>
@@ -136,7 +144,7 @@ get_header();
                         </div>
                         <div class="contact-info-details">
                             <h3 class="contact-info-title">البريد الإلكتروني</h3>
-                            <p class="contact-info-value">info@computech.com.sa</p>
+                            <p class="contact-info-value"><?php echo esc_html($ct_email); ?></p>
                             <p class="contact-info-desc">نرد على البريد الإلكتروني خلال 24 ساعة</p>
                         </div>
                     </div>
@@ -149,8 +157,8 @@ get_header();
                         </div>
                         <div class="contact-info-details">
                             <h3 class="contact-info-title">العنوان</h3>
-                            <p class="contact-info-value">الرياض، حي العليا</p>
-                            <p class="contact-info-desc">طريق الملك فهد، المملكة العربية السعودية</p>
+                            <p class="contact-info-value"><?php echo nl2br(esc_html($ct_address)); ?></p>
+                            
                         </div>
                     </div>
                 </div>
@@ -168,7 +176,7 @@ get_header();
                 <h2 class="contact-section-title">تجدنا هنا</h2>
             </div>
             <div class="contact-map-wrap">
-                <iframe class="contact-map-iframe" src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3625.944420866435!2d46.6752263!3d24.6609699!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x3e2f0388d9a8b9e1%3A0x6e8c5c0a0b0f0e1!2sKing%20Fahd%20Rd%2C%20Riyadh%20Saudi%20Arabia!5e0!3m2!1sar!2s!4v1" allowfullscreen="" loading="lazy" referrerpolicy="no-referrer-when-downgrade"></iframe>
+                <?php if ($ct_map_embed !== '') : ?><iframe class="contact-map-iframe" src="<?php echo esc_url($ct_map_embed); ?>" title="<?php echo esc_attr($ct_site_name); ?>" allowfullscreen="" loading="lazy" referrerpolicy="no-referrer-when-downgrade"></iframe><?php else : ?><div class="contact-map-empty">أضف رابط تضمين الخريطة من Settings → General.</div><?php endif; ?>
             </div>
         </div>
     </section>
@@ -180,7 +188,7 @@ get_header();
         <div class="contact-container">
             <div class="contact-social-header">
                 <span class="contact-section-badge">تابعنا</span>
-                <h2 class="contact-section-title">كمبيوتيك على وسائل التواصل</h2>
+                <h2 class="contact-section-title"><?php echo esc_html($ct_site_name); ?> على وسائل التواصل</h2>
                 <p class="contact-social-desc">تابعنا على منصات التواصل الاجتماعي لتصلك أحدث المنتجات والعروض</p>
             </div>
             <div class="contact-social-grid">
