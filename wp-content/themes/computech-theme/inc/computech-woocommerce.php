@@ -84,6 +84,19 @@ function computech_wc_category_icon_select(string $name, string $selected): stri
     return $html . '</select>';
 }
 
+function computech_wc_term_image_upload_field(int $term_id): void {
+    $thumb_id = $term_id ? absint(get_term_meta($term_id, 'thumbnail_id', true)) : 0;
+    $url = $thumb_id ? wp_get_attachment_image_url($thumb_id, 'thumbnail') : '';
+    ?>
+    <div class="ct-term-image-uploader">
+        <input type="hidden" name="_computech_wc_cat_image_id" value="<?php echo esc_attr((string) $thumb_id); ?>" class="ct-term-image-id">
+        <div class="ct-term-image-preview" style="margin-bottom:8px"><?php if ($url) : ?><img src="<?php echo esc_url($url); ?>" style="max-width:90px;height:70px;object-fit:contain;border:1px solid #ddd;border-radius:8px;background:#fff" alt=""><?php endif; ?></div>
+        <button type="button" class="button ct-term-image-upload">اختيار صورة</button>
+        <button type="button" class="button-link-delete ct-term-image-remove" style="margin-inline-start:8px">إزالة الصورة</button>
+    </div>
+    <?php
+}
+
 function computech_wc_term_icon(int $term_id, string $size = 'thumbnail'): array {
     $source = get_term_meta($term_id, '_computech_wc_cat_icon_source', true);
     if ($source !== 'icon') {
@@ -516,8 +529,7 @@ function computech_wc_product_card($product_or_post = null): void {
     ?>
     <div class="prod-card prod-card-modern" data-category="<?php echo esc_attr(computech_wc_product_filter_category_slugs($product_id)); ?>" data-status="<?php echo esc_attr(trim($condition . ' ' . $product->get_stock_status())); ?>" data-price="<?php echo esc_attr((string) computech_wc_product_price_number($product)); ?>" data-name="<?php echo esc_attr($title); ?>">
         <div class="prod-card-topline">
-            <span class="prod-fav-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M20.8 4.6c-1.7-1.7-4.4-1.7-6.1 0L12 7.3 9.3 4.6c-1.7-1.7-4.4-1.7-6.1 0s-1.7 4.4 0 6.1L12 19.5l8.8-8.8c1.7-1.7 1.7-4.4 0-6.1z"/></svg></span>
-            <?php if ($badge !== '') : ?><span class="prod-badge <?php echo esc_attr($condition === 'imported' ? 'prod-badge-imported' : 'prod-badge-new'); ?>"><?php echo esc_html($badge); ?></span><?php endif; ?>
+<?php if ($badge !== '') : ?><span class="prod-badge <?php echo esc_attr($condition === 'imported' ? 'prod-badge-imported' : 'prod-badge-new'); ?>"><?php echo esc_html($badge); ?></span><?php endif; ?>
         </div>
         <a href="<?php echo esc_url($permalink); ?>" class="prod-card-image" aria-label="<?php echo esc_attr($title); ?>"><img src="<?php echo esc_url($image_url); ?>" alt="<?php echo esc_attr($image_alt !== '' ? $image_alt : $title); ?>" loading="lazy"></a>
         <div class="prod-card-body">
@@ -793,14 +805,14 @@ function computech_wc_category_fields_markup(?WP_Term $term = null): void {
         <tr class="form-field"><th scope="row">Computech Visibility</th><td><select name="_computech_wc_category_visibility"><option value="visible" <?php selected($visibility, 'visible'); ?>>Visible</option><option value="hidden" <?php selected($visibility, 'hidden'); ?>>Hidden</option></select></td></tr>
         <tr class="form-field"><th scope="row">Is Featured</th><td><label><input type="checkbox" name="_computech_wc_is_featured" value="1" <?php checked($is_featured); ?>> Yes</label><p class="description">Shows this category inside الأقسام المميزة.</p></td></tr>
         <tr class="form-field"><th scope="row">Featured Order</th><td><input type="number" name="_computech_wc_featured_order" value="<?php echo esc_attr($featured_order); ?>" min="0" step="1"><p class="description">Used only in الأقسام المميزة.</p></td></tr>
-        <tr class="form-field"><th scope="row">Category Icon</th><td><select name="_computech_wc_cat_icon_source" class="ct-category-icon-source widefat"><option value="image" <?php selected($icon_source, 'image'); ?>>استخدم صورة القسم</option><option value="icon" <?php selected($icon_source, 'icon'); ?>>استخدم أيقونة جاهزة</option></select><div class="ct-category-icon-choice" style="margin-top:10px"><?php echo computech_wc_category_icon_select('_computech_wc_cat_icon_choice', $icon_choice); ?></div><p class="description">صورة القسم من WooCommerce thumbnail. لو اخترت أيقونة جاهزة تظهر الأيقونة بدل الافتراضي.</p></td></tr>
+        <tr class="form-field"><th scope="row">Category Icon</th><td><select name="_computech_wc_cat_icon_source" class="ct-category-icon-source widefat"><option value="image" <?php selected($icon_source, 'image'); ?>>استخدم صورة</option><option value="icon" <?php selected($icon_source, 'icon'); ?>>استخدم أيقونة جاهزة</option></select><div class="ct-category-image-choice" style="margin-top:10px"><?php computech_wc_term_image_upload_field($term_id); ?></div><div class="ct-category-icon-choice" style="margin-top:10px"><?php echo computech_wc_category_icon_select('_computech_wc_cat_icon_choice', $icon_choice); ?></div><p class="description">اختر صورة أو أيقونة جاهزة. الحقل المناسب يظهر فورًا حسب الاختيار.</p></td></tr>
         <?php
     } else {
         ?>
         <div class="form-field"><label>Computech Visibility</label><select name="_computech_wc_category_visibility"><option value="visible">Visible</option><option value="hidden">Hidden</option></select></div>
         <div class="form-field"><label><input type="checkbox" name="_computech_wc_is_featured" value="1"> Is Featured</label><p>Shows this category inside الأقسام المميزة.</p></div>
         <div class="form-field"><label>Featured Order</label><input type="number" name="_computech_wc_featured_order" value="0" min="0" step="1"></div>
-        <div class="form-field"><label>Category Icon</label><select name="_computech_wc_cat_icon_source" class="ct-category-icon-source widefat"><option value="image">استخدم صورة القسم</option><option value="icon">استخدم أيقونة جاهزة</option></select><div class="ct-category-icon-choice" style="margin-top:10px"><?php echo computech_wc_category_icon_select('_computech_wc_cat_icon_choice', 'desktop'); ?></div></div>
+        <div class="form-field"><label>Category Icon</label><select name="_computech_wc_cat_icon_source" class="ct-category-icon-source widefat"><option value="image">استخدم صورة</option><option value="icon">استخدم أيقونة جاهزة</option></select><div class="ct-category-image-choice" style="margin-top:10px"><?php computech_wc_term_image_upload_field(0); ?></div><div class="ct-category-icon-choice" style="margin-top:10px"><?php echo computech_wc_category_icon_select('_computech_wc_cat_icon_choice', 'desktop'); ?></div></div>
         <?php
     }
 }
@@ -814,6 +826,9 @@ function computech_wc_save_category_fields(int $term_id): void {
     $icon_source = sanitize_key(wp_unslash($_POST['_computech_wc_cat_icon_source'] ?? 'image'));
     update_term_meta($term_id, '_computech_wc_cat_icon_source', in_array($icon_source, array('image','icon'), true) ? $icon_source : 'image');
     update_term_meta($term_id, '_computech_wc_cat_icon_choice', sanitize_key(wp_unslash($_POST['_computech_wc_cat_icon_choice'] ?? 'desktop')));
+    if (isset($_POST['_computech_wc_cat_image_id'])) {
+        update_term_meta($term_id, 'thumbnail_id', (string) absint($_POST['_computech_wc_cat_image_id']));
+    }
     update_term_meta($term_id, 'display_type', '');
 
     foreach (array(
@@ -836,16 +851,35 @@ function computech_wc_admin_media_script(string $hook): void {
     if (!is_admin()) { return; }
     $screen = function_exists('get_current_screen') ? get_current_screen() : null;
     if (!$screen || $screen->taxonomy !== 'product_cat') { return; }
-
+    wp_enqueue_media();
     $script = <<<'JS'
 jQuery(function($){
     $('#display_type').val('');
     $('#display_type').closest('tr,.form-field').hide();
+    $('.term-thumbnail-wrap,.form-field.term-thumbnail-wrap').hide();
     function ctToggleCatIcon(){
         var v = $('.ct-category-icon-source').val() || 'image';
         $('.ct-category-icon-choice').toggle(v === 'icon');
+        $('.ct-category-image-choice').toggle(v === 'image');
     }
     $(document).on('change', '.ct-category-icon-source', ctToggleCatIcon);
+    $(document).on('click', '.ct-term-image-upload', function(e){
+        e.preventDefault();
+        var box = $(this).closest('.ct-term-image-uploader');
+        var frame = wp.media({title:'اختيار صورة القسم', button:{text:'استخدام الصورة'}, multiple:false});
+        frame.on('select', function(){
+            var file = frame.state().get('selection').first().toJSON();
+            box.find('.ct-term-image-id').val(file.id);
+            box.find('.ct-term-image-preview').html('<img src="'+((file.sizes && file.sizes.thumbnail) ? file.sizes.thumbnail.url : file.url)+'" style="max-width:90px;height:70px;object-fit:contain;border:1px solid #ddd;border-radius:8px;background:#fff" alt="">');
+        });
+        frame.open();
+    });
+    $(document).on('click', '.ct-term-image-remove', function(e){
+        e.preventDefault();
+        var box = $(this).closest('.ct-term-image-uploader');
+        box.find('.ct-term-image-id').val('0');
+        box.find('.ct-term-image-preview').empty();
+    });
     ctToggleCatIcon();
 });
 JS;
@@ -856,7 +890,7 @@ add_action('admin_enqueue_scripts', 'computech_wc_admin_media_script');
 function computech_wc_hide_default_category_admin_fields(): void {
     $screen = function_exists('get_current_screen') ? get_current_screen() : null;
     if (!$screen || $screen->taxonomy !== 'product_cat') { return; }
-    echo '<style>.term-display-type-wrap{display:none!important}</style>';
+    echo '<style>.term-display-type-wrap,.term-thumbnail-wrap{display:none!important}</style>';
 }
 add_action('admin_head', 'computech_wc_hide_default_category_admin_fields');
 

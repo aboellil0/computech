@@ -2684,6 +2684,7 @@ function computech_save_hero_slide(int $post_id): void {
 
         $page_value = sanitize_text_field(wp_unslash($_POST['_computech_hero_' . $prefix . '_page_id'] ?? '0'));
         update_post_meta($post_id, '_computech_hero_' . $prefix . '_page_id', $page_value === 'home' ? '0' : (string) absint($page_value));
+        update_post_meta($post_id, '_computech_hero_' . $prefix . '_page_slug', $page_value === 'home' ? 'home' : '');
         update_post_meta($post_id, '_computech_hero_' . $prefix . '_url', esc_url_raw(wp_unslash($_POST['_computech_hero_' . $prefix . '_url'] ?? '')));
         update_post_meta($post_id, '_computech_hero_' . $prefix . '_new_tab', !empty($_POST['_computech_hero_' . $prefix . '_new_tab']) ? '1' : '0');
     }
@@ -2701,7 +2702,7 @@ function computech_save_hero_slide(int $post_id): void {
                 'text' => sanitize_text_field(wp_unslash($row['text'] ?? '')),
                 'style' => sanitize_key(wp_unslash($row['style'] ?? 'secondary')),
                 'link_type' => sanitize_key(wp_unslash($row['link_type'] ?? 'none')),
-                'page_slug' => sanitize_title(wp_unslash($row['page_slug'] ?? '')),
+                'page_slug' => $page_value === 'home' ? 'home' : sanitize_title(wp_unslash($row['page_slug'] ?? '')),
                 'page_id' => $page_value === 'home' ? 0 : absint($page_value),
                 'term_id' => absint($row['term_id'] ?? 0),
                 'url' => esc_url_raw(wp_unslash($row['url'] ?? '')),
@@ -2777,12 +2778,16 @@ function computech_hero_tag_icon_svg(string $icon): string {
 function computech_hero_link_url_from_data(WP_Post $slide, array $item): string {
     $type = sanitize_key((string) ($item['link_type'] ?? 'none'));
     if ($type === 'page') {
-        $page_id = absint($item['page_id'] ?? 0);
+        $raw_page = (string) ($item['page_id'] ?? '0');
+        $slug = sanitize_title((string) ($item['page_slug'] ?? ''));
+        if ($raw_page === 'home' || $slug === 'home' || $slug === 'front-page') {
+            return home_url('/');
+        }
+        $page_id = absint($raw_page);
         if ($page_id) {
             $url = get_permalink($page_id);
             return $url ?: '';
         }
-        $slug = sanitize_title((string) ($item['page_slug'] ?? ''));
         return $slug !== '' ? computech_page_url($slug) : '';
     }
     if ($type === 'category') {
@@ -2980,6 +2985,7 @@ function computech_hero_card_metabox(WP_Post $post): void {
     computech_admin_editor_styles_once();
     $type = computech_card_meta($post, '_computech_card_link_type', 'page');
     $page_id = computech_card_meta($post, '_computech_card_page_id', '0');
+    $page_selected = computech_card_meta($post, '_computech_card_page_slug', '') === 'home' ? 'home' : $page_id;
     ?>
     <div class="ct-editor ct-hero-admin" dir="rtl">
         <div class="ct-hero-dashboard-head">
@@ -3020,11 +3026,10 @@ function computech_hero_card_metabox(WP_Post $post): void {
                 </div>
                 <div class="ct-admin-section-body">
                     <div class="ct-grid ct-grid-2">
-                        <p class="ct-field"><label>نص الرابط</label><input type="text" value="اكتشف المزيد ←" class="widefat" readonly><span class="ct-help">نص ثابت في الموقع.</span></p>
                         <p class="ct-field"><label>نوع الرابط</label><?php echo computech_hero_link_type_select('_computech_card_link_type', $type); ?></p>
                     </div>
                     <div class="ct-conditional-fields" style="margin-top:14px">
-                        <p class="ct-field ct-link-page-field"><label>اختيار صفحة</label><select name="_computech_card_page_id" class="widefat"><?php echo computech_hero_pages_options($type === 'home' ? 'home' : $page_id); ?></select></p>
+                        <p class="ct-field ct-link-page-field"><label>اختيار صفحة</label><select name="_computech_card_page_id" class="widefat"><?php echo computech_hero_pages_options($page_selected); ?></select></p>
                         <p class="ct-field ct-link-category-field"><label>اختيار قسم منتجات</label><select name="_computech_card_term_id" class="widefat"><?php echo computech_hero_product_category_options(computech_card_meta($post, '_computech_card_term_id', '0')); ?></select></p>
                         <p class="ct-field ct-link-url-field"><label>رابط خارجي / عام</label><input type="url" name="_computech_card_url" value="<?php echo esc_attr(computech_card_meta($post, '_computech_card_url', '')); ?>" class="widefat" placeholder="https://example.com أو /products/"></p>
                     </div>
@@ -3085,6 +3090,7 @@ function computech_save_hero_card(int $post_id): void {
     update_post_meta($post_id, '_computech_card_link_type', $type);
     $page_value = sanitize_text_field(wp_unslash($_POST['_computech_card_page_id'] ?? '0'));
     update_post_meta($post_id, '_computech_card_page_id', $page_value === 'home' ? '0' : (string) absint($page_value));
+    update_post_meta($post_id, '_computech_card_page_slug', $page_value === 'home' ? 'home' : '');
     update_post_meta($post_id, '_computech_card_term_id', (string) absint($_POST['_computech_card_term_id'] ?? 0));
     update_post_meta($post_id, '_computech_card_url', esc_url_raw(wp_unslash($_POST['_computech_card_url'] ?? '')));
     update_post_meta($post_id, '_computech_card_new_tab', !empty($_POST['_computech_card_new_tab']) ? '1' : '0');
@@ -3092,6 +3098,28 @@ function computech_save_hero_card(int $post_id): void {
     delete_post_meta($post_id, '_computech_card_image_url');
 }
 add_action('save_post_computech_hero_card', 'computech_save_hero_card');
+
+function computech_visibility_guide_metabox(WP_Post $post): void {
+    computech_admin_editor_styles_once();
+    ?>
+    <div class="ct-editor ct-hero-admin" dir="rtl">
+        <div class="ct-status-card" style="max-width:520px">
+            <strong>ظهور الكارت</strong>
+            <p class="description">Published + Public = يظهر. Draft / Pending / Private / Password protected = لا يظهر.</p>
+        </div>
+    </div>
+    <?php
+}
+
+function computech_add_visibility_guide_metaboxes(): void {
+    $post_types = array('computech_hero_slide','computech_hero_card','computech_need_card','ct_topbar_item','ct_pay_method','ct_offer_banner','ct_service','product');
+    foreach ($post_types as $post_type) {
+        if (post_type_exists($post_type)) {
+            add_meta_box('computech_visibility_guide', 'ظهور الكارت', 'computech_visibility_guide_metabox', $post_type, 'normal', 'high');
+        }
+    }
+}
+add_action('add_meta_boxes', 'computech_add_visibility_guide_metaboxes', 5);
 
 function computech_get_hero_cards(): array {
     $query = new WP_Query(array(
@@ -3393,9 +3421,6 @@ function computech_render_featured_product_card(WP_Post $product): void {
     <div class="feat-card">
         <div class="feat-card-top">
             <?php if ($status_data['label'] !== '') : ?><span class="feat-badge <?php echo esc_attr($status_data['class']); ?>"><?php echo esc_html($status_data['label']); ?></span><?php endif; ?>
-            <button class="feat-heart" aria-label="أضف للمفضلة" type="button">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
-            </button>
         </div>
         <?php if ($image['url'] !== '') : ?><div class="feat-card-img"><img src="<?php echo esc_url($image['url']); ?>" alt="<?php echo esc_attr($image['alt']); ?>"></div><?php endif; ?>
         <div class="feat-card-body">
@@ -3531,12 +3556,7 @@ add_action('add_meta_boxes', 'computech_add_customer_need_card_metaboxes');
 
 
 function computech_need_pages_options(string $selected = ''): string {
-    $pages = get_pages(array('sort_column' => 'menu_order,post_title', 'post_status' => 'publish'));
-    $html = '<option value="0">اختر صفحة</option>';
-    foreach ($pages as $page) {
-        $html .= '<option value="' . esc_attr((string) $page->ID) . '" ' . selected($selected, (string) $page->ID, false) . '>' . esc_html($page->post_title) . '</option>';
-    }
-    return $html;
+    return function_exists('computech_hero_pages_options') ? computech_hero_pages_options($selected) : '<option value="0">اختر صفحة</option>';
 }
 
 function computech_need_link_type_select(string $name, string $selected): string {
@@ -3559,6 +3579,7 @@ function computech_need_card_metabox(WP_Post $post): void {
     computech_admin_editor_styles_once();
     $link_type = computech_section_meta($post, '_computech_need_link_type', 'custom');
     $page_id = computech_section_meta($post, '_computech_need_page_id', '0');
+    $page_selected = computech_section_meta($post, '_computech_need_page_slug', '') === 'home' ? 'home' : $page_id;
     $term_id = computech_section_meta($post, '_computech_need_term_id', '0');
     ?>
     <div class="ct-editor ct-hero-admin" dir="rtl">
@@ -3590,7 +3611,7 @@ function computech_need_card_metabox(WP_Post $post): void {
                 <div class="ct-admin-section-body">
                     <div class="ct-grid ct-grid-2">
                         <p class="ct-field"><label>نوع الرابط</label><?php echo computech_need_link_type_select('_computech_need_link_type', $link_type); ?></p>
-                        <p class="ct-field ct-need-page-field"><label>اختيار صفحة</label><select name="_computech_need_page_id" class="widefat"><?php echo computech_need_pages_options($page_id); ?></select></p>
+                        <p class="ct-field ct-need-page-field"><label>اختيار صفحة</label><select name="_computech_need_page_id" class="widefat"><?php echo computech_need_pages_options($page_selected); ?></select></p>
                     </div>
                     <div class="ct-conditional-fields" style="margin-top:14px">
                         <p class="ct-field ct-need-category-field"><label>اختيار قسم منتجات</label><select name="_computech_need_term_id" class="widefat"><?php echo computech_hero_product_category_options($term_id); ?></select></p>
@@ -3649,7 +3670,9 @@ function computech_save_need_card(int $post_id): void {
     $type = sanitize_key(wp_unslash($_POST['_computech_need_link_type'] ?? 'none'));
     $type = in_array($type, array('none', 'page', 'category', 'custom'), true) ? $type : 'none';
     update_post_meta($post_id, '_computech_need_link_type', $type);
-    update_post_meta($post_id, '_computech_need_page_id', (string) absint($_POST['_computech_need_page_id'] ?? 0));
+    $need_page_value = sanitize_text_field(wp_unslash($_POST['_computech_need_page_id'] ?? '0'));
+    update_post_meta($post_id, '_computech_need_page_id', $need_page_value === 'home' ? '0' : (string) absint($need_page_value));
+    update_post_meta($post_id, '_computech_need_page_slug', $need_page_value === 'home' ? 'home' : '');
     update_post_meta($post_id, '_computech_need_term_id', (string) absint($_POST['_computech_need_term_id'] ?? 0));
     update_post_meta($post_id, '_computech_need_url', esc_url_raw(wp_unslash($_POST['_computech_need_url'] ?? '')));
     update_post_meta($post_id, '_computech_need_new_tab', !empty($_POST['_computech_need_new_tab']) ? '1' : '0');
@@ -5263,13 +5286,20 @@ add_action('add_meta_boxes', 'computech_add_payment_method_metaboxes');
 function computech_payment_method_metabox(WP_Post $post): void {
     computech_admin_editor_styles_once();
     wp_nonce_field('computech_save_payment_method', 'computech_payment_method_nonce');
+    $icon_source = sanitize_key((string)get_post_meta($post->ID, '_computech_payment_icon_source', true));
+    if (!in_array($icon_source, array('icon','image'), true)) { $icon_source = 'icon'; }
     $icon = sanitize_key((string)get_post_meta($post->ID, '_computech_payment_icon', true));
     if ($icon === '') { $icon = 'credit_card'; }
     ?>
     <div class="ct-editor ct-hero-admin" dir="rtl">
         <div class="ct-hero-dashboard-head"><div><h2>طريقة دفع</h2><p>الاسم من عنوان WordPress. الظهور من Published/Public فقط. الترتيب من Order. لا يتم استخدام Featured Image هنا.</p></div></div>
-        <div class="ct-admin-grid"><label>الأيقونة<?php echo computech_home_extra_icon_select('_computech_payment_icon', $icon); ?></label></div>
+        <div class="ct-admin-grid">
+            <label>نوع الأيقونة<select name="_computech_payment_icon_source" class="widefat ct-payment-icon-source"><option value="icon" <?php selected($icon_source, 'icon'); ?>>أيقونة جاهزة</option><option value="image" <?php selected($icon_source, 'image'); ?>>صورة</option></select></label>
+            <div class="ct-payment-icon-choice"><label>الأيقونة<?php echo computech_home_extra_icon_select('_computech_payment_icon', $icon); ?></label></div>
+            <div class="ct-payment-image-choice"><?php computech_admin_image_upload_field('صورة الأيقونة', '_computech_payment_icon_image_id', $post->ID, 'اختار صورة صغيرة لطريقة الدفع.'); ?></div>
+        </div>
     </div>
+    <script>(function(){var root=document.currentScript.previousElementSibling;if(!root)return;function update(){var v=(root.querySelector('.ct-payment-icon-source')||{}).value||'icon';var icon=root.querySelector('.ct-payment-icon-choice');var img=root.querySelector('.ct-payment-image-choice');if(icon)icon.style.display=v==='icon'?'':'none';if(img)img.style.display=v==='image'?'':'none';}var s=root.querySelector('.ct-payment-icon-source');if(s)s.addEventListener('change',update);update();})();</script>
     <?php
 }
 
@@ -5277,7 +5307,10 @@ function computech_save_payment_method(int $post_id): void {
     if (!isset($_POST['computech_payment_method_nonce']) || !wp_verify_nonce(sanitize_text_field(wp_unslash($_POST['computech_payment_method_nonce'])), 'computech_save_payment_method')) { return; }
     if (defined('DOING_AUTOSAVE') && DOING_AUTOSAVE) { return; }
     if (!current_user_can('edit_post', $post_id)) { return; }
+    $payment_icon_source = sanitize_key(wp_unslash($_POST['_computech_payment_icon_source'] ?? 'icon'));
+    update_post_meta($post_id, '_computech_payment_icon_source', in_array($payment_icon_source, array('icon','image'), true) ? $payment_icon_source : 'icon');
     update_post_meta($post_id, '_computech_payment_icon', sanitize_key(wp_unslash($_POST['_computech_payment_icon'] ?? 'credit_card')));
+    update_post_meta($post_id, '_computech_payment_icon_image_id', (string) absint($_POST['_computech_payment_icon_image_id'] ?? 0));
 }
 add_action('save_post_ct_pay_method', 'computech_save_payment_method');
 
@@ -5304,6 +5337,14 @@ function computech_home_payment_method_posts(): array {
 }
 
 function computech_payment_method_icon_html(WP_Post $post): string {
+    $source = sanitize_key((string)get_post_meta($post->ID, '_computech_payment_icon_source', true));
+    if ($source === 'image') {
+        $image_id = absint(get_post_meta($post->ID, '_computech_payment_icon_image_id', true));
+        $url = $image_id ? wp_get_attachment_image_url($image_id, 'thumbnail') : '';
+        if ($url) {
+            return '<img src="' . esc_url($url) . '" alt="" loading="lazy">';
+        }
+    }
     $fallback_icon = sanitize_key((string)get_post_meta($post->ID, '_computech_payment_icon', true));
     if ($fallback_icon === '') {
         $fallback_icon = 'credit_card';
@@ -5382,6 +5423,7 @@ function computech_home_offer_banner_metabox(WP_Post $post): void {
     computech_admin_editor_styles_once();
     $link_type = computech_section_meta($post, '_computech_offer_link_type', 'none');
     $page_id = computech_section_meta($post, '_computech_offer_page_id', '0');
+    $page_selected = computech_section_meta($post, '_computech_offer_page_slug', '') === 'home' ? 'home' : $page_id;
     $color = computech_section_meta($post, '_computech_offer_color', 'main');
     ?>
     <div class="ct-editor ct-hero-admin" dir="rtl">
@@ -5407,7 +5449,7 @@ function computech_home_offer_banner_metabox(WP_Post $post): void {
                 <div class="ct-admin-section-body">
                     <div class="ct-grid ct-grid-2">
                         <p class="ct-field"><label>نوع الرابط</label><?php echo computech_home_offer_link_type_select('_computech_offer_link_type', $link_type); ?></p>
-                        <p class="ct-field ct-offer-page-field"><label>اختيار صفحة</label><select name="_computech_offer_page_id" class="widefat"><?php echo computech_need_pages_options($page_id); ?></select></p>
+                        <p class="ct-field ct-offer-page-field"><label>اختيار صفحة</label><select name="_computech_offer_page_id" class="widefat"><?php echo computech_need_pages_options($page_selected); ?></select></p>
                         <p class="ct-field ct-offer-category-field"><label>اختيار قسم منتجات</label><select name="_computech_offer_term_id" class="widefat"><?php echo computech_hero_product_category_options(computech_section_meta($post, '_computech_offer_term_id', '0')); ?></select></p>
                     </div>
                     <p class="ct-field ct-offer-url-field" style="margin-top:14px"><label>رابط خارجي</label><input type="url" name="_computech_offer_url" value="<?php echo esc_attr(computech_section_meta($post, '_computech_offer_url', '')); ?>" class="widefat" placeholder="https://example.com"></p>
@@ -5458,7 +5500,9 @@ function computech_save_home_offer_banner(int $post_id): void {
     $type = sanitize_key(wp_unslash($_POST['_computech_offer_link_type'] ?? 'none'));
     $type = in_array($type, array('none', 'page', 'category', 'custom'), true) ? $type : 'none';
     update_post_meta($post_id, '_computech_offer_link_type', $type);
-    update_post_meta($post_id, '_computech_offer_page_id', (string) absint($_POST['_computech_offer_page_id'] ?? 0));
+    $offer_page_value = sanitize_text_field(wp_unslash($_POST['_computech_offer_page_id'] ?? '0'));
+    update_post_meta($post_id, '_computech_offer_page_id', $offer_page_value === 'home' ? '0' : (string) absint($offer_page_value));
+    update_post_meta($post_id, '_computech_offer_page_slug', $offer_page_value === 'home' ? 'home' : '');
     update_post_meta($post_id, '_computech_offer_term_id', (string) absint($_POST['_computech_offer_term_id'] ?? 0));
     update_post_meta($post_id, '_computech_offer_url', esc_url_raw(wp_unslash($_POST['_computech_offer_url'] ?? '')));
     update_post_meta($post_id, '_computech_offer_new_tab', !empty($_POST['_computech_offer_new_tab']) ? '1' : '0');
@@ -5492,6 +5536,9 @@ function computech_home_offer_banner_posts(): array {
 function computech_home_offer_banner_url(WP_Post $post): string {
     $type = computech_section_meta($post, '_computech_offer_link_type', 'none');
     if ($type === 'page') {
+        if (computech_section_meta($post, '_computech_offer_page_slug', '') === 'home') {
+            return home_url('/');
+        }
         $page_id = absint(computech_section_meta($post, '_computech_offer_page_id', '0'));
         $url = $page_id ? get_permalink($page_id) : '';
         return $url ? $url : '#';
@@ -5926,6 +5973,7 @@ function computech_service_metabox(WP_Post $post): void {
     $link_type = sanitize_key((string)get_post_meta($post->ID, '_computech_service_link_type', true));
     if (!in_array($link_type, array('none','page','category','custom'), true)) { $link_type = 'none'; }
     $page_id = (string)get_post_meta($post->ID, '_computech_service_page_id', true);
+    $page_selected = (string)get_post_meta($post->ID, '_computech_service_page_slug', true) === 'home' ? 'home' : $page_id;
     $url = (string)get_post_meta($post->ID, '_computech_service_url', true);
     $term_id = (string)get_post_meta($post->ID, '_computech_service_term_id', true);
     $new_tab = (string)get_post_meta($post->ID, '_computech_service_new_tab', true);
@@ -5953,7 +6001,7 @@ function computech_service_metabox(WP_Post $post): void {
                 <div class="ct-admin-section-body">
                     <div class="ct-grid ct-grid-2">
                         <p class="ct-field"><label>نوع الرابط</label><?php echo computech_service_link_type_select('_computech_service_link_type', $link_type); ?></p>
-                        <p class="ct-field ct-service-page-field"><label>اختيار صفحة</label><select name="_computech_service_page_id" class="widefat"><?php echo computech_need_pages_options($page_id); ?></select></p>
+                        <p class="ct-field ct-service-page-field"><label>اختيار صفحة</label><select name="_computech_service_page_id" class="widefat"><?php echo computech_need_pages_options($page_selected); ?></select></p>
                         <p class="ct-field ct-service-category-field"><label>اختيار قسم منتجات</label><select name="_computech_service_term_id" class="widefat"><?php echo computech_hero_product_category_options($term_id); ?></select></p>
                     </div>
                     <p class="ct-field ct-service-url-field" style="margin-top:14px"><label>رابط خارجي</label><input type="url" name="_computech_service_url" value="<?php echo esc_attr($url); ?>" class="widefat" placeholder="https://example.com"></p>
@@ -6006,7 +6054,9 @@ function computech_save_service(int $post_id): void {
     $type = sanitize_key(wp_unslash($_POST['_computech_service_link_type'] ?? 'none'));
     $type = in_array($type, array('none','page','category','custom'), true) ? $type : 'none';
     update_post_meta($post_id, '_computech_service_link_type', $type);
-    update_post_meta($post_id, '_computech_service_page_id', (string)absint($_POST['_computech_service_page_id'] ?? 0));
+    $service_page_value = sanitize_text_field(wp_unslash($_POST['_computech_service_page_id'] ?? '0'));
+    update_post_meta($post_id, '_computech_service_page_id', $service_page_value === 'home' ? '0' : (string)absint($service_page_value));
+    update_post_meta($post_id, '_computech_service_page_slug', $service_page_value === 'home' ? 'home' : '');
     update_post_meta($post_id, '_computech_service_term_id', (string)absint($_POST['_computech_service_term_id'] ?? 0));
     update_post_meta($post_id, '_computech_service_url', esc_url_raw(wp_unslash($_POST['_computech_service_url'] ?? '')));
     update_post_meta($post_id, '_computech_service_new_tab', !empty($_POST['_computech_service_new_tab']) ? '1' : '0');
@@ -6038,6 +6088,9 @@ function computech_service_posts(): array {
 function computech_service_url(WP_Post $post): string {
     $type = sanitize_key((string)get_post_meta($post->ID, '_computech_service_link_type', true));
     if ($type === 'page') {
+        if ((string)get_post_meta($post->ID, '_computech_service_page_slug', true) === 'home') {
+            return home_url('/');
+        }
         $page_id = absint(get_post_meta($post->ID, '_computech_service_page_id', true));
         $url = $page_id ? get_permalink($page_id) : '';
         return $url ? (string)$url : '#';
