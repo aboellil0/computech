@@ -1521,6 +1521,8 @@ function computech_default_hero_slide_meta(): array {
         '_computech_hero_description' => '',
         '_computech_hero_features' => '',
         '_computech_hero_tags' => array(),
+        '_computech_hero_badge_line_1' => '',
+        '_computech_hero_badge_line_2' => '',
         '_computech_hero_primary_text' => '',
         '_computech_hero_primary_link_type' => 'none',
         '_computech_hero_primary_page_slug' => '',
@@ -1879,8 +1881,8 @@ function computech_hero_slide_metabox(WP_Post $post): void {
                 <p>أضف، عدّل، أو احذف شرائح الهيرو من هنا. كل شريحة لها نفس الحقول.</p>
             </div>
             <div class="ct-status-card">
-                <label><input type="checkbox" name="_computech_hero_show" value="1" <?php checked(computech_hero_meta($post, '_computech_hero_show', '1'), '1'); ?>> إظهار الشريحة</label>
-                <p class="description">لو اتقفلت، الشريحة مش هتظهر في سلايدر الرئيسية.</p>
+                <strong>الظهور من WordPress</strong>
+                <p class="description">الشريحة تظهر فقط عند الحالة Published والرؤية Public. استخدم صندوق Publish الجانبي للتحكم.</p>
             </div>
         </div>
 
@@ -1889,13 +1891,27 @@ function computech_hero_slide_metabox(WP_Post $post): void {
                 <div class="ct-admin-section-head">
                     <div>
                         <h3>1. محتوى الشريحة</h3>
-                        <p>كل شريحة لها نفس الحقول: عنوان، وصف، كلمات دليلية، صورة، وأزرار.</p>
+                        <p>كل شريحة لها نفس الحقول: عنوان، وصف، كلمات دليلية، وأزرار. صورة الشريحة من Featured Image.</p>
                     </div>
                 </div>
                 <div class="ct-admin-section-body">
                     <div class="ct-grid ct-grid-2">
                         <p class="ct-field"><label>عنوان الشريحة</label><input type="text" name="_computech_hero_title" value="<?php echo esc_attr(computech_hero_full_title($post)); ?>" class="widefat" placeholder="كل ما تحتاجه لعالم الكمبيوتر في مكان واحد"></p>
                         <p class="ct-field"><label>الوصف القصير</label><textarea name="_computech_hero_description" rows="3" class="widefat" maxlength="220"><?php echo esc_textarea(computech_hero_meta($post, '_computech_hero_description', $defaults['_computech_hero_description'])); ?></textarea><span class="ct-help">يفضل ألا يزيد عن سطرين في الواجهة.</span></p>
+                    </div>
+                    <div class="ct-admin-section" style="margin-top:14px; box-shadow:none;">
+                        <div class="ct-admin-section-head">
+                            <div>
+                                <h3>البادج العائم</h3>
+                                <p>اكتب نص البادج الظاهر فوق صورة الهيرو. لو الحقلين فاضيين، البادج لا يظهر.</p>
+                            </div>
+                        </div>
+                        <div class="ct-admin-section-body">
+                            <div class="ct-grid ct-grid-2">
+                                <p class="ct-field"><label>النص الأول</label><input type="text" name="_computech_hero_badge_line_1" value="<?php echo esc_attr(computech_hero_meta($post, '_computech_hero_badge_line_1', $defaults['_computech_hero_badge_line_1'])); ?>" class="widefat" placeholder="أحدث الأجهزة"></p>
+                                <p class="ct-field"><label>النص الثاني</label><input type="text" name="_computech_hero_badge_line_2" value="<?php echo esc_attr(computech_hero_meta($post, '_computech_hero_badge_line_2', $defaults['_computech_hero_badge_line_2'])); ?>" class="widefat" placeholder="أفضل الأسعار"></p>
+                            </div>
+                        </div>
                     </div>
                     <div class="ct-admin-section" style="margin-top:14px; box-shadow:none;">
                         <div class="ct-admin-section-head">
@@ -1935,13 +1951,7 @@ function computech_hero_slide_metabox(WP_Post $post): void {
                 <div class="ct-admin-section-head">
                     <div>
                         <h3>3. صورة الشريحة</h3>
-                        <p>ارفع صورة الشريحة من هنا، وسيتم أخذ Alt Text وTitle من بيانات الصورة داخل Media Library تلقائيًا.</p>
-                    </div>
-                </div>
-                <div class="ct-admin-section-body">
-                    <div class="ct-note"><span>ℹ️</span><div>ارفع أو اختر صورة الهيرو من Media Library. الواجهة ستستخدم Alt Text وTitle من بيانات الصورة تلقائيًا بدل إدخالهم يدويًا.</div></div>
-                    <div class="ct-grid ct-grid-1">
-                        <?php computech_admin_image_upload_field('صورة الشريحة', '_computech_hero_image_id', $post->ID, 'اختار صورة الشريحة من Media Library. عدّل Alt Text من صفحة الصورة نفسها لو محتاج SEO أفضل.'); ?>
+                        <p>استخدم صندوق Featured Image الجانبي في WordPress. الواجهة تقرأ الصورة والـ Alt Text منه مباشرة.</p>
                     </div>
                 </div>
             </section>
@@ -2039,6 +2049,8 @@ function computech_save_hero_slide(int $post_id): void {
         '_computech_hero_title_line_3',
         '_computech_hero_primary_text',
         '_computech_hero_secondary_text',
+        '_computech_hero_badge_line_1',
+        '_computech_hero_badge_line_2',
     );
     foreach ($text_fields as $field) {
         update_post_meta($post_id, $field, sanitize_text_field(wp_unslash($_POST[$field] ?? '')));
@@ -2104,8 +2116,8 @@ function computech_save_hero_slide(int $post_id): void {
 
     update_post_meta($post_id, '_computech_hero_buttons', $hero_buttons);
 
-    update_post_meta($post_id, '_computech_hero_image_id', (string) absint($_POST['_computech_hero_image_id'] ?? 0));
-    update_post_meta($post_id, '_computech_hero_show', !empty($_POST['_computech_hero_show']) ? '1' : '0');
+    delete_post_meta($post_id, '_computech_hero_image_id');
+    delete_post_meta($post_id, '_computech_hero_show');
 }
 add_action('save_post_computech_hero_slide', 'computech_save_hero_slide');
 
@@ -2116,15 +2128,11 @@ function computech_get_hero_slides(): array {
         'posts_per_page' => -1,
         'orderby' => array('menu_order' => 'ASC', 'date' => 'ASC'),
         'order' => 'ASC',
-        'meta_query' => array(
-            array(
-                'key' => '_computech_hero_show',
-                'value' => '1',
-                'compare' => '=',
-            ),
-        ),
+        'has_password' => false,
     ));
-    return $query->posts;
+    return array_values(array_filter($query->posts, static function ($slide): bool {
+        return $slide instanceof WP_Post && $slide->post_status === 'publish' && $slide->post_password === '';
+    }));
 }
 
 function computech_hero_feature_svg(int $index): string {
@@ -2212,9 +2220,11 @@ function computech_render_hero_slide(WP_Post $slide, int $index): void {
     }
     $description = computech_hero_meta($slide, '_computech_hero_description', '');
     $features = computech_get_hero_display_tags($slide);
-    $hero_image = computech_post_image_data((int) $slide->ID, '_computech_hero_image_id', 'full', '_computech_hero_image_url');
+    $hero_image = computech_attachment_image_data((int) get_post_thumbnail_id($slide), 'full');
     $image = $hero_image['url'];
     $alt = $hero_image['alt'] !== '' ? $hero_image['alt'] : get_the_title($slide);
+    $badge_1 = trim(computech_hero_meta($slide, '_computech_hero_badge_line_1', ''));
+    $badge_2 = trim(computech_hero_meta($slide, '_computech_hero_badge_line_2', ''));
     ?>
     <div class="hero-slide <?php echo $index === 0 ? 'is-active' : ''; ?>" data-hero-slide>
         <div class="hero-container">
@@ -2237,6 +2247,12 @@ function computech_render_hero_slide(WP_Post $slide, int $index): void {
                 <div class="hero-image-wrapper">
                     <div class="hero-image-glow"></div>
                     <img src="<?php echo esc_url($image); ?>" alt="<?php echo esc_attr($alt); ?>" class="hero-image">
+                    <?php if ($badge_1 !== '' || $badge_2 !== '') : ?>
+                        <div class="hero-floating-badge">
+                            <?php if ($badge_1 !== '') : ?><span><?php echo esc_html($badge_1); ?></span><?php endif; ?>
+                            <?php if ($badge_2 !== '') : ?><span><?php echo esc_html($badge_2); ?></span><?php endif; ?>
+                        </div>
+                    <?php endif; ?>
                     <div class="floating-dots"><span class="f-dot d1"></span><span class="f-dot d2"></span><span class="f-dot d3"></span><span class="f-dot d4"></span><span class="f-dot d5"></span></div>
                 </div>
             <?php endif; ?>
