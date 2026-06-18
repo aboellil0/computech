@@ -15612,3 +15612,109 @@ body.home .contact-section .contact-panel .contact-social-btn span {
     width: 100% !important;
     height: 100% !important;
 }
+
+/* Topbar overflow fix: show max 3 items cleanly, slide extras without breaking UI */
+.computech-topbar {
+    width: 100% !important;
+    height: 56px !important;
+    min-height: 56px !important;
+    max-height: 56px !important;
+    overflow: hidden !important;
+    padding: 0 !important;
+    box-sizing: border-box !important;
+}
+
+.computech-topbar .benefits-slider {
+    width: 100% !important;
+    max-width: var(--ct-shell-max, 1440px) !important;
+    height: 56px !important;
+    margin-inline: auto !important;
+    padding-inline: var(--ct-shell-pad, clamp(18px, 4vw, 56px)) !important;
+    overflow: hidden !important;
+    box-sizing: border-box !important;
+}
+
+.computech-topbar .benefits-track {
+    display: flex !important;
+    flex-wrap: nowrap !important;
+    align-items: center !important;
+    justify-content: flex-start !important;
+    height: 56px !important;
+    min-width: 100% !important;
+    width: max-content !important;
+    overflow: visible !important;
+    direction: ltr !important;
+    transition: transform 0.55s ease !important;
+    will-change: transform !important;
+}
+
+.computech-topbar .benefits-track > .benefit-item {
+    flex: 0 0 calc(100% / 3) !important;
+    width: calc(100% / 3) !important;
+    max-width: calc(100% / 3) !important;
+    height: 56px !important;
+    min-width: 0 !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    gap: 10px !important;
+    padding: 0 clamp(10px, 1.8vw, 22px) !important;
+    box-sizing: border-box !important;
+    overflow: hidden !important;
+    white-space: nowrap !important;
+    direction: rtl !important;
+}
+
+.computech-topbar .benefit-text {
+    min-width: 0 !important;
+    max-width: calc(100% - 34px) !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    white-space: nowrap !important;
+    display: block !important;
+    -webkit-line-clamp: unset !important;
+    -webkit-box-orient: unset !important;
+}
+
+.computech-topbar .benefit-icon-frame {
+    flex: 0 0 24px !important;
+    width: 24px !important;
+    height: 24px !important;
+}
+
+@media (max-width: 1024px) {
+    .computech-topbar .benefits-track > .benefit-item {
+        flex-basis: 50% !important;
+        width: 50% !important;
+        max-width: 50% !important;
+        justify-content: center !important;
+        text-align: center !important;
+    }
+}
+
+@media (max-width: 640px) {
+    .computech-topbar,
+    .computech-topbar .benefits-slider,
+    .computech-topbar .benefits-track,
+    .computech-topbar .benefits-track > .benefit-item {
+        height: 48px !important;
+        min-height: 48px !important;
+        max-height: 48px !important;
+    }
+
+    .computech-topbar .benefits-track > .benefit-item {
+        flex-basis: 100% !important;
+        width: 100% !important;
+        max-width: 100% !important;
+        justify-content: center !important;
+        text-align: center !important;
+    }
+}
+
+/* Topbar custom icon image */
+.computech-topbar .benefit-icon-frame img.ct-topbar-icon-img,
+.computech-topbar .benefit-icon-frame img {
+    width: 20px;
+    height: 20px;
+    object-fit: contain;
+    display: block;
+}

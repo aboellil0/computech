@@ -866,7 +866,17 @@
             const visible = Math.min(topbarVisibleCount(), slides.length);
             const maxIndex = Math.max(0, slides.length - visible);
             if (topbarIndex > maxIndex) { topbarIndex = 0; }
-            const slideWidth = slides[0].getBoundingClientRect().width || 0;
+
+            const sliderWidth = topbarSlider.clientWidth || topbarSlider.getBoundingClientRect().width || 0;
+            const slideWidth = sliderWidth > 0 ? (sliderWidth / visible) : (slides[0].getBoundingClientRect().width || 0);
+
+            slides.forEach(function (slide) {
+                slide.style.flex = '0 0 ' + slideWidth + 'px';
+                slide.style.width = slideWidth + 'px';
+                slide.style.maxWidth = slideWidth + 'px';
+            });
+
+            track.style.width = (slideWidth * slides.length) + 'px';
             track.style.transform = 'translateX(' + (-topbarIndex * slideWidth) + 'px)';
         }
 

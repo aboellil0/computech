@@ -239,7 +239,10 @@ function computech_wc_get_category_items(string $section = 'shop', int $limit = 
     }
 
     $items = array_map(static fn(array $row): array => $row['item'], $items);
-    return $limit > 0 ? array_slice($items, 0, $limit) : $items;
+    if ($limit > 0) {
+        return $section === 'featured' ? array_slice($items, -$limit) : array_slice($items, 0, $limit);
+    }
+    return $items;
 }
 
 function computech_wc_render_category_icon(array $item, string $class = 'cat-card-icon-img'): void {
@@ -552,13 +555,13 @@ function computech_wc_product_card($product_or_post = null): void {
     <?php
 }
 
-function computech_wc_get_featured_products(int $limit = 12): array {
+function computech_wc_get_featured_products(int $limit = 8): array {
     if (!computech_wc_active()) {
         return array();
     }
     $products = wc_get_products(array(
         'status' => 'publish',
-        'limit' => $limit,
+        'limit' => -1,
         'orderby' => 'date',
         'order' => 'DESC',
         'return' => 'objects',
@@ -573,6 +576,9 @@ function computech_wc_get_featured_products(int $limit = 12): array {
         }
         return $ao <=> $bo;
     });
+    if ($limit > 0 && count($products) > $limit) {
+        $products = array_slice($products, -$limit);
+    }
     return $products;
 }
 
@@ -583,7 +589,7 @@ function computech_wc_render_featured_products_section(): void {
     if (function_exists('computech_home_section_option') && computech_home_section_option('featured_show', '0') !== '1') {
         return;
     }
-    $products = computech_wc_get_featured_products(12);
+    $products = computech_wc_get_featured_products(8);
     if (!$products) {
         return;
     }
@@ -913,7 +919,10 @@ function computech_wc_product_metabox_html(WP_Post $post): void {
     if (!in_array($condition, array('new', 'imported'), true)) { $condition = 'new'; }
     ?>
     <div class="computech-product-admin" style="direction:rtl;display:grid;gap:18px">
-        <div style="max-width:520px;background:#fff;border:1px solid #d7e2f2;border-radius:14px;padding:12px 14px;box-shadow:0 8px 24px rgba(15,23,42,.06)"><strong>ظهور الكارت</strong><p class="description" style="margin:8px 0 0;color:#64748b">Published + Public = يظهر. Draft / Pending / Private / Password protected = لا يظهر.</p></div>
+        <div style="display:flex;gap:12px;flex-wrap:wrap;align-items:stretch">
+            <div style="max-width:520px;background:#fff;border:1px solid #d7e2f2;border-radius:14px;padding:12px 14px;box-shadow:0 8px 24px rgba(15,23,42,.06)"><strong>ظهور الكارت</strong><p class="description" style="margin:8px 0 0;color:#64748b">Published + Public = يظهر. Draft / Pending / Private / Password protected = لا يظهر.</p></div>
+            <div style="max-width:520px;background:#fff;border:1px solid #d7e2f2;border-radius:14px;padding:12px 14px;box-shadow:0 8px 24px rgba(15,23,42,.06)"><strong>تنبيه منتجات مميزة</strong><p class="description" style="margin:8px 0 0;color:#64748b">الصفحة الرئيسية تعرض 8 منتجات مميزة كحد أقصى. إذا زاد العدد سيظهر آخر 8 منتجات فقط حسب Featured Order.</p></div>
+        </div>
         <p><strong>WooCommerce controls:</strong> price, stock, product image, gallery, categories, and core data.</p>
         <div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px">
             <p><label style="display:block;font-weight:700;margin-bottom:6px"><input type="checkbox" name="_computech_wc_is_featured" value="1" <?php checked($is_featured); ?>> Is Featured</label><span class="description">Shows this product in homepage featured products.</span></p>
