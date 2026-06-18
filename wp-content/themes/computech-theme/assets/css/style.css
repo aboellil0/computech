@@ -18402,3 +18402,64 @@ a.contact-info-value:hover {
         margin-inline-start: 0;
     }
 }
+
+/* ============================================
+   Computech final fix: top header dynamic item count
+   - 2 visible items: one fixed right, one fixed left
+   - 1 visible item: centered
+   ============================================ */
+.computech-topbar[data-count="1"] .benefits-track {
+    grid-template-columns: minmax(0, 1fr) !important;
+    direction: rtl !important;
+    justify-items: center !important;
+}
+
+.computech-topbar[data-count="1"] .benefits-track > .benefit-item,
+.computech-topbar[data-count="1"] .benefits-track > .benefit-item.ct-topbar-slot-single,
+.computech-topbar[data-count="1"] .benefits-track > .benefit-item:nth-child(1) {
+    justify-content: center !important;
+    justify-self: center !important;
+    text-align: center !important;
+}
+
+.computech-topbar[data-count="1"] .benefits-track > .benefit-item .benefit-text,
+.computech-topbar[data-count="1"] .benefits-track > .benefit-item.ct-topbar-slot-single .benefit-text,
+.computech-topbar[data-count="1"] .benefits-track > .benefit-item:nth-child(1) .benefit-text {
+    text-align: center !important;
+}
+
+.computech-topbar[data-count="2"] .benefits-track {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    direction: rtl !important;
+    justify-items: stretch !important;
+}
+
+.computech-topbar[data-count="2"] .benefits-track > .benefit-item.ct-topbar-slot-right,
+.computech-topbar[data-count="2"] .benefits-track > .benefit-item:nth-child(1) {
+    justify-content: flex-start !important;
+    justify-self: stretch !important;
+    text-align: right !important;
+}
+
+.computech-topbar[data-count="2"] .benefits-track > .benefit-item.ct-topbar-slot-right .benefit-text,
+.computech-topbar[data-count="2"] .benefits-track > .benefit-item:nth-child(1) .benefit-text {
+    text-align: right !important;
+}
+
+.computech-topbar[data-count="2"] .benefits-track > .benefit-item.ct-topbar-slot-left,
+.computech-topbar[data-count="2"] .benefits-track > .benefit-item:nth-child(2) {
+    justify-content: flex-end !important;
+    justify-self: stretch !important;
+    text-align: left !important;
+}
+
+.computech-topbar[data-count="2"] .benefits-track > .benefit-item.ct-topbar-slot-left .benefit-text,
+.computech-topbar[data-count="2"] .benefits-track > .benefit-item:nth-child(2) .benefit-text {
+    text-align: left !important;
+}
+
+@media (max-width: 640px) {
+    .computech-topbar[data-count="2"] .benefits-track {
+        grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    }
+}

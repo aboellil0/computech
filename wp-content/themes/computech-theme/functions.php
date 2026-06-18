@@ -82,7 +82,9 @@ add_action('admin_init', 'computech_admin_fix_clean_routes', 5);
 function computech_filter_clean_generated_url($url) {
     return is_string($url) ? computech_route_without_index_php($url) : $url;
 }
-add_filter('home_url', 'computech_filter_clean_generated_url', 20, 1);
+// Do not filter home_url globally. WordPress uses it internally while resolving
+// rewrite rules; filtering it globally can break WooCommerce product/category
+// requests on local servers. Specific generated links are cleaned below.
 add_filter('page_link', 'computech_filter_clean_generated_url', 20, 1);
 add_filter('post_link', 'computech_filter_clean_generated_url', 20, 1);
 add_filter('post_type_link', 'computech_filter_clean_generated_url', 20, 1);
@@ -119,6 +121,181 @@ function computech_redirect_index_php_routes(): void {
 }
 add_action('template_redirect', 'computech_redirect_index_php_routes', 1);
 
+
+
+/**
+ * Clean URL fallback for WooCommerce routes.
+ *
+ * Some local setups previously used /index.php/%postname%/ permalinks. After
+ * cleaning generated URLs to /product/slug/ and /product-category/slug/, stale
+ * rewrite rules can make WordPress fall through to index.php and show
+ * "لا يوجد محتوى". This request-level fallback maps clean WooCommerce product
+ * and category URLs back to the correct query vars before the main query runs.
+ */
+function computech_clean_route_request_path(): string {
+    $request_uri = isset($_SERVER['REQUEST_URI']) ? (string) wp_unslash($_SERVER['REQUEST_URI']) : '';
+    if ($request_uri === '') {
+        return '';
+    }
+
+    $path = (string) wp_parse_url($request_uri, PHP_URL_PATH);
+    $path = rawurldecode($path);
+    $path = trim($path, '/');
+
+    $home_path = (string) wp_parse_url(home_url('/'), PHP_URL_PATH);
+    $home_path = trim($home_path, '/');
+    if ($home_path !== '') {
+        if ($path === $home_path) {
+            $path = '';
+        } elseif (strpos($path, $home_path . '/') === 0) {
+            $path = substr($path, strlen($home_path) + 1);
+        }
+    }
+
+    if (strpos($path, 'index.php/') === 0) {
+        $path = substr($path, strlen('index.php/'));
+    } elseif ($path === 'index.php') {
+        $path = '';
+    }
+
+    return trim($path, '/');
+}
+
+function computech_clean_route_base_candidates(string $type): array {
+    $bases = array();
+    $woocommerce_permalinks = get_option('woocommerce_permalinks', array());
+    $woocommerce_permalinks = is_array($woocommerce_permalinks) ? $woocommerce_permalinks : array();
+
+    if ($type === 'product') {
+        $bases[] = (string) ($woocommerce_permalinks['product_base'] ?? '');
+        $bases[] = 'product';
+    } elseif ($type === 'product_cat') {
+        $bases[] = (string) ($woocommerce_permalinks['category_base'] ?? '');
+        $bases[] = 'product-category';
+    }
+
+    $clean = array();
+    foreach ($bases as $base) {
+        $base = trim((string) $base, '/');
+        if ($base === '') {
+            continue;
+        }
+
+        // For product bases such as shop/%product_cat%, keep the fixed prefix.
+        $base = preg_replace('#/%[^/]+%#', '', $base);
+        $base = trim((string) $base, '/');
+        if ($base !== '') {
+            $clean[] = $base;
+        }
+    }
+
+    return array_values(array_unique($clean));
+}
+
+function computech_clean_route_path_starts_with_base(array $path_segments, string $base): ?array {
+    $base_segments = array_values(array_filter(explode('/', trim($base, '/')), static function($segment) {
+        return $segment !== '';
+    }));
+
+    if (!$base_segments || count($path_segments) <= count($base_segments)) {
+        return null;
+    }
+
+    foreach ($base_segments as $index => $segment) {
+        if (!isset($path_segments[$index]) || $path_segments[$index] !== $segment) {
+            return null;
+        }
+    }
+
+    return array_slice($path_segments, count($base_segments));
+}
+
+function computech_clean_route_fallback_request(array $query_vars): array {
+    if (is_admin() || wp_doing_ajax() || (defined('REST_REQUEST') && REST_REQUEST)) {
+        return $query_vars;
+    }
+
+    if (isset($query_vars['product']) || isset($query_vars['product_cat']) || isset($query_vars['post_type']) && $query_vars['post_type'] === 'product') {
+        return $query_vars;
+    }
+
+    if (!post_type_exists('product') && !taxonomy_exists('product_cat')) {
+        return $query_vars;
+    }
+
+    $path = computech_clean_route_request_path();
+    if ($path === '') {
+        return $query_vars;
+    }
+
+    $path_segments = array_values(array_filter(explode('/', $path), static function($segment) {
+        return $segment !== '';
+    }));
+
+    if (!$path_segments) {
+        return $query_vars;
+    }
+
+    // Product category archive: /product-category/category-slug/
+    if (taxonomy_exists('product_cat')) {
+        foreach (computech_clean_route_base_candidates('product_cat') as $base) {
+            $remaining = computech_clean_route_path_starts_with_base($path_segments, $base);
+            if (!$remaining) {
+                continue;
+            }
+
+            $term_path = implode('/', array_map('sanitize_title', $remaining));
+            $last_slug = sanitize_title((string) end($remaining));
+            $term = $last_slug !== '' ? get_term_by('slug', $last_slug, 'product_cat') : false;
+            if ($term instanceof WP_Term) {
+                return array('product_cat' => $term_path);
+            }
+        }
+    }
+
+    // Single product: /product/product-slug/ or custom base such as /shop/category/product-slug/
+    if (post_type_exists('product')) {
+        foreach (computech_clean_route_base_candidates('product') as $base) {
+            $remaining = computech_clean_route_path_starts_with_base($path_segments, $base);
+            if (!$remaining) {
+                continue;
+            }
+
+            $product_slug = sanitize_title((string) end($remaining));
+            if ($product_slug === '') {
+                continue;
+            }
+
+            $product_post = get_page_by_path($product_slug, OBJECT, 'product');
+            if ($product_post instanceof WP_Post && $product_post->post_status === 'publish') {
+                return array(
+                    'post_type' => 'product',
+                    'product' => $product_post->post_name,
+                    'name' => $product_post->post_name,
+                );
+            }
+        }
+    }
+
+    return $query_vars;
+}
+add_filter('request', 'computech_clean_route_fallback_request', 0);
+
+function computech_admin_fix_product_category_clean_routes(): void {
+    if (!current_user_can('manage_options')) {
+        return;
+    }
+
+    $version_key = '2026-06-18-product-category-routes-v2';
+    if (get_option('computech_product_category_routes_version') === $version_key) {
+        return;
+    }
+
+    computech_enable_clean_permalink_routes(false);
+    flush_rewrite_rules(false);
+    update_option('computech_product_category_routes_version', $version_key, false);
+}
+add_action('admin_init', 'computech_admin_fix_product_category_clean_routes', 30);
 
 /**
  * Global site identity helpers.
