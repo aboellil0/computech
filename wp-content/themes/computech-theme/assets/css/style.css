@@ -15751,3 +15751,273 @@ body.home .contact-section .contact-panel .contact-social-btn span {
     text-overflow: ellipsis !important;
     white-space: nowrap !important;
 }
+
+/* Computech final topbar fix: moving track with fixed inner slots */
+.computech-topbar .benefits-slider {
+    overflow: hidden !important;
+}
+
+.computech-topbar .benefits-track {
+    display: flex !important;
+    flex-wrap: nowrap !important;
+    align-items: center !important;
+    justify-content: flex-start !important;
+    overflow: visible !important;
+    direction: ltr !important;
+    transition: transform 0.55s ease !important;
+    will-change: transform !important;
+}
+
+.computech-topbar .benefits-track > .benefit-item {
+    flex-shrink: 0 !important;
+    flex-grow: 0 !important;
+    min-width: 0 !important;
+    max-width: none !important;
+    overflow: hidden !important;
+    white-space: nowrap !important;
+    direction: rtl !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    gap: 10px !important;
+}
+
+.computech-topbar .benefits-track > .benefit-item.ct-topbar-slot-left {
+    justify-content: flex-end !important;
+    text-align: right !important;
+}
+
+.computech-topbar .benefits-track > .benefit-item.ct-topbar-slot-center,
+.computech-topbar .benefits-track > .benefit-item.ct-topbar-slot-single {
+    justify-content: center !important;
+    text-align: center !important;
+}
+
+.computech-topbar .benefits-track > .benefit-item.ct-topbar-slot-right {
+    justify-content: flex-start !important;
+    text-align: left !important;
+}
+
+.computech-topbar .benefits-track > .benefit-item.ct-topbar-slot-left .benefit-text {
+    text-align: right !important;
+}
+
+.computech-topbar .benefits-track > .benefit-item.ct-topbar-slot-center .benefit-text,
+.computech-topbar .benefits-track > .benefit-item.ct-topbar-slot-single .benefit-text {
+    text-align: center !important;
+}
+
+.computech-topbar .benefits-track > .benefit-item.ct-topbar-slot-right .benefit-text {
+    text-align: left !important;
+}
+
+.computech-topbar .benefit-text {
+    min-width: 0 !important;
+    max-width: calc(100% - 34px) !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    white-space: nowrap !important;
+    display: block !important;
+}
+
+.computech-topbar .benefit-icon-frame {
+    flex: 0 0 24px !important;
+    width: 24px !important;
+    height: 24px !important;
+    min-width: 24px !important;
+    max-width: 24px !important;
+}
+
+/* Computech fix: center topbar item content inside every moving slot */
+.computech-topbar .benefits-track > .benefit-item,
+.computech-topbar .benefits-track > .benefit-item.ct-topbar-slot-left,
+.computech-topbar .benefits-track > .benefit-item.ct-topbar-slot-center,
+.computech-topbar .benefits-track > .benefit-item.ct-topbar-slot-right,
+.computech-topbar .benefits-track > .benefit-item.ct-topbar-slot-single {
+    justify-content: center !important;
+    text-align: center !important;
+}
+
+.computech-topbar .benefits-track > .benefit-item .benefit-text,
+.computech-topbar .benefits-track > .benefit-item.ct-topbar-slot-left .benefit-text,
+.computech-topbar .benefits-track > .benefit-item.ct-topbar-slot-center .benefit-text,
+.computech-topbar .benefits-track > .benefit-item.ct-topbar-slot-right .benefit-text,
+.computech-topbar .benefits-track > .benefit-item.ct-topbar-slot-single .benefit-text {
+    text-align: center !important;
+}
+
+
+/* Computech strict topbar: every visible slot centered, always 3 slots */
+.computech-topbar .benefits-slider {
+    overflow: hidden !important;
+}
+.computech-topbar .benefits-track {
+    display: flex !important;
+    align-items: center !important;
+    flex-wrap: nowrap !important;
+    justify-content: flex-start !important;
+}
+.computech-topbar .benefits-track > .benefit-item,
+.computech-topbar .benefits-track > a.benefit-item,
+.computech-topbar .benefits-track > div.benefit-item,
+.computech-topbar .benefits-track > .benefit-item.ct-topbar-slot-left,
+.computech-topbar .benefits-track > .benefit-item.ct-topbar-slot-center,
+.computech-topbar .benefits-track > .benefit-item.ct-topbar-slot-right,
+.computech-topbar .benefits-track > .benefit-item.ct-topbar-slot-single {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    text-align: center !important;
+    gap: 10px !important;
+    padding-inline: 12px !important;
+    min-width: 0 !important;
+    overflow: hidden !important;
+    box-sizing: border-box !important;
+}
+.computech-topbar .benefits-track > .benefit-item .benefit-text,
+.computech-topbar .benefits-track > .benefit-item.ct-topbar-slot-left .benefit-text,
+.computech-topbar .benefits-track > .benefit-item.ct-topbar-slot-center .benefit-text,
+.computech-topbar .benefits-track > .benefit-item.ct-topbar-slot-right .benefit-text,
+.computech-topbar .benefits-track > .benefit-item.ct-topbar-slot-single .benefit-text {
+    text-align: center !important;
+    margin: 0 !important;
+    min-width: 0 !important;
+    max-width: calc(100% - 34px) !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    white-space: nowrap !important;
+    display: block !important;
+}
+.computech-topbar .benefit-icon-frame {
+    flex: 0 0 24px !important;
+}
+
+/* Computech rest footer admin UX */
+.ct-rest-feature-row {
+    grid-template-columns: 160px 260px minmax(0, 1fr) !important;
+    align-items: end !important;
+}
+.ct-rest-feature-row .ct-row-head {
+    grid-column: 1 / -1 !important;
+}
+.ct-rest-feature-row .ct-feature-visible {
+    background: #eff6ff !important;
+    border: 1px solid #bfdbfe !important;
+    border-radius: 12px !important;
+    padding: 10px 12px !important;
+    min-height: 42px !important;
+    display: flex !important;
+    align-items: center !important;
+    gap: 8px !important;
+}
+.ct-rest-feature-row .ct-feature-text-field {
+    grid-column: auto !important;
+}
+.ct-rest-features-toolbar {
+    display: flex !important;
+    justify-content: space-between !important;
+    align-items: center !important;
+    gap: 12px !important;
+    margin-top: 14px !important;
+}
+.ct-rest-feature-warning {
+    background: #fff7ed !important;
+    border: 1px solid #fed7aa !important;
+    color: #9a3412 !important;
+    border-radius: 12px !important;
+    padding: 10px 12px !important;
+    font-weight: 700 !important;
+    margin: 10px 0 16px !important;
+}
+@media(max-width: 900px) {
+    .ct-rest-feature-row {
+        grid-template-columns: 1fr !important;
+    }
+}
+
+
+/* Computech final topbar: no slider, max 3 last items from PHP, stable centered layout */
+.computech-topbar {
+    height: 56px !important;
+    min-height: 56px !important;
+    max-height: 56px !important;
+    overflow: hidden !important;
+    padding: 0 !important;
+}
+
+.computech-topbar .benefits-slider {
+    width: 100% !important;
+    max-width: var(--ct-shell-max, 1440px) !important;
+    height: 56px !important;
+    margin-inline: auto !important;
+    padding-inline: var(--ct-shell-pad, clamp(18px, 4vw, 56px)) !important;
+    overflow: hidden !important;
+    box-sizing: border-box !important;
+}
+
+.computech-topbar .benefits-track {
+    width: 100% !important;
+    min-width: 0 !important;
+    max-width: 100% !important;
+    height: 56px !important;
+    display: grid !important;
+    grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+    align-items: center !important;
+    justify-items: center !important;
+    gap: 0 !important;
+    transform: none !important;
+    transition: none !important;
+    will-change: auto !important;
+    overflow: hidden !important;
+    direction: rtl !important;
+}
+
+.computech-topbar .benefits-track > .benefit-item,
+.computech-topbar .benefits-track > a.benefit-item,
+.computech-topbar .benefits-track > div.benefit-item,
+.computech-topbar .benefits-track > .benefit-item.ct-topbar-slot-left,
+.computech-topbar .benefits-track > .benefit-item.ct-topbar-slot-center,
+.computech-topbar .benefits-track > .benefit-item.ct-topbar-slot-right,
+.computech-topbar .benefits-track > .benefit-item.ct-topbar-slot-single {
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
+    height: 56px !important;
+    min-height: 56px !important;
+    max-height: 56px !important;
+    flex: none !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    justify-self: center !important;
+    text-align: center !important;
+    gap: 10px !important;
+    padding: 0 12px !important;
+    box-sizing: border-box !important;
+    overflow: hidden !important;
+    white-space: nowrap !important;
+    direction: rtl !important;
+}
+
+.computech-topbar .benefit-text,
+.computech-topbar .benefits-track > .benefit-item .benefit-text,
+.computech-topbar .benefits-track > .benefit-item.ct-topbar-slot-left .benefit-text,
+.computech-topbar .benefits-track > .benefit-item.ct-topbar-slot-center .benefit-text,
+.computech-topbar .benefits-track > .benefit-item.ct-topbar-slot-right .benefit-text,
+.computech-topbar .benefits-track > .benefit-item.ct-topbar-slot-single .benefit-text {
+    display: block !important;
+    min-width: 0 !important;
+    max-width: calc(100% - 34px) !important;
+    margin: 0 !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    white-space: nowrap !important;
+    text-align: center !important;
+}
+
+.computech-topbar .benefit-icon-frame {
+    flex: 0 0 24px !important;
+    width: 24px !important;
+    height: 24px !important;
+    min-width: 24px !important;
+    max-width: 24px !important;
+}

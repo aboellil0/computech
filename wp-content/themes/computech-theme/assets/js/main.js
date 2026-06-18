@@ -847,7 +847,7 @@
     }
 
 
-    /* Dynamic top bar slider - handles any number of admin items */
+    /* Dynamic top bar slider - fixed slots, stable inner alignment */
     const topbarSlider = document.querySelector('[data-topbar-slider]');
     if (topbarSlider) {
         const track = topbarSlider.querySelector('.benefits-track');
@@ -856,9 +856,41 @@
         let topbarTimer = null;
 
         function topbarVisibleCount() {
-            if (window.matchMedia('(max-width: 640px)').matches) { return 1; }
-            if (window.matchMedia('(max-width: 1024px)').matches) { return 2; }
             return 3;
+        }
+
+        function topbarContentWidth() {
+            if (!topbarSlider) { return 0; }
+            const rectWidth = topbarSlider.getBoundingClientRect().width || topbarSlider.clientWidth || 0;
+            const styles = window.getComputedStyle(topbarSlider);
+            const padStart = parseFloat(styles.paddingLeft || '0') || 0;
+            const padEnd = parseFloat(styles.paddingRight || '0') || 0;
+            return Math.max(0, rectWidth - padStart - padEnd);
+        }
+
+        function resetTopbarSlotClasses() {
+            slides.forEach(function (slide) {
+                slide.classList.remove('ct-topbar-slot-left', 'ct-topbar-slot-center', 'ct-topbar-slot-right', 'ct-topbar-slot-single');
+            });
+        }
+
+        function applyTopbarSlotClasses(visible) {
+            resetTopbarSlotClasses();
+            for (let slot = 0; slot < visible; slot += 1) {
+                const slide = slides[topbarIndex + slot];
+                if (!slide) { continue; }
+                if (visible === 1) {
+                    slide.classList.add('ct-topbar-slot-single');
+                } else if (visible === 2) {
+                    slide.classList.add(slot === 0 ? 'ct-topbar-slot-left' : 'ct-topbar-slot-right');
+                } else if (slot === 0) {
+                    slide.classList.add('ct-topbar-slot-left');
+                } else if (slot === 1) {
+                    slide.classList.add('ct-topbar-slot-center');
+                } else {
+                    slide.classList.add('ct-topbar-slot-right');
+                }
+            }
         }
 
         function updateTopbarSlider() {
@@ -867,7 +899,7 @@
             const maxIndex = Math.max(0, slides.length - visible);
             if (topbarIndex > maxIndex) { topbarIndex = 0; }
 
-            const sliderWidth = topbarSlider.clientWidth || topbarSlider.getBoundingClientRect().width || 0;
+            const sliderWidth = topbarContentWidth();
             const slideWidth = sliderWidth > 0 ? (sliderWidth / visible) : (slides[0].getBoundingClientRect().width || 0);
 
             slides.forEach(function (slide) {
@@ -879,7 +911,8 @@
 
             track.style.setProperty('width', (slideWidth * slides.length) + 'px', 'important');
             track.style.setProperty('min-width', (slideWidth * slides.length) + 'px', 'important');
-            track.style.transform = 'translateX(' + (-topbarIndex * slideWidth) + 'px)';
+            track.style.transform = 'translate3d(' + (-topbarIndex * slideWidth) + 'px, 0, 0)';
+            applyTopbarSlotClasses(visible);
         }
 
         function startTopbarSlider() {

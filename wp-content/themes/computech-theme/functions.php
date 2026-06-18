@@ -824,7 +824,7 @@ function computech_render_header_topbar(): void {
     $posts = function_exists('computech_topbar_item_posts') ? computech_topbar_item_posts() : array();
 
     if ($posts) {
-        echo '<div class="benefits-strip computech-topbar" data-count="' . esc_attr((string) count($posts)) . '"><div class="benefits-slider" data-topbar-slider><div class="benefits-track">';
+        echo '<div class="benefits-strip computech-topbar" data-count="' . esc_attr((string) count($posts)) . '"><div class="benefits-slider"><div class="benefits-track">';
         foreach ($posts as $post) {
             $url = computech_topbar_item_url($post);
             $target = !empty(get_post_meta($post->ID, '_computech_topbar_new_tab', true)) ? ' target="_blank" rel="noopener"' : '';
@@ -840,11 +840,11 @@ function computech_render_header_topbar(): void {
     }
 
     // Backward compatibility for old saved option rows until posts are created/seeded.
-    $items = computech_get_visible_topbar_items();
+    $items = array_slice(computech_get_visible_topbar_items(), -3);
     if (!$items) {
         return;
     }
-    echo '<div class="benefits-strip computech-topbar" data-count="' . esc_attr((string) count($items)) . '"><div class="benefits-slider" data-topbar-slider><div class="benefits-track">';
+    echo '<div class="benefits-strip computech-topbar" data-count="' . esc_attr((string) count($items)) . '"><div class="benefits-slider"><div class="benefits-track">';
     foreach ($items as $item) {
         $tag = !empty($item['link']) ? 'a' : 'div';
         $attrs = !empty($item['link']) ? ' href="' . esc_url($item['link']) . '"' : '';
@@ -4500,9 +4500,6 @@ function computech_render_footer_feature_strip(): void {
 }
 
 function computech_render_footer_social_links(): void {
-    if (!computech_footer_bool('show_social_links', true)) {
-        return;
-    }
     $identity_items = function_exists('computech_site_identity_social_links') ? computech_site_identity_social_links() : array();
     $items = !empty($identity_items) ? $identity_items : computech_footer_visible_rows('computech_footer_social_links');
     if (empty($items)) {
@@ -5280,7 +5277,7 @@ function computech_topbar_item_metabox(WP_Post $post): void {
                 <p>النص من عنوان WordPress. الترتيب من Order. لا يتم استخدام Featured Image هنا.</p>
             </div>
             <?php echo computech_visibility_guide_inline('ظهور الكارت'); ?>
-            <?php echo computech_limit_warning_inline('الحد الأقصى الظاهر في الواجهة هو 3 عناصر. عند إضافة أكثر من 3 عناصر يعمل الشريط كسلايدر ويعرض 3 عناصر في كل مرة.'); ?>
+            <?php echo computech_limit_warning_inline('الحد الأقصى الظاهر في الواجهة هو 3 عناصر. عند إضافة أكثر من 3 عناصر يظهر آخر 3 عناصر فقط.'); ?>
         </div>
         <div class="ct-hero-dashboard">
             <section class="ct-admin-section">
@@ -5380,9 +5377,11 @@ function computech_topbar_item_posts(): array {
         'no_found_rows' => true,
     ));
 
-    return array_values(array_filter($posts, static function ($post): bool {
+    $posts = array_values(array_filter($posts, static function ($post): bool {
         return $post instanceof WP_Post && $post->post_status === 'publish' && $post->post_password === '' && trim(get_the_title($post)) !== '';
     }));
+
+    return array_slice($posts, -3);
 }
 
 function computech_topbar_item_url(WP_Post $post): string {
@@ -6599,7 +6598,6 @@ function computech_footer_static_bottom_links(): array {
 }
 
 function computech_render_footer_site_identity_bottom_links(): void {
-    if (function_exists('computech_footer_bool') && !computech_footer_bool('show_bottom_links', true)) { return; }
     $links = computech_footer_static_bottom_links();
     if (empty($links)) { return; }
     echo '<div class="footer-bottom-links">';
@@ -6808,31 +6806,46 @@ function computech_rest_footer_settings_page(): void {
                 <label>الوصف<textarea name="newsletter_subtitle" rows="2"><?php echo esc_textarea($footer['newsletter_subtitle'] ?? ''); ?></textarea></label>
                 <div class="ct-grid"><label>Placeholder البريد<input type="text" name="newsletter_placeholder" value="<?php echo esc_attr($footer['newsletter_placeholder'] ?? 'أدخل بريدك الإلكتروني'); ?>"></label><label>نص الزر<input type="text" name="newsletter_button_label" value="<?php echo esc_attr($footer['newsletter_button_label'] ?? 'اشترك الآن'); ?>"></label></div>
             </div>
-            <div class="ct-panel"><h2>مميزات الفوتر</h2><p class="description">تحكم في النص والأيقونة. تحذير: أقصى عدد ظاهر في الواجهة هو 4 عناصر فقط. إذا زاد العدد سيظهر آخر 4 عناصر فقط.</p>
-                <label><input type="checkbox" name="show_feature_strip" value="1" <?php checked(computech_footer_bool('show_feature_strip', true)); ?>> إظهار مميزات الفوتر</label>
+            <div class="ct-panel ct-rest-features-panel"><h2>مميزات الفوتر</h2><p class="description">تحكم في كل ميزة بشكل منفصل من النص والأيقونة وحالة الظهور.</p>
+                <div class="ct-rest-feature-warning">تحذير: أقصى عدد ظاهر في الواجهة هو 4 عناصر فقط. إذا زاد العدد سيظهر آخر 4 عناصر فقط.</div>
                 <div id="ct-rest-footer-features">
                     <?php foreach ($features as $i => $item) : ?>
                         <div class="ct-row ct-rest-feature-row">
                             <div class="ct-row-head"><strong>ميزة</strong><button type="button" class="button-link-delete ct-rest-remove-row">حذف</button></div>
-                            <label><input type="checkbox" name="footer_features[<?php echo esc_attr((string)$i); ?>][show]" value="1" <?php checked(!empty($item['show'])); ?>> إظهار الميزة</label>
+                            <label class="ct-feature-visible"><input type="checkbox" name="footer_features[<?php echo esc_attr((string)$i); ?>][show]" value="1" <?php checked(!empty($item['show'])); ?>> إظهار الميزة</label>
                             <label>الأيقونة<?php echo function_exists('computech_admin_footer_icon_select') ? computech_admin_footer_icon_select('footer_features[' . esc_attr((string)$i) . '][icon]', $item['icon'] ?? 'check') : '<input type="text" name="footer_features[' . esc_attr((string)$i) . '][icon]" value="' . esc_attr($item['icon'] ?? 'check') . '">'; ?></label>
-                            <label>النص<input type="text" name="footer_features[<?php echo esc_attr((string)$i); ?>][text]" value="<?php echo esc_attr($item['text'] ?? ''); ?>"></label>
+                            <label class="ct-feature-text-field">النص<input type="text" name="footer_features[<?php echo esc_attr((string)$i); ?>][text]" value="<?php echo esc_attr($item['text'] ?? ''); ?>" placeholder="مثال: فحص قبل البيع"></label>
                         </div>
                     <?php endforeach; ?>
                 </div>
-                <button type="button" class="button button-secondary" id="ct-rest-add-feature">+ إضافة ميزة</button>
+                <div class="ct-rest-features-toolbar"><span class="description">يمكن إضافة أكثر من 4، لكن الواجهة ستعرض آخر 4 فقط.</span><button type="button" class="button button-secondary" id="ct-rest-add-feature">+ إضافة ميزة</button></div>
             </div>
-            <div class="ct-panel"><h2>أسفل الفوتر</h2>
-                <label><input type="checkbox" name="show_social_links" value="1" <?php checked(computech_footer_bool('show_social_links', true)); ?>> إظهار روابط السوشيال</label>
-                <div class="ct-grid">
-                    <?php foreach ($platforms as $platform => $label) : ?>
-                        <label><input type="checkbox" name="footer_social_visibility[<?php echo esc_attr($platform); ?>]" value="1" <?php checked(!isset($social_visibility[$platform]) || $social_visibility[$platform] === '1'); ?>> <?php echo esc_html($label); ?></label>
-                    <?php endforeach; ?>
+            <div class="ct-panel ct-footer-bottom-panel">
+                <h2>أسفل الفوتر</h2>
+                <p class="description">تحكم في العناصر السفلية للفوتر. روابط السوشيال وروابط السياسات تظهر حسب اختيار كل عنصر فقط.</p>
+
+                <div class="ct-subpanel ct-whatsapp-control">
+                    <h3>زر واتساب العائم</h3>
+                    <label class="ct-checkline"><input type="checkbox" name="show_whatsapp_float" value="1" <?php checked(computech_footer_bool('show_whatsapp_float', true)); ?>> إظهار أيقونة واتساب العائمة</label>
                 </div>
-                <label><input type="checkbox" name="show_bottom_links" value="1" <?php checked(computech_footer_bool('show_bottom_links', true)); ?>> إظهار روابط خريطة الموقع / الشروط / الخصوصية</label>
-                <label><input type="checkbox" name="show_whatsapp_float" value="1" <?php checked(computech_footer_bool('show_whatsapp_float', true)); ?>> إظهار أيقونة واتساب العائمة</label>
-                <h3>روابط ثابتة Max 3</h3>
-                <?php foreach ($bottom_links as $key => $row) { computech_rest_footer_render_bottom_link_field((string)$key, $row); } ?>
+
+                <div class="ct-footer-admin-grid">
+                    <div class="ct-subpanel">
+                        <h3>روابط السوشيال</h3>
+                        <p class="description">اختار كل منصة تظهر أو تختفي. الروابط نفسها من Site Identity.</p>
+                        <div class="ct-social-toggle-grid">
+                            <?php foreach ($platforms as $platform => $label) : ?>
+                                <label class="ct-check-card"><input type="checkbox" name="footer_social_visibility[<?php echo esc_attr($platform); ?>]" value="1" <?php checked(!isset($social_visibility[$platform]) || $social_visibility[$platform] === '1'); ?>> <span><?php echo esc_html($label); ?></span></label>
+                            <?php endforeach; ?>
+                        </div>
+                    </div>
+
+                    <div class="ct-subpanel">
+                        <h3>روابط أسفل الفوتر</h3>
+                        <p class="description">Max 3: خريطة الموقع / الشروط والأحكام / سياسة الخصوصية. لكل رابط نوع رابط مستقل.</p>
+                        <?php foreach ($bottom_links as $key => $row) { computech_rest_footer_render_bottom_link_field((string)$key, $row); } ?>
+                    </div>
+                </div>
             </div>
             <?php submit_button('حفظ باقي الفوتر'); ?>
         </form>
@@ -6840,12 +6853,33 @@ function computech_rest_footer_settings_page(): void {
     <template id="ct-rest-feature-template">
         <div class="ct-row ct-rest-feature-row">
             <div class="ct-row-head"><strong>ميزة</strong><button type="button" class="button-link-delete ct-rest-remove-row">حذف</button></div>
-            <label><input type="checkbox" name="footer_features[__i__][show]" value="1" checked> إظهار الميزة</label>
+            <label class="ct-feature-visible"><input type="checkbox" name="footer_features[__i__][show]" value="1" checked> إظهار الميزة</label>
             <label>الأيقونة<?php echo function_exists('computech_admin_footer_icon_select') ? computech_admin_footer_icon_select('footer_features[__i__][icon]', 'check') : '<input type="text" name="footer_features[__i__][icon]" value="check">'; ?></label>
-            <label>النص<input type="text" name="footer_features[__i__][text]" value=""></label>
+            <label class="ct-feature-text-field">النص<input type="text" name="footer_features[__i__][text]" value="" placeholder="مثال: فحص قبل البيع"></label>
         </div>
     </template>
-    <style>.computech-admin-wrap{max-width:1120px}.ct-panel{background:#fff;border:1px solid #dcdcde;border-radius:14px;padding:18px;margin:18px 0}.ct-panel label{display:block;font-weight:700;margin:10px 0}.ct-panel input[type=text],.ct-panel input[type=url],.ct-panel textarea,.ct-panel select{width:100%;margin-top:6px}.ct-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}.ct-row{border:1px solid #e5e7eb;border-radius:12px;padding:14px;margin:12px 0;background:#f9fafb;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}.ct-row-head{grid-column:1/-1;display:flex;justify-content:space-between;align-items:center}@media(max-width:782px){.ct-grid,.ct-row{grid-template-columns:1fr}}</style>
+    <style>
+        .computech-admin-wrap{max-width:1180px}
+        .ct-panel{background:#fff;border:1px solid #dcdcde;border-radius:16px;padding:20px;margin:18px 0;box-shadow:0 8px 24px rgba(15,23,42,.04)}
+        .ct-panel h2{margin:0 0 8px;font-size:20px}
+        .ct-panel h3{margin:0 0 10px;font-size:16px}
+        .ct-panel .description{color:#64748b;margin:4px 0 14px;line-height:1.8}
+        .ct-panel label{display:block;font-weight:700;margin:10px 0}
+        .ct-panel input[type=text],.ct-panel input[type=url],.ct-panel textarea,.ct-panel select{width:100%;margin-top:6px;min-height:42px;border-radius:10px;border-color:#cbd5e1}
+        .ct-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
+        .ct-footer-admin-grid{display:grid;grid-template-columns:360px minmax(0,1fr);gap:16px;align-items:start}
+        .ct-subpanel{background:#f8fafc;border:1px solid #e2e8f0;border-radius:14px;padding:16px;margin-top:14px}
+        .ct-whatsapp-control{max-width:420px}
+        .ct-checkline{display:flex!important;align-items:center;gap:8px;margin:0!important}
+        .ct-social-toggle-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+        .ct-check-card{display:flex!important;align-items:center;gap:8px;background:#fff;border:1px solid #e2e8f0;border-radius:12px;padding:10px 12px;margin:0!important;min-height:42px}
+        .ct-row{border:1px solid #e5e7eb;border-radius:12px;padding:14px;margin:12px 0;background:#fff;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+        .ct-footer-bottom-panel .ct-row{background:#fff}
+        .ct-row-head{grid-column:1/-1;display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid #eef2f7;padding-bottom:8px;margin-bottom:2px}
+        .ct-rest-footer-link-row label:first-of-type{background:#eff6ff;border:1px solid #bfdbfe;border-radius:10px;padding:8px 10px}
+        @media(max-width:1000px){.ct-footer-admin-grid{grid-template-columns:1fr}}
+        @media(max-width:782px){.ct-grid,.ct-row,.ct-social-toggle-grid{grid-template-columns:1fr}}
+    </style>
     <script>
     (function(){
         var featureIndex = <?php echo (int)count($features); ?>;
@@ -6884,9 +6918,12 @@ function computech_handle_rest_footer_save(): void {
     if (!wp_verify_nonce(sanitize_text_field(wp_unslash($_POST['computech_rest_footer_nonce'])), 'computech_save_rest_footer')) { return; }
     if (!current_user_can(computech_admin_capability())) { return; }
     $footer = computech_footer_settings();
-    foreach (array('show_newsletter','show_feature_strip','show_social_links','show_bottom_links','show_whatsapp_float') as $bool_key) {
+    foreach (array('show_newsletter','show_whatsapp_float') as $bool_key) {
         $footer[$bool_key] = !empty($_POST[$bool_key]) ? '1' : '0';
     }
+    $footer['show_feature_strip'] = '1';
+    $footer['show_social_links'] = '1';
+    $footer['show_bottom_links'] = '1';
     $footer['newsletter_title'] = sanitize_text_field(wp_unslash($_POST['newsletter_title'] ?? ''));
     $footer['newsletter_subtitle'] = sanitize_textarea_field(wp_unslash($_POST['newsletter_subtitle'] ?? ''));
     $footer['newsletter_placeholder'] = sanitize_text_field(wp_unslash($_POST['newsletter_placeholder'] ?? ''));
