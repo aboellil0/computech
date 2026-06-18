@@ -3,14 +3,41 @@
  * Template Name: صفحة تواصل معنا - كمبيوتيك
  */
 get_header();
+
+// Contact page data must come from Site Identity / Settings > General, not hardcoded template values.
 $ct_site_name = function_exists('computech_site_name') ? computech_site_name() : get_bloginfo('name');
+$ct_site_description = function_exists('computech_site_description') ? computech_site_description() : get_bloginfo('description');
+$ct_contact_intro = $ct_site_description !== ''
+    ? $ct_site_description
+    : sprintf('فريق %s متاح للإجابة على استفساراتك وتقديم الدعم الفني والاستشارات. تواصل معنا بالطريقة التي تناسبك.', $ct_site_name);
+
 $ct_phone = function_exists('computech_business_phone') ? computech_business_phone() : '';
+$ct_phone_url = ($ct_phone !== '' && function_exists('computech_tel_url')) ? computech_tel_url($ct_phone) : '';
+
 $ct_whatsapp_number = function_exists('computech_business_whatsapp_number') ? computech_business_whatsapp_number() : '';
 $ct_whatsapp_display = $ct_whatsapp_number !== '' ? '+' . $ct_whatsapp_number : '';
+$ct_whatsapp_url = ($ct_whatsapp_number !== '' && function_exists('computech_whatsapp_url'))
+    ? computech_whatsapp_url('مرحباً، أحتاج مساعدة من ' . $ct_site_name)
+    : '';
+
 $ct_email = function_exists('computech_business_email') ? computech_business_email() : get_option('admin_email', '');
+$ct_email_url = ($ct_email !== '' && function_exists('computech_mailto_url')) ? computech_mailto_url($ct_email) : '';
+
 $ct_address = function_exists('computech_business_address') ? computech_business_address() : '';
 $ct_hours = function_exists('computech_business_hours') ? computech_business_hours() : '';
+$ct_map_url = function_exists('computech_business_map_url') ? computech_business_map_url() : '';
 $ct_map_embed = function_exists('computech_business_map_embed_url') ? computech_business_map_embed_url() : '';
+
+$ct_social_links = function_exists('computech_site_identity_social_links') ? computech_site_identity_social_links() : array();
+$ct_social_labels = array(
+    'facebook' => 'فيسبوك',
+    'instagram' => 'انستقرام',
+    'linkedin' => 'لينكد إن',
+    'youtube' => 'يوتيوب',
+    'tiktok' => 'تيك توك',
+    'twitter' => 'إكس',
+    'whatsapp' => 'واتساب',
+);
 ?>
 <?php computech_breadcrumbs('تواصل معنا'); ?>
     <!-- ============================================
@@ -32,7 +59,7 @@ $ct_map_embed = function_exists('computech_business_map_embed_url') ? computech_
             <div class="contact-hero-content">
                 <span class="contact-section-badge">تواصل معنا</span>
                 <h1 class="contact-hero-title">نحن هنا لمساعدتك</h1>
-                <p class="contact-hero-subtitle">فريق <?php echo esc_html($ct_site_name); ?> متاح للإجابة على استفساراتك وتقديم الدعم الفني والاستشارات. تواصل معنا بالطريقة التي تناسبك.</p>
+                <p class="contact-hero-subtitle"><?php echo esc_html($ct_contact_intro); ?></p>
                 <div class="contact-hero-pills">
                     <span class="contact-pill">رد سريع</span>
                     <span class="contact-pill">دعم فني</span>
@@ -111,6 +138,7 @@ $ct_map_embed = function_exists('computech_business_map_embed_url') ? computech_
 
                 <!-- Contact Info Cards (Right side in RTL) -->
                 <div class="contact-info-wrap">
+                    <?php if ($ct_phone !== '') : ?>
                     <div class="contact-info-card">
                         <div class="contact-info-icon">
                             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -119,10 +147,16 @@ $ct_map_embed = function_exists('computech_business_map_embed_url') ? computech_
                         </div>
                         <div class="contact-info-details">
                             <h3 class="contact-info-title">الهاتف</h3>
-                            <p class="contact-info-value"><?php echo esc_html($ct_phone); ?></p>
-                            <p class="contact-info-desc"><?php echo esc_html($ct_hours); ?></p>
+                            <?php if ($ct_phone_url !== '') : ?>
+                                <a class="contact-info-value" href="<?php echo esc_url($ct_phone_url); ?>"><?php echo esc_html($ct_phone); ?></a>
+                            <?php else : ?>
+                                <p class="contact-info-value"><?php echo esc_html($ct_phone); ?></p>
+                            <?php endif; ?>
+                            <?php if ($ct_hours !== '') : ?><p class="contact-info-desc"><?php echo esc_html($ct_hours); ?></p><?php endif; ?>
                         </div>
                     </div>
+                    <?php endif; ?>
+                    <?php if ($ct_whatsapp_display !== '') : ?>
                     <div class="contact-info-card">
                         <div class="contact-info-icon contact-info-icon-green">
                             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -131,10 +165,16 @@ $ct_map_embed = function_exists('computech_business_map_embed_url') ? computech_
                         </div>
                         <div class="contact-info-details">
                             <h3 class="contact-info-title">واتساب</h3>
-                            <p class="contact-info-value"><?php echo esc_html($ct_whatsapp_display); ?></p>
+                            <?php if ($ct_whatsapp_url !== '') : ?>
+                                <a class="contact-info-value" href="<?php echo esc_url($ct_whatsapp_url); ?>" target="_blank" rel="noopener"><?php echo esc_html($ct_whatsapp_display); ?></a>
+                            <?php else : ?>
+                                <p class="contact-info-value"><?php echo esc_html($ct_whatsapp_display); ?></p>
+                            <?php endif; ?>
                             <p class="contact-info-desc">نخدمك عبر واتساب على مدار الساعة</p>
                         </div>
                     </div>
+                    <?php endif; ?>
+                    <?php if ($ct_email !== '') : ?>
                     <div class="contact-info-card">
                         <div class="contact-info-icon contact-info-icon-cyan">
                             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -144,10 +184,16 @@ $ct_map_embed = function_exists('computech_business_map_embed_url') ? computech_
                         </div>
                         <div class="contact-info-details">
                             <h3 class="contact-info-title">البريد الإلكتروني</h3>
-                            <p class="contact-info-value"><?php echo esc_html($ct_email); ?></p>
+                            <?php if ($ct_email_url !== '') : ?>
+                                <a class="contact-info-value" href="<?php echo esc_url($ct_email_url); ?>"><?php echo esc_html($ct_email); ?></a>
+                            <?php else : ?>
+                                <p class="contact-info-value"><?php echo esc_html($ct_email); ?></p>
+                            <?php endif; ?>
                             <p class="contact-info-desc">نرد على البريد الإلكتروني خلال 24 ساعة</p>
                         </div>
                     </div>
+                    <?php endif; ?>
+                    <?php if ($ct_address !== '') : ?>
                     <div class="contact-info-card">
                         <div class="contact-info-icon contact-info-icon-orange">
                             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -157,10 +203,14 @@ $ct_map_embed = function_exists('computech_business_map_embed_url') ? computech_
                         </div>
                         <div class="contact-info-details">
                             <h3 class="contact-info-title">العنوان</h3>
-                            <p class="contact-info-value"><?php echo nl2br(esc_html($ct_address)); ?></p>
-                            
+                            <?php if ($ct_map_url !== '') : ?>
+                                <a class="contact-info-value" href="<?php echo esc_url($ct_map_url); ?>" target="_blank" rel="noopener"><?php echo nl2br(esc_html($ct_address)); ?></a>
+                            <?php else : ?>
+                                <p class="contact-info-value"><?php echo nl2br(esc_html($ct_address)); ?></p>
+                            <?php endif; ?>
                         </div>
                     </div>
+                    <?php endif; ?>
                 </div>
             </div>
         </div>
@@ -176,7 +226,16 @@ $ct_map_embed = function_exists('computech_business_map_embed_url') ? computech_
                 <h2 class="contact-section-title">تجدنا هنا</h2>
             </div>
             <div class="contact-map-wrap">
-                <?php if ($ct_map_embed !== '') : ?><iframe class="contact-map-iframe" src="<?php echo esc_url($ct_map_embed); ?>" title="<?php echo esc_attr($ct_site_name); ?>" allowfullscreen="" loading="lazy" referrerpolicy="no-referrer-when-downgrade"></iframe><?php else : ?><div class="contact-map-empty">أضف رابط تضمين الخريطة من Settings → General.</div><?php endif; ?>
+                <?php if ($ct_map_embed !== '') : ?>
+                    <iframe class="contact-map-iframe" src="<?php echo esc_url($ct_map_embed); ?>" title="<?php echo esc_attr($ct_site_name); ?>" allowfullscreen="" loading="lazy" referrerpolicy="no-referrer-when-downgrade"></iframe>
+                <?php elseif ($ct_map_url !== '') : ?>
+                    <div class="contact-map-empty">
+                        <span>تم إضافة رابط الخريطة من Site Identity / Settings > General.</span>
+                        <a class="contact-map-link" href="<?php echo esc_url($ct_map_url); ?>" target="_blank" rel="noopener">فتح الموقع على خرائط Google</a>
+                    </div>
+                <?php else : ?>
+                    <div class="contact-map-empty">أضف رابط الخريطة أو رابط التضمين من Site Identity / Settings > General.</div>
+                <?php endif; ?>
             </div>
         </div>
     </section>
@@ -184,53 +243,33 @@ $ct_map_embed = function_exists('computech_business_map_embed_url') ? computech_
     <!-- ============================================
          Social Media Section
          ============================================ -->
+    <?php if (!empty($ct_social_links)) : ?>
     <section class="contact-social">
         <div class="contact-container">
             <div class="contact-social-header">
                 <span class="contact-section-badge">تابعنا</span>
                 <h2 class="contact-section-title"><?php echo esc_html($ct_site_name); ?> على وسائل التواصل</h2>
-                <p class="contact-social-desc">تابعنا على منصات التواصل الاجتماعي لتصلك أحدث المنتجات والعروض</p>
+                <p class="contact-social-desc">روابط التواصل هنا تظهر فقط من البيانات المسجلة في Site Identity / Settings > General.</p>
             </div>
             <div class="contact-social-grid">
-                <a href="<?php echo esc_url(computech_social_url('facebook')); ?>" class="contact-social-btn" target="_blank" rel="noopener" aria-label="فيسبوك">
-                    <svg viewBox="0 0 24 24" fill="currentColor">
-                        <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/>
-                    </svg>
-                    <span>فيسبوك</span>
-                </a>
-                <a href="<?php echo esc_url(computech_social_url('instagram')); ?>" class="contact-social-btn" target="_blank" rel="noopener" aria-label="انستقرام">
-                    <svg viewBox="0 0 24 24" fill="currentColor">
-                        <path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zM12 0C8.741 0 8.333.014 7.053.072 2.695.272.273 2.69.073 7.052.014 8.333 0 8.741 0 12c0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98C8.333 23.986 8.741 24 12 24c3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98C15.668.014 15.259 0 12 0zm0 5.838a6.162 6.162 0 1 0 0 12.324 6.162 6.162 0 0 0 0-12.324zM12 16a4 4 0 1 1 0-8 4 4 0 0 1 0 8zm6.406-11.845a1.44 1.44 0 1 0 0 2.881 1.44 1.44 0 0 0 0-2.881z"/>
-                    </svg>
-                    <span>انستقرام</span>
-                </a>
-                <a href="<?php echo esc_url(computech_social_url('youtube')); ?>" class="contact-social-btn" target="_blank" rel="noopener" aria-label="يوتيوب">
-                    <svg viewBox="0 0 24 24" fill="currentColor">
-                        <path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/>
-                    </svg>
-                    <span>يوتيوب</span>
-                </a>
-                <a href="<?php echo esc_url(computech_social_url('tiktok')); ?>" class="contact-social-btn" target="_blank" rel="noopener" aria-label="تيك توك">
-                    <svg viewBox="0 0 24 24" fill="currentColor">
-                        <path d="M12.525.02c1.31-.02 2.61-.01 3.91-.02.08 1.53.63 3.09 1.75 4.17 1.12 1.11 2.7 1.62 4.24 1.79v4.03c-1.44-.05-2.89-.35-4.2-.97-.57-.26-1.1-.59-1.62-.93-.01 2.92.01 5.84-.02 8.75-.08 1.4-.54 2.79-1.35 3.94-1.31 1.92-3.58 3.17-5.91 3.21-1.43.08-2.86-.31-4.08-1.03-2.02-1.19-3.44-3.37-3.65-5.71-.02-.5-.03-1-.01-1.49.18-1.9 1.12-3.72 2.58-4.96 1.66-1.44 3.98-2.13 6.15-1.72.02 1.48-.04 2.96-.04 4.44-.99-.32-2.15-.23-3.02.37-.63.41-1.11 1.04-1.36 1.75-.21.51-.15 1.07-.14 1.61.24 1.64 1.82 3.02 3.5 2.87 1.12-.01 2.19-.66 2.77-1.61.19-.33.4-.67.41-1.06.1-1.79.06-3.57.07-5.36.01-4.03-.01-8.05.02-12.07z"/>
-                    </svg>
-                    <span>تيك توك</span>
-                </a>
-                <a href="<?php echo esc_url(computech_social_url('linkedin')); ?>" class="contact-social-btn" target="_blank" rel="noopener" aria-label="لينكد إن">
-                    <svg viewBox="0 0 24 24" fill="currentColor">
-                        <path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433a2.062 2.062 0 0 1-2.063-2.065 2.064 2.064 0 1 1 2.063 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/>
-                    </svg>
-                    <span>لينكد إن</span>
-                </a>
-                <a href="<?php echo esc_url(computech_social_url('twitter')); ?>" class="contact-social-btn" target="_blank" rel="noopener" aria-label="إكس تويتر">
-                    <svg viewBox="0 0 24 24" fill="currentColor">
-                        <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/>
-                    </svg>
-                    <span>إكس</span>
-                </a>
+                <?php foreach ($ct_social_links as $social) : ?>
+                    <?php
+                    $platform = sanitize_key((string) ($social['platform'] ?? ''));
+                    $url = trim((string) ($social['url'] ?? ''));
+                    if ($platform === '' || $url === '') {
+                        continue;
+                    }
+                    $label = $ct_social_labels[$platform] ?? ucfirst($platform);
+                    ?>
+                    <a href="<?php echo esc_url($url); ?>" class="contact-social-btn" target="_blank" rel="noopener" aria-label="<?php echo esc_attr($label); ?>">
+                        <?php echo function_exists('computech_footer_social_svg') ? computech_footer_social_svg($platform) : '<span aria-hidden="true">•</span>'; ?>
+                        <span><?php echo esc_html($label); ?></span>
+                    </a>
+                <?php endforeach; ?>
             </div>
         </div>
     </section>
+    <?php endif; ?>
 
     <!-- ============================================
          Quick Support Strip

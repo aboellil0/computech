@@ -22,6 +22,105 @@ add_action('after_setup_theme', 'computech_setup');
 
 
 /**
+ * Clean permalink helpers.
+ *
+ * The site should use clean URLs such as /cart/ instead of /index.php/cart/.
+ * This updates WordPress permalink settings when the theme is activated or
+ * visited from the dashboard, removes index.php from generated URLs, and
+ * redirects old index.php URLs to the clean equivalent.
+ */
+function computech_route_without_index_php(string $url): string {
+    if ($url === '') {
+        return $url;
+    }
+
+    $url = str_replace('/index.php/', '/', $url);
+    $url = str_replace('/index.php?', '/?', $url);
+    $url = preg_replace('#/index\.php$#', '/', $url);
+
+    return $url;
+}
+
+function computech_enable_clean_permalink_routes(bool $flush = false): void {
+    if (!current_user_can('manage_options')) {
+        return;
+    }
+
+    $current = (string) get_option('permalink_structure', '');
+    $needs_update = ($current === '' || strpos($current, 'index.php') !== false);
+
+    if ($needs_update) {
+        global $wp_rewrite;
+        if ($wp_rewrite instanceof WP_Rewrite) {
+            $wp_rewrite->set_permalink_structure('/%postname%/');
+        }
+        update_option('permalink_structure', '/%postname%/');
+        update_option('rewrite_rules', '');
+        $flush = true;
+    }
+
+    if ($flush) {
+        flush_rewrite_rules(true);
+    }
+}
+
+function computech_admin_fix_clean_routes(): void {
+    if (!current_user_can('manage_options')) {
+        return;
+    }
+
+    $version_key = '2026-06-18-clean-routes-v1';
+    if (get_option('computech_clean_routes_version') === $version_key && strpos((string) get_option('permalink_structure', ''), 'index.php') === false) {
+        return;
+    }
+
+    computech_enable_clean_permalink_routes(false);
+    update_option('computech_clean_routes_version', $version_key);
+}
+add_action('admin_init', 'computech_admin_fix_clean_routes', 5);
+
+function computech_filter_clean_generated_url($url) {
+    return is_string($url) ? computech_route_without_index_php($url) : $url;
+}
+add_filter('home_url', 'computech_filter_clean_generated_url', 20, 1);
+add_filter('page_link', 'computech_filter_clean_generated_url', 20, 1);
+add_filter('post_link', 'computech_filter_clean_generated_url', 20, 1);
+add_filter('post_type_link', 'computech_filter_clean_generated_url', 20, 1);
+add_filter('term_link', 'computech_filter_clean_generated_url', 20, 1);
+add_filter('attachment_link', 'computech_filter_clean_generated_url', 20, 1);
+add_filter('woocommerce_get_cart_url', 'computech_filter_clean_generated_url', 20, 1);
+add_filter('woocommerce_get_checkout_url', 'computech_filter_clean_generated_url', 20, 1);
+add_filter('woocommerce_get_myaccount_page_permalink', 'computech_filter_clean_generated_url', 20, 1);
+add_filter('woocommerce_get_endpoint_url', 'computech_filter_clean_generated_url', 20, 1);
+
+function computech_redirect_index_php_routes(): void {
+    if (is_admin() || wp_doing_ajax()) {
+        return;
+    }
+
+    $request_uri = isset($_SERVER['REQUEST_URI']) ? (string) wp_unslash($_SERVER['REQUEST_URI']) : '';
+    if ($request_uri === '' || strpos($request_uri, '/index.php') === false) {
+        return;
+    }
+
+    $clean_request_uri = preg_replace('#/index\.php(?=/|\?|$)#', '', $request_uri);
+    if (!$clean_request_uri || $clean_request_uri === $request_uri) {
+        return;
+    }
+
+    $scheme = is_ssl() ? 'https://' : 'http://';
+    $host = isset($_SERVER['HTTP_HOST']) ? sanitize_text_field(wp_unslash($_SERVER['HTTP_HOST'])) : wp_parse_url(home_url('/'), PHP_URL_HOST);
+    if (!$host) {
+        return;
+    }
+
+    wp_safe_redirect(esc_url_raw($scheme . $host . $clean_request_uri), 301);
+    exit;
+}
+add_action('template_redirect', 'computech_redirect_index_php_routes', 1);
+
+
+/**
  * Global site identity helpers.
  *
  * These helpers make the theme read shared identity data from WordPress first:
@@ -530,7 +629,7 @@ function computech_activate(): void {
     computech_seed_header_database_options();
     if (function_exists('computech_seed_footer_database_options')) { computech_seed_footer_database_options(); }
     computech_seed_default_home_section_options();
-    flush_rewrite_rules();
+    computech_enable_clean_permalink_routes(true);
 }
 add_action('after_switch_theme', 'computech_activate');
 
@@ -541,12 +640,13 @@ function computech_admin_ensure_pages(): void {
 
     computech_seed_header_database_options();
     if (function_exists('computech_seed_footer_database_options')) { computech_seed_footer_database_options(); }
-    $version_key = '2026-06-16-routes-v3';
+    $version_key = '2026-06-18-routes-clean-v4';
     if (get_option('computech_theme_pages_version') === $version_key) {
         return;
     }
 
     computech_ensure_theme_pages();
+    computech_enable_clean_permalink_routes(false);
     update_option('computech_theme_pages_version', $version_key);
     flush_rewrite_rules(false);
 }
@@ -8129,6 +8229,18 @@ function computech_woocommerce_front_arabic_text($translated, $text, $domain) {
         'Shipping options will be updated during checkout.' => 'سيتم تحديث خيارات الشحن أثناء إتمام الطلب.',
         'Enter your address to view shipping options.' => 'أدخل عنوانك لعرض خيارات الشحن.',
         'No payment methods are available. This may be an error on our side. Please contact us if you need any help placing your order.' => 'لا توجد طرق دفع متاحة حاليًا. تواصل معنا لمساعدتك في إتمام الطلب.',
+        'Cart updated.' => 'تم تحديث السلة بنجاح.',
+        'Update cart' => 'تحديث السلة',
+        'Undo?' => 'تراجع',
+        '&ldquo;%s&rdquo; removed. %sUndo?%s' => 'تم حذف “%s” من السلة. %sتراجع%s',
+        '“%s” removed. %sUndo?%s' => 'تم حذف “%s” من السلة. %sتراجع%s',
+        '"%s" removed. %sUndo?%s' => 'تم حذف “%s” من السلة. %sتراجع%s',
+        '%s removed. %sUndo?%s' => 'تم حذف %s من السلة. %sتراجع%s',
+        'Shipping to %s.' => 'الشحن إلى %s.',
+        'Shipping options will be updated during checkout.' => 'سيتم تحديث خيارات الشحن أثناء إتمام الطلب.',
+        'Change address' => 'تغيير العنوان',
+        'Flat rate:' => 'شحن ثابت:',
+        'Flat rate: %s' => 'شحن ثابت: %s',
     );
 
     return array_key_exists($text, $map) ? $map[$text] : $translated;
