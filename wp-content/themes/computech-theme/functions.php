@@ -4250,7 +4250,7 @@ function computech_footer_default_contact_items(): array {
 
 function computech_footer_default_feature_items(): array {
     return array(
-        array('show' => '1', 'icon' => 'check', 'text' => 'فحص قبل البيع'),
+        array('show' => '1', 'icon' => 'shield', 'text' => 'فحص قبل البيع'),
         array('show' => '1', 'icon' => 'warranty', 'text' => 'ضمان حسب المنتج'),
         array('show' => '1', 'icon' => 'delivery', 'text' => 'توصيل سريع'),
         array('show' => '1', 'icon' => 'support', 'text' => 'دعم فني'),
@@ -6145,10 +6145,10 @@ function computech_register_services_cpt(): void {
         ),
         'public' => false,
         'show_ui' => true,
-        'show_in_menu' => true,
+        'show_in_menu' => 'edit.php?post_type=ct_service_slide',
         'menu_position' => 59,
         'menu_icon' => 'dashicons-hammer',
-        'supports' => array('title', 'page-attributes'),
+        'supports' => array('title', 'thumbnail', 'page-attributes'),
         'capability_type' => 'page',
         'map_meta_cap' => true,
         'show_in_rest' => false,
@@ -6349,6 +6349,993 @@ function computech_service_icon_html(WP_Post $post): string {
     if ($icon === '') { $icon = 'support'; }
     $color = sanitize_hex_color((string)get_post_meta($post->ID, '_computech_service_icon_color', true)) ?: '#2563eb';
     return '<span class="ct-service-icon-inner" style="color:' . esc_attr($color) . '">' . computech_home_extra_icon_svg($icon) . '</span>';
+}
+
+
+
+/* ============================================
+   Services Page Dashboard
+   Parent menu: Services
+   Sections: service slider, old خدمات posts, خدمة مميزة.
+   ============================================ */
+function computech_register_service_slides_cpt(): void {
+    register_post_type('ct_service_slide', array(
+        'labels' => array(
+            'name' => 'سلايدر الخدمات',
+            'singular_name' => 'شريحة خدمات',
+            'menu_name' => 'Services',
+            'all_items' => 'سلايدر الخدمات',
+            'add_new' => 'إضافة شريحة',
+            'add_new_item' => 'إضافة شريحة خدمات',
+            'edit_item' => 'تعديل شريحة خدمات',
+            'new_item' => 'شريحة خدمات جديدة',
+            'view_item' => 'عرض الشريحة',
+            'search_items' => 'بحث في شرائح الخدمات',
+            'not_found' => 'لا توجد شرائح خدمات',
+        ),
+        'public' => false,
+        'show_ui' => true,
+        'show_in_menu' => true,
+        'menu_position' => 59,
+        'menu_icon' => 'dashicons-screenoptions',
+        'supports' => array('title', 'thumbnail', 'page-attributes'),
+        'capability_type' => 'page',
+        'map_meta_cap' => true,
+        'show_in_rest' => false,
+    ));
+}
+add_action('init', 'computech_register_service_slides_cpt');
+
+
+/* Services process steps posts: كيف نخدمك؟ */
+function computech_register_service_process_steps_cpt(): void {
+    register_post_type('ct_svc_process', array(
+        'labels' => array(
+            'name' => 'كيف نخدمك؟',
+            'singular_name' => 'خطوة خدمة',
+            'menu_name' => 'كيف نخدمك؟',
+            'all_items' => 'كيف نخدمك؟',
+            'add_new' => 'إضافة خطوة',
+            'add_new_item' => 'إضافة خطوة خدمة',
+            'edit_item' => 'تعديل خطوة خدمة',
+            'new_item' => 'خطوة خدمة جديدة',
+            'view_item' => 'عرض الخطوة',
+            'search_items' => 'بحث في الخطوات',
+            'not_found' => 'لا توجد خطوات',
+        ),
+        'public' => false,
+        'show_ui' => true,
+        'show_in_menu' => false,
+        'menu_position' => 59,
+        'supports' => array('title', 'page-attributes'),
+        'capability_type' => 'page',
+        'map_meta_cap' => true,
+        'show_in_rest' => false,
+    ));
+}
+add_action('init', 'computech_register_service_process_steps_cpt');
+
+function computech_add_service_process_step_metaboxes(): void {
+    add_meta_box('ct_service_process_step_data', 'بيانات الخطوة', 'computech_service_process_step_metabox', 'ct_svc_process', 'normal', 'high');
+}
+add_action('add_meta_boxes', 'computech_add_service_process_step_metaboxes');
+
+function computech_service_process_step_metabox(WP_Post $post): void {
+    computech_admin_editor_styles_once();
+    wp_enqueue_media();
+    wp_nonce_field('computech_save_service_process_step', 'computech_service_process_step_nonce');
+
+    $description = (string)get_post_meta($post->ID, '_ct_process_step_description', true);
+    $source = sanitize_key((string)get_post_meta($post->ID, '_ct_process_step_icon_source', true));
+    if (!in_array($source, array('icon', 'image'), true)) { $source = 'icon'; }
+    $icon = sanitize_key((string)get_post_meta($post->ID, '_ct_process_step_icon', true));
+    if ($icon === '') { $icon = 'shield'; }
+    $image_id = absint(get_post_meta($post->ID, '_ct_process_step_image_id', true));
+    $image = $image_id ? wp_get_attachment_image_url($image_id, 'thumbnail') : '';
+    ?>
+    <div class="ct-editor ct-hero-admin ct-services-process-post-admin" dir="rtl">
+        <div class="ct-hero-dashboard-head">
+            <div>
+                <h2>خطوة داخل كيف نخدمك؟</h2>
+                <p>العنوان من عنوان WordPress. الترتيب من Order. الظهور من Published + Public.</p>
+            </div>
+            <?php echo computech_visibility_guide_inline('ظهور الخطوة'); ?>
+        </div>
+
+        <div class="ct-admin-note ct-admin-warning">
+            الحد الأقصى في الواجهة 4 خطوات فقط. لو عدد الخطوات أكثر من 4، يتم عرض آخر 4 خطوات فقط حسب الترتيب.
+        </div>
+
+        <div class="ct-hero-dashboard ct-services-process-dashboard">
+            <section class="ct-admin-section ct-admin-section-full" data-ct-process-icon-card>
+                <div class="ct-admin-section-head">
+                    <div><h3>1. محتوى الخطوة</h3><p>اكتب عنوان الخطوة في خانة العنوان بالأعلى، ثم أضف الوصف هنا.</p></div>
+                </div>
+                <div class="ct-admin-section-body">
+                    <p class="ct-field"><label>الوصف</label><textarea name="_ct_process_step_description" rows="4" class="widefat" placeholder="وصف مختصر للخطوة"><?php echo esc_textarea($description); ?></textarea></p>
+                    <div class="ct-grid ct-grid-2">
+                        <p class="ct-field"><label>نوع الأيقونة</label><select name="_ct_process_step_icon_source" class="widefat ct-process-icon-source"><option value="icon" <?php selected($source, 'icon'); ?>>أيقونة جاهزة</option><option value="image" <?php selected($source, 'image'); ?>>صورة</option></select></p>
+                        <div class="ct-process-icon-ready"><label class="ct-field-label">الأيقونة الجاهزة</label><?php echo computech_home_extra_icon_select('_ct_process_step_icon', $icon); ?></div>
+                    </div>
+                    <div class="ct-process-icon-image ct-field ct-media-field" data-ct-media-field data-title="اختيار صورة أيقونة" data-button="استخدام الصورة">
+                        <label>صورة الأيقونة</label>
+                        <input type="hidden" name="_ct_process_step_image_id" value="<?php echo esc_attr((string)$image_id); ?>">
+                        <div class="ct-media-preview" data-ct-media-preview><?php echo $image ? '<img src="' . esc_url($image) . '" alt="">' : '<span class="ct-media-empty">لم يتم اختيار صورة</span>'; ?></div>
+                        <div class="ct-media-actions"><button type="button" class="button" data-ct-select-media>اختيار / تغيير الصورة</button><button type="button" class="button-link-delete" data-ct-remove-media>إزالة الصورة</button></div>
+                        <span class="ct-help" data-ct-media-info>اختار صورة صغيرة تظهر بدل الأيقونة الجاهزة.</span>
+                    </div>
+                </div>
+            </section>
+            <section class="ct-admin-section ct-admin-section-full">
+                <div class="ct-admin-section-head"><div><h3>2. قواعد الظهور</h3></div></div>
+                <div class="ct-admin-section-body">
+                    <div class="ct-admin-note">Published + Public = تظهر. Draft / Pending / Private / Password protected = لا تظهر.</div>
+                    <div class="ct-admin-note">استخدم Order لترتيب الخطوات. لو العدد أكبر من 4، الواجهة تعرض آخر 4 خطوات فقط.</div>
+                </div>
+            </section>
+        </div>
+    </div>
+    <script>
+    (function(){
+        var root = document.currentScript.previousElementSibling;
+        if (!root) { return; }
+        function update(){
+            var source = root.querySelector('.ct-process-icon-source');
+            var value = source ? source.value : 'icon';
+            var ready = root.querySelector('.ct-process-icon-ready');
+            var image = root.querySelector('.ct-process-icon-image');
+            if (ready) { ready.style.display = value === 'icon' ? '' : 'none'; }
+            if (image) { image.style.display = value === 'image' ? '' : 'none'; }
+        }
+        var source = root.querySelector('.ct-process-icon-source');
+        if (source) { source.addEventListener('change', update); }
+        update();
+    })();
+    </script>
+    <?php computech_admin_media_script_once(); ?>
+    <?php
+}
+
+function computech_save_service_process_step(int $post_id): void {
+    if (!isset($_POST['computech_service_process_step_nonce']) || !wp_verify_nonce(sanitize_text_field(wp_unslash($_POST['computech_service_process_step_nonce'])), 'computech_save_service_process_step')) { return; }
+    if (defined('DOING_AUTOSAVE') && DOING_AUTOSAVE) { return; }
+    if (!current_user_can('edit_post', $post_id)) { return; }
+
+    update_post_meta($post_id, '_ct_process_step_description', sanitize_textarea_field(wp_unslash($_POST['_ct_process_step_description'] ?? '')));
+    $source = sanitize_key(wp_unslash($_POST['_ct_process_step_icon_source'] ?? 'icon'));
+    if (!in_array($source, array('icon', 'image'), true)) { $source = 'icon'; }
+    update_post_meta($post_id, '_ct_process_step_icon_source', $source);
+
+    $icons = computech_home_extra_icon_choices();
+    $icon = sanitize_key(wp_unslash($_POST['_ct_process_step_icon'] ?? 'shield'));
+    update_post_meta($post_id, '_ct_process_step_icon', array_key_exists($icon, $icons) ? $icon : 'shield');
+    update_post_meta($post_id, '_ct_process_step_image_id', (string)absint($_POST['_ct_process_step_image_id'] ?? 0));
+}
+add_action('save_post_ct_svc_process', 'computech_save_service_process_step');
+
+function computech_service_process_step_posts(): array {
+    $posts = get_posts(array(
+        'post_type' => 'ct_svc_process',
+        'post_status' => 'publish',
+        'posts_per_page' => -1,
+        'orderby' => array('menu_order' => 'ASC', 'date' => 'DESC'),
+        'order' => 'ASC',
+        'post_password' => '',
+        'no_found_rows' => true,
+        'suppress_filters' => false,
+    ));
+    $posts = array_values(array_filter($posts, static function($post): bool {
+        return $post instanceof WP_Post && $post->post_status === 'publish' && $post->post_password === '' && trim(get_the_title($post)) !== '';
+    }));
+    if (count($posts) > 4) {
+        $posts = array_slice($posts, -4);
+    }
+    return $posts;
+}
+
+function computech_service_process_step_to_array(WP_Post $post): array {
+    $source = sanitize_key((string)get_post_meta($post->ID, '_ct_process_step_icon_source', true));
+    if (!in_array($source, array('icon', 'image'), true)) { $source = 'icon'; }
+    return array(
+        'title' => trim(get_the_title($post)),
+        'description' => trim((string)get_post_meta($post->ID, '_ct_process_step_description', true)),
+        'icon_source' => $source,
+        'icon' => sanitize_key((string)get_post_meta($post->ID, '_ct_process_step_icon', true)) ?: 'shield',
+        'image_id' => (string)absint(get_post_meta($post->ID, '_ct_process_step_image_id', true)),
+    );
+}
+
+function computech_service_process_steps_admin_notice(): void {
+    $screen = function_exists('get_current_screen') ? get_current_screen() : null;
+    if (!$screen || $screen->post_type !== 'ct_svc_process') { return; }
+    echo '<div class="notice notice-info"><p><strong>كيف نخدمك؟</strong>: الحد الأقصى في الواجهة 4 خطوات فقط. لو عدد الخطوات أكثر من 4، يتم عرض آخر 4 خطوات فقط حسب الترتيب. الظهور يعتمد على Published + Public.</p></div>';
+}
+add_action('admin_notices', 'computech_service_process_steps_admin_notice');
+
+function computech_migrate_services_process_steps_to_posts_once(): void {
+    if (get_option('computech_service_process_steps_posts_migrated') === '1') { return; }
+    $existing = get_posts(array('post_type' => 'ct_svc_process', 'post_status' => array('publish','draft','pending','private'), 'posts_per_page' => 1, 'no_found_rows' => true));
+    if ($existing) { update_option('computech_service_process_steps_posts_migrated', '1', false); return; }
+    $saved = get_option('computech_services_process_settings', array());
+    $steps = is_array($saved) && isset($saved['steps']) && is_array($saved['steps']) ? $saved['steps'] : array();
+    $order = 0;
+    foreach ($steps as $step) {
+        if (!is_array($step)) { continue; }
+        $title = sanitize_text_field((string)($step['title'] ?? ''));
+        $desc = sanitize_textarea_field((string)($step['description'] ?? ''));
+        if ($title === '' && $desc === '') { continue; }
+        $post_id = wp_insert_post(array(
+            'post_type' => 'ct_svc_process',
+            'post_status' => 'publish',
+            'post_title' => $title !== '' ? $title : 'خطوة خدمة',
+            'menu_order' => $order,
+        ), true);
+        if (is_wp_error($post_id) || !$post_id) { continue; }
+        $source = sanitize_key((string)($step['icon_source'] ?? 'icon'));
+        if (!in_array($source, array('icon','image'), true)) { $source = 'icon'; }
+        update_post_meta($post_id, '_ct_process_step_description', $desc);
+        update_post_meta($post_id, '_ct_process_step_icon_source', $source);
+        update_post_meta($post_id, '_ct_process_step_icon', sanitize_key((string)($step['icon'] ?? 'shield')) ?: 'shield');
+        update_post_meta($post_id, '_ct_process_step_image_id', (string)absint($step['image_id'] ?? 0));
+        $order++;
+    }
+    update_option('computech_service_process_steps_posts_migrated', '1', false);
+}
+add_action('init', 'computech_migrate_services_process_steps_to_posts_once', 35);
+
+function computech_services_admin_submenus(): void {
+    add_submenu_page(
+        'edit.php?post_type=ct_service_slide',
+        'كيف نخدمك؟',
+        'كيف نخدمك؟',
+        computech_admin_capability(),
+        'edit.php?post_type=ct_svc_process'
+    );
+    add_submenu_page(
+        'edit.php?post_type=ct_service_slide',
+        'خدمة مميزة',
+        'خدمة مميزة',
+        computech_admin_capability(),
+        'computech-services-featured',
+        'computech_services_featured_settings_page'
+    );
+}
+add_action('admin_menu', 'computech_services_admin_submenus', 40);
+
+function computech_services_link_types(): array {
+    return array(
+        'none' => 'بدون رابط',
+        'page' => 'صفحة موجودة',
+        'category' => 'قسم منتجات موجود',
+        'custom' => 'رابط خارجي',
+    );
+}
+
+function computech_services_link_type_select(string $name, string $selected, string $class = 'ct-services-link-type'): string {
+    $types = computech_services_link_types();
+    if (!array_key_exists($selected, $types)) { $selected = 'none'; }
+    $html = '<select name="' . esc_attr($name) . '" class="widefat ' . esc_attr($class) . '">';
+    foreach ($types as $key => $label) {
+        $html .= '<option value="' . esc_attr($key) . '" ' . selected($selected, $key, false) . '>' . esc_html($label) . '</option>';
+    }
+    return $html . '</select>';
+}
+
+function computech_services_resolve_link(string $type, string $page_id = '0', string $page_slug = '', int $term_id = 0, string $custom_url = ''): string {
+    $type = sanitize_key($type);
+    if ($type === 'page') {
+        if ($page_slug === 'home' || $page_id === 'home') { return home_url('/'); }
+        $id = absint($page_id);
+        $url = $id ? get_permalink($id) : '';
+        return $url ? (string)$url : '#';
+    }
+    if ($type === 'category') {
+        if ($term_id && taxonomy_exists('product_cat')) {
+            $url = get_term_link($term_id, 'product_cat');
+            return is_wp_error($url) ? '#' : (string)$url;
+        }
+        return '#';
+    }
+    if ($type === 'custom') {
+        return $custom_url !== '' ? $custom_url : '#';
+    }
+    return '#';
+}
+
+function computech_services_link_target($new_tab): string {
+    return (string)$new_tab === '1' ? ' target="_blank" rel="noopener"' : '';
+}
+
+function computech_services_render_link_fields(string $prefix, array $values, string $scope_class = 'ct-services-link-box'): void {
+    $type = sanitize_key((string)($values['type'] ?? 'none'));
+    if (!array_key_exists($type, computech_services_link_types())) { $type = 'none'; }
+    $page_selected = (string)($values['page_slug'] ?? '') === 'home' ? 'home' : (string)($values['page_id'] ?? '0');
+    $term_id = (string)($values['term_id'] ?? '0');
+    $url = (string)($values['url'] ?? '');
+    $new_tab = (string)($values['new_tab'] ?? '0');
+    $field_prefix = $prefix === '' ? '' : $prefix . '_';
+    $type_name = $field_prefix . 'link_type';
+    $page_name = $field_prefix . 'page_id';
+    $term_name = $field_prefix . 'term_id';
+    $url_name = $field_prefix . 'url';
+    $new_tab_name = $field_prefix . 'new_tab';
+    ?>
+    <div class="ct-services-link-ui <?php echo esc_attr($scope_class); ?>" data-services-link-box>
+        <div class="ct-grid ct-grid-2">
+            <p class="ct-field"><label>نوع الرابط</label><?php echo computech_services_link_type_select($type_name, $type); ?></p>
+            <p class="ct-field ct-services-page-field"><label>اختيار صفحة</label><select name="<?php echo esc_attr($page_name); ?>" class="widefat"><?php echo computech_need_pages_options($page_selected); ?></select></p>
+            <p class="ct-field ct-services-category-field"><label>اختيار قسم منتجات</label><select name="<?php echo esc_attr($term_name); ?>" class="widefat"><?php echo computech_hero_product_category_options($term_id); ?></select></p>
+        </div>
+        <p class="ct-field ct-services-url-field" style="margin-top:14px"><label>رابط خارجي</label><input type="url" name="<?php echo esc_attr($url_name); ?>" value="<?php echo esc_attr($url); ?>" class="widefat" placeholder="https://example.com"></p>
+        <p class="ct-field" style="margin-top:14px"><label><input type="checkbox" name="<?php echo esc_attr($new_tab_name); ?>" value="1" <?php checked($new_tab, '1'); ?>> فتح في تبويب جديد</label></p>
+    </div>
+    <?php
+}
+
+function computech_services_admin_link_script_once(): void {
+    static $done = false;
+    if ($done) { return; }
+    $done = true;
+    ?>
+    <script>
+    (function(){
+        function updateBox(box){
+            if (!box) { return; }
+            var select = box.querySelector('.ct-services-link-type');
+            var type = select ? select.value : 'none';
+            var pageField = box.querySelector('.ct-services-page-field');
+            var categoryField = box.querySelector('.ct-services-category-field');
+            var urlField = box.querySelector('.ct-services-url-field');
+            if (pageField) { pageField.style.display = type === 'page' ? '' : 'none'; }
+            if (categoryField) { categoryField.style.display = type === 'category' ? '' : 'none'; }
+            if (urlField) { urlField.style.display = type === 'custom' ? '' : 'none'; }
+        }
+        function init(root){
+            (root || document).querySelectorAll('[data-services-link-box]').forEach(function(box){
+                var select = box.querySelector('.ct-services-link-type');
+                if (select && !select.dataset.ctBound) {
+                    select.dataset.ctBound = '1';
+                    select.addEventListener('change', function(){ updateBox(box); });
+                }
+                updateBox(box);
+            });
+        }
+        document.addEventListener('DOMContentLoaded', function(){ init(document); });
+        init(document);
+    })();
+    </script>
+    <?php
+}
+
+function computech_add_service_slide_metaboxes(): void {
+    add_meta_box('ct_service_slide_data', 'بيانات شريحة الخدمات', 'computech_service_slide_metabox', 'ct_service_slide', 'normal', 'high');
+}
+add_action('add_meta_boxes', 'computech_add_service_slide_metaboxes');
+
+function computech_service_slide_metabox(WP_Post $post): void {
+    computech_admin_editor_styles_once();
+    wp_nonce_field('computech_save_service_slide', 'computech_service_slide_nonce');
+    $desc = (string)get_post_meta($post->ID, '_ct_service_slide_desc', true);
+    $badge = (string)get_post_meta($post->ID, '_ct_service_slide_badge', true);
+    $pills = (string)get_post_meta($post->ID, '_ct_service_slide_pills', true);
+    $button1_text = (string)get_post_meta($post->ID, '_ct_service_slide_button_1_text', true);
+    $button2_text = (string)get_post_meta($post->ID, '_ct_service_slide_button_2_text', true);
+    ?>
+    <div class="ct-editor ct-hero-admin" dir="rtl">
+        <div class="ct-hero-dashboard-head">
+            <div>
+                <h2>شريحة خدمات</h2>
+                <p>العنوان من عنوان WordPress، والصورة من Featured Image، والظهور من Publish/Public.</p>
+            </div>
+            <?php echo computech_visibility_guide_inline('ظهور الشريحة'); ?>
+        </div>
+        <div class="ct-hero-dashboard">
+            <section class="ct-admin-section">
+                <div class="ct-admin-section-head"><div><h3>1. محتوى الشريحة</h3></div></div>
+                <div class="ct-admin-section-body">
+                    <div class="ct-grid ct-grid-2">
+                        <p class="ct-field"><label>البادج</label><input type="text" name="_ct_service_slide_badge" value="<?php echo esc_attr($badge); ?>" class="widefat" placeholder="مثال: ماذا نقدم لك"></p>
+                        <p class="ct-field"><label>كلمات مختصرة</label><textarea name="_ct_service_slide_pills" rows="3" class="widefat" placeholder="كل كلمة في سطر - يظهر أول 4 فقط"><?php echo esc_textarea($pills); ?></textarea></p>
+                    </div>
+                    <p class="ct-field"><label>الوصف</label><textarea name="_ct_service_slide_desc" rows="4" class="widefat" placeholder="وصف قصير للشريحة"><?php echo esc_textarea($desc); ?></textarea></p>
+                </div>
+            </section>
+            <section class="ct-admin-section">
+                <div class="ct-admin-section-head"><div><h3>2. الأزرار</h3><p>يمكن ترك نص الزر فارغًا لإخفائه.</p></div></div>
+                <div class="ct-admin-section-body ct-services-buttons-admin">
+                    <div class="ct-admin-subcard">
+                        <h4>الزر الأول</h4>
+                        <p class="ct-field"><label>نص الزر</label><input type="text" name="_ct_service_slide_button_1_text" value="<?php echo esc_attr($button1_text); ?>" class="widefat" placeholder="مثال: تصفح المنتجات"></p>
+                        <?php computech_services_render_link_fields('_ct_service_slide_button_1', array(
+                            'type' => get_post_meta($post->ID, '_ct_service_slide_button_1_link_type', true),
+                            'page_id' => get_post_meta($post->ID, '_ct_service_slide_button_1_page_id', true),
+                            'page_slug' => get_post_meta($post->ID, '_ct_service_slide_button_1_page_slug', true),
+                            'term_id' => get_post_meta($post->ID, '_ct_service_slide_button_1_term_id', true),
+                            'url' => get_post_meta($post->ID, '_ct_service_slide_button_1_url', true),
+                            'new_tab' => get_post_meta($post->ID, '_ct_service_slide_button_1_new_tab', true),
+                        )); ?>
+                    </div>
+                    <div class="ct-admin-subcard">
+                        <h4>الزر الثاني</h4>
+                        <p class="ct-field"><label>نص الزر</label><input type="text" name="_ct_service_slide_button_2_text" value="<?php echo esc_attr($button2_text); ?>" class="widefat" placeholder="مثال: تواصل معنا"></p>
+                        <?php computech_services_render_link_fields('_ct_service_slide_button_2', array(
+                            'type' => get_post_meta($post->ID, '_ct_service_slide_button_2_link_type', true),
+                            'page_id' => get_post_meta($post->ID, '_ct_service_slide_button_2_page_id', true),
+                            'page_slug' => get_post_meta($post->ID, '_ct_service_slide_button_2_page_slug', true),
+                            'term_id' => get_post_meta($post->ID, '_ct_service_slide_button_2_term_id', true),
+                            'url' => get_post_meta($post->ID, '_ct_service_slide_button_2_url', true),
+                            'new_tab' => get_post_meta($post->ID, '_ct_service_slide_button_2_new_tab', true),
+                        )); ?>
+                    </div>
+                </div>
+            </section>
+            <section class="ct-admin-section">
+                <div class="ct-admin-section-head"><div><h3>3. الصورة والظهور</h3></div></div>
+                <div class="ct-admin-section-body"><div class="ct-admin-note">صورة الشريحة من Featured Image. الشريحة تظهر فقط لو Published + Public. استخدم Order لترتيب الشرائح.</div></div>
+            </section>
+        </div>
+    </div>
+    <?php computech_services_admin_link_script_once(); ?>
+    <?php
+}
+
+function computech_save_services_link_meta(int $post_id, string $prefix): void {
+    $type = sanitize_key(wp_unslash($_POST[$prefix . '_link_type'] ?? 'none'));
+    $type = in_array($type, array('none','page','category','custom'), true) ? $type : 'none';
+    update_post_meta($post_id, $prefix . '_link_type', $type);
+    $page_value = sanitize_text_field(wp_unslash($_POST[$prefix . '_page_id'] ?? '0'));
+    update_post_meta($post_id, $prefix . '_page_id', $page_value === 'home' ? '0' : (string)absint($page_value));
+    update_post_meta($post_id, $prefix . '_page_slug', $page_value === 'home' ? 'home' : '');
+    update_post_meta($post_id, $prefix . '_term_id', (string)absint($_POST[$prefix . '_term_id'] ?? 0));
+    update_post_meta($post_id, $prefix . '_url', esc_url_raw(wp_unslash($_POST[$prefix . '_url'] ?? '')));
+    update_post_meta($post_id, $prefix . '_new_tab', !empty($_POST[$prefix . '_new_tab']) ? '1' : '0');
+}
+
+function computech_save_service_slide(int $post_id): void {
+    if (!isset($_POST['computech_service_slide_nonce']) || !wp_verify_nonce(sanitize_text_field(wp_unslash($_POST['computech_service_slide_nonce'])), 'computech_save_service_slide')) { return; }
+    if (defined('DOING_AUTOSAVE') && DOING_AUTOSAVE) { return; }
+    if (!current_user_can('edit_post', $post_id)) { return; }
+    update_post_meta($post_id, '_ct_service_slide_desc', sanitize_textarea_field(wp_unslash($_POST['_ct_service_slide_desc'] ?? '')));
+    update_post_meta($post_id, '_ct_service_slide_badge', sanitize_text_field(wp_unslash($_POST['_ct_service_slide_badge'] ?? '')));
+    update_post_meta($post_id, '_ct_service_slide_pills', sanitize_textarea_field(wp_unslash($_POST['_ct_service_slide_pills'] ?? '')));
+    update_post_meta($post_id, '_ct_service_slide_button_1_text', sanitize_text_field(wp_unslash($_POST['_ct_service_slide_button_1_text'] ?? '')));
+    update_post_meta($post_id, '_ct_service_slide_button_2_text', sanitize_text_field(wp_unslash($_POST['_ct_service_slide_button_2_text'] ?? '')));
+    computech_save_services_link_meta($post_id, '_ct_service_slide_button_1');
+    computech_save_services_link_meta($post_id, '_ct_service_slide_button_2');
+}
+add_action('save_post_ct_service_slide', 'computech_save_service_slide');
+
+function computech_service_slide_posts(): array {
+    $posts = get_posts(array(
+        'post_type' => 'ct_service_slide',
+        'post_status' => 'publish',
+        'posts_per_page' => -1,
+        'orderby' => array('menu_order' => 'ASC', 'date' => 'DESC'),
+        'order' => 'ASC',
+        'post_password' => '',
+        'no_found_rows' => true,
+        'suppress_filters' => false,
+    ));
+    return array_values(array_filter($posts, static function($post): bool {
+        return $post instanceof WP_Post && $post->post_status === 'publish' && $post->post_password === '' && trim(get_the_title($post)) !== '';
+    }));
+}
+
+function computech_service_slide_button(WP_Post $post, int $num): array {
+    $base = '_ct_service_slide_button_' . $num;
+    $text = trim((string)get_post_meta($post->ID, $base . '_text', true));
+    if ($text === '') { return array(); }
+    $type = sanitize_key((string)get_post_meta($post->ID, $base . '_link_type', true));
+    $url = computech_services_resolve_link(
+        $type,
+        (string)get_post_meta($post->ID, $base . '_page_id', true),
+        (string)get_post_meta($post->ID, $base . '_page_slug', true),
+        absint(get_post_meta($post->ID, $base . '_term_id', true)),
+        (string)get_post_meta($post->ID, $base . '_url', true)
+    );
+    if ($url === '#') { return array(); }
+    return array(
+        'text' => $text,
+        'url' => $url,
+        'target' => computech_services_link_target(get_post_meta($post->ID, $base . '_new_tab', true)),
+    );
+}
+
+function computech_render_services_hero_slider(): void {
+    $slides = computech_service_slide_posts();
+    if (!$slides) { return; }
+    $has_many = count($slides) > 1;
+    ?>
+    <section class="services-hero services-hero-slider" data-hero-slider>
+        <div class="services-hero-bg">
+            <div class="svc-circuit svc-circuit-1"></div><div class="svc-circuit svc-circuit-2"></div><div class="svc-circuit svc-circuit-3"></div>
+            <div class="svc-dot svc-dot-1"></div><div class="svc-dot svc-dot-2"></div><div class="svc-dot svc-dot-3"></div><div class="svc-dot svc-dot-4"></div>
+            <div class="svc-glow svc-glow-1"></div><div class="svc-glow svc-glow-2"></div>
+        </div>
+        <div class="services-slides-shell">
+            <?php foreach ($slides as $index => $slide) :
+                $badge = trim((string)get_post_meta($slide->ID, '_ct_service_slide_badge', true));
+                $desc = trim((string)get_post_meta($slide->ID, '_ct_service_slide_desc', true));
+                $pills_raw = preg_split('/\r\n|\r|\n|,/', (string)get_post_meta($slide->ID, '_ct_service_slide_pills', true));
+                $pills = array_slice(array_values(array_filter(array_map('trim', is_array($pills_raw) ? $pills_raw : array()))), 0, 4);
+                $image = get_the_post_thumbnail_url($slide, 'large');
+                $button1 = computech_service_slide_button($slide, 1);
+                $button2 = computech_service_slide_button($slide, 2);
+            ?>
+                <div class="services-hero-slide <?php echo $index === 0 ? 'is-active' : ''; ?>" data-hero-slide>
+                    <div class="services-container services-hero-inner">
+                        <div class="services-hero-content">
+                            <?php if ($badge !== '') : ?><span class="svc-section-badge"><?php echo esc_html($badge); ?></span><?php endif; ?>
+                            <h1 class="services-hero-title"><?php echo esc_html(get_the_title($slide)); ?></h1>
+                            <?php if ($desc !== '') : ?><p class="services-hero-subtitle"><?php echo esc_html($desc); ?></p><?php endif; ?>
+                            <?php if ($pills) : ?><div class="services-hero-pills"><?php foreach ($pills as $pill) : ?><span class="svc-pill"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg><?php echo esc_html($pill); ?></span><?php endforeach; ?></div><?php endif; ?>
+                            <?php if ($button1 || $button2) : ?><div class="services-hero-cta">
+                                <?php if ($button1) : ?><a href="<?php echo esc_url($button1['url']); ?>" class="btn-primary"<?php echo $button1['target']; ?>><?php echo esc_html($button1['text']); ?></a><?php endif; ?>
+                                <?php if ($button2) : ?><a href="<?php echo esc_url($button2['url']); ?>" class="btn-secondary"<?php echo $button2['target']; ?>><?php echo esc_html($button2['text']); ?></a><?php endif; ?>
+                            </div><?php endif; ?>
+                        </div>
+                        <?php if ($image) : ?><div class="services-hero-image"><div class="services-hero-image-glow"></div><img src="<?php echo esc_url($image); ?>" alt="<?php echo esc_attr(get_the_title($slide)); ?>" class="services-hero-img"></div><?php endif; ?>
+                    </div>
+                </div>
+            <?php endforeach; ?>
+        </div>
+        <?php if ($has_many) : ?>
+            <div class="hero-slider-controls services-slider-controls">
+                <button class="hero-slider-arrow" type="button" data-hero-prev aria-label="السابق">‹</button>
+                <div class="hero-slider-dots"><?php foreach ($slides as $index => $slide) : ?><button class="hero-slider-dot <?php echo $index === 0 ? 'is-active' : ''; ?>" type="button" data-hero-dot="<?php echo esc_attr((string)$index); ?>" aria-label="الشريحة <?php echo esc_attr((string)($index + 1)); ?>"></button><?php endforeach; ?></div>
+                <button class="hero-slider-arrow" type="button" data-hero-next aria-label="التالي">›</button>
+            </div>
+        <?php endif; ?>
+    </section>
+    <?php
+}
+
+function computech_services_featured_defaults(): array {
+    return array(
+        'title' => '',
+        'description' => '',
+        'tag_1' => '',
+        'tag_2' => '',
+        'tag_3' => '',
+        'tags_text' => '',
+        'image_id' => 0,
+        'button_1_text' => '',
+        'button_1_link_type' => 'none',
+        'button_1_page_id' => '0',
+        'button_1_page_slug' => '',
+        'button_1_term_id' => '0',
+        'button_1_url' => '',
+        'button_1_new_tab' => '0',
+        'button_2_text' => '',
+        'button_2_link_type' => 'none',
+        'button_2_page_id' => '0',
+        'button_2_page_slug' => '',
+        'button_2_term_id' => '0',
+        'button_2_url' => '',
+        'button_2_new_tab' => '0',
+        // Backward compatibility for old one-button settings.
+        'button_text' => '',
+        'link_type' => 'none',
+        'page_id' => '0',
+        'page_slug' => '',
+        'term_id' => '0',
+        'url' => '',
+        'new_tab' => '0',
+    );
+}
+
+function computech_services_featured_settings(): array {
+    $saved = get_option('computech_services_featured_settings', array());
+    return wp_parse_args(is_array($saved) ? $saved : array(), computech_services_featured_defaults());
+}
+
+
+function computech_services_featured_collect_link(string $prefix): array {
+    $type = sanitize_key(wp_unslash($_POST[$prefix . '_link_type'] ?? 'none'));
+    $type = in_array($type, array('none','page','category','custom'), true) ? $type : 'none';
+    $page_value = sanitize_text_field(wp_unslash($_POST[$prefix . '_page_id'] ?? '0'));
+    return array(
+        $prefix . '_link_type' => $type,
+        $prefix . '_page_id' => $page_value === 'home' ? '0' : (string)absint($page_value),
+        $prefix . '_page_slug' => $page_value === 'home' ? 'home' : '',
+        $prefix . '_term_id' => (string)absint($_POST[$prefix . '_term_id'] ?? 0),
+        $prefix . '_url' => esc_url_raw(wp_unslash($_POST[$prefix . '_url'] ?? '')),
+        $prefix . '_new_tab' => !empty($_POST[$prefix . '_new_tab']) ? '1' : '0',
+    );
+}
+
+function computech_services_featured_settings_page(): void {
+    if (!current_user_can(computech_admin_capability())) { wp_die('غير مسموح'); }
+    $settings = computech_services_featured_settings();
+    if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['computech_services_featured_nonce']) && wp_verify_nonce(sanitize_text_field(wp_unslash($_POST['computech_services_featured_nonce'])), 'computech_save_services_featured')) {
+        $tags_text_raw = sanitize_textarea_field(wp_unslash($_POST['tags_text'] ?? ''));
+        $tags_lines = preg_split('/\r\n|\r|\n/', $tags_text_raw);
+        $tags_lines = is_array($tags_lines) ? array_values(array_filter(array_map('trim', $tags_lines), static function($value){ return $value !== ''; })) : array();
+        $tags_lines = array_slice($tags_lines, 0, 3);
+
+        $settings = array(
+            'title' => sanitize_text_field(wp_unslash($_POST['title'] ?? '')),
+            'description' => sanitize_textarea_field(wp_unslash($_POST['description'] ?? '')),
+            'tags_text' => implode("\n", $tags_lines),
+            'tag_1' => (string)($tags_lines[0] ?? ''),
+            'tag_2' => (string)($tags_lines[1] ?? ''),
+            'tag_3' => (string)($tags_lines[2] ?? ''),
+            'image_id' => (string)absint($_POST['image_id'] ?? 0),
+            'button_1_text' => sanitize_text_field(wp_unslash($_POST['button_1_text'] ?? '')),
+            'button_2_text' => sanitize_text_field(wp_unslash($_POST['button_2_text'] ?? '')),
+        );
+        $settings = array_merge(
+            $settings,
+            computech_services_featured_collect_link('button_1'),
+            computech_services_featured_collect_link('button_2')
+        );
+        update_option('computech_services_featured_settings', $settings);
+        echo '<div class="updated notice"><p>تم حفظ خدمة مميزة.</p></div>';
+    }
+
+    // Backward compatibility: move old one-button values to button one if empty.
+    if (trim((string)($settings['button_1_text'] ?? '')) === '' && trim((string)($settings['button_text'] ?? '')) !== '') {
+        $settings['button_1_text'] = (string)$settings['button_text'];
+        $settings['button_1_link_type'] = (string)($settings['link_type'] ?? 'none');
+        $settings['button_1_page_id'] = (string)($settings['page_id'] ?? '0');
+        $settings['button_1_page_slug'] = (string)($settings['page_slug'] ?? '');
+        $settings['button_1_term_id'] = (string)($settings['term_id'] ?? '0');
+        $settings['button_1_url'] = (string)($settings['url'] ?? '');
+        $settings['button_1_new_tab'] = (string)($settings['new_tab'] ?? '0');
+    }
+
+    $tags_text = (string)($settings['tags_text'] ?? '');
+    if (trim($tags_text) === '') {
+        $tags_text = implode("\n", array_values(array_filter(array(
+            trim((string)($settings['tag_1'] ?? '')),
+            trim((string)($settings['tag_2'] ?? '')),
+            trim((string)($settings['tag_3'] ?? '')),
+        ), static function($value){ return $value !== ''; })));
+    }
+    $image_id = absint($settings['image_id']);
+    $image = $image_id ? wp_get_attachment_image_url($image_id, 'medium') : '';
+    computech_admin_editor_styles_once();
+    wp_enqueue_media();
+    ?>
+    <div class="wrap ct-editor ct-hero-admin ct-services-featured-admin" dir="rtl">
+        <h1>خدمة مميزة</h1>
+        <p class="description">تحكم في قسم خدمة مميزة داخل صفحة الخدمات. لو كل المحتوى فارغ، القسم لا يظهر.</p>
+        <form method="post">
+            <?php wp_nonce_field('computech_save_services_featured', 'computech_services_featured_nonce'); ?>
+            <div class="ct-hero-dashboard ct-services-featured-dashboard">
+                <section class="ct-admin-section">
+                    <div class="ct-admin-section-head"><div><h3>1. المحتوى الأساسي</h3><p>العنوان والوصف الظاهرين في بداية القسم.</p></div></div>
+                    <div class="ct-admin-section-body">
+                        <p class="ct-field"><label>العنوان</label><input type="text" name="title" value="<?php echo esc_attr($settings['title']); ?>" class="widefat"></p>
+                        <p class="ct-field"><label>الوصف</label><textarea name="description" rows="4" class="widefat"><?php echo esc_textarea($settings['description']); ?></textarea></p>
+                        <p class="ct-field"><label>العلامات</label><textarea name="tags_text" rows="4" class="widefat" placeholder="كل علامة في سطر مستقل - يظهر أول 3 فقط"><?php echo esc_textarea($tags_text); ?></textarea><span class="ct-help">اكتب كل علامة في سطر منفصل. الحد الأقصى 3 علامات.</span></p>
+                    </div>
+                </section>
+
+                <section class="ct-admin-section">
+                    <div class="ct-admin-section-head"><div><h3>2. الصورة</h3><p>صورة اختيارية بجانب المحتوى.</p></div></div>
+                    <div class="ct-admin-section-body">
+                        <div class="ct-field ct-media-field" data-ct-featured-media>
+                            <label>صورة القسم</label>
+                            <input type="hidden" name="image_id" value="<?php echo esc_attr((string)$image_id); ?>">
+                            <div class="ct-media-preview" data-ct-featured-preview><?php echo $image ? '<img src="' . esc_url($image) . '" alt="">' : '<span class="ct-media-empty">لم يتم اختيار صورة</span>'; ?></div>
+                            <div class="ct-media-actions"><button type="button" class="button" data-ct-featured-select>اختيار / تغيير الصورة</button><button type="button" class="button-link-delete" data-ct-featured-remove>إزالة الصورة</button></div>
+                        </div>
+                    </div>
+                </section>
+
+                <section class="ct-admin-section ct-admin-section-full">
+                    <div class="ct-admin-section-head"><div><h3>3. الأزرار</h3><p>يمكن التحكم في زرّين. اترك نص أي زر فارغ لإخفائه.</p></div></div>
+                    <div class="ct-admin-section-body ct-services-buttons-admin">
+                        <div class="ct-admin-subcard">
+                            <h4>الزر الأول</h4>
+                            <p class="ct-field"><label>نص الزر</label><input type="text" name="button_1_text" value="<?php echo esc_attr($settings['button_1_text']); ?>" class="widefat" placeholder="مثال: اطلب الخدمة"></p>
+                            <?php computech_services_render_link_fields('button_1', array(
+                                'type' => $settings['button_1_link_type'],
+                                'page_id' => $settings['button_1_page_id'],
+                                'page_slug' => $settings['button_1_page_slug'],
+                                'term_id' => $settings['button_1_term_id'],
+                                'url' => $settings['button_1_url'],
+                                'new_tab' => $settings['button_1_new_tab'],
+                            )); ?>
+                        </div>
+                        <div class="ct-admin-subcard">
+                            <h4>الزر الثاني</h4>
+                            <p class="ct-field"><label>نص الزر</label><input type="text" name="button_2_text" value="<?php echo esc_attr($settings['button_2_text']); ?>" class="widefat" placeholder="مثال: تصفح الخدمات"></p>
+                            <?php computech_services_render_link_fields('button_2', array(
+                                'type' => $settings['button_2_link_type'],
+                                'page_id' => $settings['button_2_page_id'],
+                                'page_slug' => $settings['button_2_page_slug'],
+                                'term_id' => $settings['button_2_term_id'],
+                                'url' => $settings['button_2_url'],
+                                'new_tab' => $settings['button_2_new_tab'],
+                            )); ?>
+                        </div>
+                    </div>
+                </section>
+            </div>
+            <?php submit_button('حفظ'); ?>
+        </form>
+    </div>
+    <script>
+    (function(){
+        var field = document.querySelector('[data-ct-featured-media]');
+        if (field) {
+            var selectBtn = field.querySelector('[data-ct-featured-select]');
+            var removeBtn = field.querySelector('[data-ct-featured-remove]');
+            var input = field.querySelector('input[type="hidden"]');
+            var preview = field.querySelector('[data-ct-featured-preview]');
+            if (selectBtn) { selectBtn.addEventListener('click', function(e){
+                e.preventDefault();
+                if (!window.wp || !wp.media) { return; }
+                var frame = wp.media({title:'اختيار صورة', button:{text:'استخدام الصورة'}, multiple:false, library:{type:'image'}});
+                frame.on('select', function(){
+                    var attachment = frame.state().get('selection').first().toJSON();
+                    var url = attachment.sizes && attachment.sizes.medium ? attachment.sizes.medium.url : attachment.url;
+                    if (input) { input.value = attachment.id || ''; }
+                    if (preview) { preview.innerHTML = '<img src="' + url + '" alt="">'; }
+                });
+                frame.open();
+            }); }
+            if (removeBtn) { removeBtn.addEventListener('click', function(e){ e.preventDefault(); if (input) { input.value = ''; } if (preview) { preview.innerHTML = '<span class="ct-media-empty">لم يتم اختيار صورة</span>'; } }); }
+        }
+    })();
+    </script>
+    <?php computech_services_admin_link_script_once(); ?>
+    <?php
+}
+
+function computech_services_process_defaults(): array {
+    return array(
+        'badge' => 'خطوات بسيطة',
+        'title' => 'كيف نخدمك؟',
+        'subtitle' => 'أربع خطوات بسيطة للحصول على خدمتك',
+        'steps' => array(
+            array('title' => 'حدد احتياجك', 'description' => 'أخبرنا بما تحتاجه من أجهزة أو إكسسوارات أو خدمات', 'icon_source' => 'icon', 'icon' => 'search', 'image_id' => '0'),
+            array('title' => 'نقترح الأنسب', 'description' => 'نقدم لك أفضل الخيارات المناسبة لميزانيتك واستخدامك', 'icon_source' => 'icon', 'icon' => 'installment', 'image_id' => '0'),
+            array('title' => 'نجهز ونفحص', 'description' => 'نجهز جهازك ونفحصه بدقة قبل التسليم لضمان جودته', 'icon_source' => 'icon', 'icon' => 'shield', 'image_id' => '0'),
+            array('title' => 'نوصّل وندعمك', 'description' => 'نوصّل جهازك ونقدم لك الدعم الفني المستمر', 'icon_source' => 'icon', 'icon' => 'support', 'image_id' => '0'),
+        ),
+    );
+}
+
+function computech_services_process_settings(): array {
+    $saved = get_option('computech_services_process_settings', array());
+    $defaults = computech_services_process_defaults();
+    $settings = wp_parse_args(is_array($saved) ? $saved : array(), $defaults);
+    $steps = isset($settings['steps']) && is_array($settings['steps']) ? $settings['steps'] : array();
+    $normalized = array();
+    for ($i = 0; $i < 4; $i++) {
+        $default_step = $defaults['steps'][$i] ?? array('title' => '', 'description' => '', 'icon_source' => 'icon', 'icon' => 'shield', 'image_id' => '0');
+        $step = isset($steps[$i]) && is_array($steps[$i]) ? $steps[$i] : array();
+        $step = wp_parse_args($step, $default_step);
+        $source = sanitize_key((string)($step['icon_source'] ?? 'icon'));
+        if (!in_array($source, array('icon', 'image'), true)) { $source = 'icon'; }
+        $normalized[] = array(
+            'title' => (string)($step['title'] ?? ''),
+            'description' => (string)($step['description'] ?? ''),
+            'icon_source' => $source,
+            'icon' => sanitize_key((string)($step['icon'] ?? 'shield')) ?: 'shield',
+            'image_id' => (string)absint($step['image_id'] ?? 0),
+        );
+    }
+    $settings['steps'] = $normalized;
+    return $settings;
+}
+
+function computech_services_process_settings_page(): void {
+    if (!current_user_can(computech_admin_capability())) { wp_die('غير مسموح'); }
+    $settings = computech_services_process_settings();
+    if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['computech_services_process_nonce']) && wp_verify_nonce(sanitize_text_field(wp_unslash($_POST['computech_services_process_nonce'])), 'computech_save_services_process')) {
+        $posted_steps = isset($_POST['process_steps']) && is_array($_POST['process_steps']) ? wp_unslash($_POST['process_steps']) : array();
+        $steps = array();
+        for ($i = 0; $i < 4; $i++) {
+            $step = isset($posted_steps[$i]) && is_array($posted_steps[$i]) ? $posted_steps[$i] : array();
+            $source = sanitize_key((string)($step['icon_source'] ?? 'icon'));
+            if (!in_array($source, array('icon','image'), true)) { $source = 'icon'; }
+            $steps[] = array(
+                'title' => sanitize_text_field((string)($step['title'] ?? '')),
+                'description' => sanitize_textarea_field((string)($step['description'] ?? '')),
+                'icon_source' => $source,
+                'icon' => sanitize_key((string)($step['icon'] ?? 'shield')) ?: 'shield',
+                'image_id' => (string)absint($step['image_id'] ?? 0),
+            );
+        }
+        $settings = array(
+            'badge' => (string)($settings['badge'] ?? 'خطوات بسيطة'),
+            'title' => (string)($settings['title'] ?? 'كيف نخدمك؟'),
+            'subtitle' => (string)($settings['subtitle'] ?? 'أربع خطوات بسيطة للحصول على خدمتك'),
+            'steps' => $steps,
+        );
+        update_option('computech_services_process_settings', $settings);
+        echo '<div class="updated notice"><p>تم حفظ قسم كيف نخدمك؟.</p></div>';
+    }
+    wp_enqueue_media();
+    computech_admin_editor_styles_once();
+    ?>
+    <div class="wrap ct-editor ct-hero-admin ct-services-process-admin" dir="rtl">
+        <h1>كيف نخدمك؟</h1>
+        <p class="description">تحكم في الخطوات فقط. كل خطوة لها عنوان، وصف، وسيناريو أيقونة مثل الأقسام وطرق الدفع.</p>
+        <form method="post">
+            <?php wp_nonce_field('computech_save_services_process', 'computech_services_process_nonce'); ?>
+            <div class="ct-hero-dashboard ct-services-process-dashboard">
+                <section class="ct-admin-section ct-admin-section-full">
+                    <div class="ct-admin-section-head"><div><h3>خطوات الخدمة</h3><p>4 خطوات ثابتة في الواجهة. اترك عنوان ووصف أي خطوة فارغين لإخفائها.</p></div></div>
+                    <div class="ct-admin-section-body ct-process-steps-admin-grid">
+                        <?php foreach ($settings['steps'] as $i => $step) :
+                            $image_id = absint($step['image_id'] ?? 0);
+                            $image = $image_id ? wp_get_attachment_image_url($image_id, 'thumbnail') : '';
+                            $source = sanitize_key((string)($step['icon_source'] ?? 'icon'));
+                            if (!in_array($source, array('icon','image'), true)) { $source = 'icon'; }
+                        ?>
+                            <div class="ct-admin-subcard ct-process-step-admin-card" data-ct-process-icon-card>
+                                <h4>الخطوة <?php echo esc_html((string)($i + 1)); ?></h4>
+                                <div class="ct-grid ct-grid-2">
+                                    <p class="ct-field"><label>العنوان</label><input type="text" name="process_steps[<?php echo esc_attr((string)$i); ?>][title]" value="<?php echo esc_attr($step['title']); ?>" class="widefat"></p>
+                                    <p class="ct-field"><label>نوع الأيقونة</label><select name="process_steps[<?php echo esc_attr((string)$i); ?>][icon_source]" class="widefat ct-process-icon-source"><option value="icon" <?php selected($source, 'icon'); ?>>أيقونة جاهزة</option><option value="image" <?php selected($source, 'image'); ?>>صورة</option></select></p>
+                                </div>
+                                <p class="ct-field"><label>الوصف</label><textarea name="process_steps[<?php echo esc_attr((string)$i); ?>][description]" rows="3" class="widefat"><?php echo esc_textarea($step['description']); ?></textarea></p>
+                                <div class="ct-process-icon-ready"><label class="ct-field-label">الأيقونة الجاهزة</label><?php echo computech_home_extra_icon_select('process_steps[' . esc_attr((string)$i) . '][icon]', sanitize_key((string)$step['icon'])); ?></div>
+                                <div class="ct-process-icon-image ct-field ct-media-field" data-ct-media-field data-title="اختيار صورة أيقونة" data-button="استخدام الصورة">
+                                    <label>صورة الأيقونة</label>
+                                    <input type="hidden" name="process_steps[<?php echo esc_attr((string)$i); ?>][image_id]" value="<?php echo esc_attr((string)$image_id); ?>">
+                                    <div class="ct-media-preview" data-ct-media-preview><?php echo $image ? '<img src="' . esc_url($image) . '" alt="">' : '<span class="ct-media-empty">لم يتم اختيار صورة</span>'; ?></div>
+                                    <div class="ct-media-actions"><button type="button" class="button" data-ct-select-media>اختيار / تغيير الصورة</button><button type="button" class="button-link-delete" data-ct-remove-media>إزالة الصورة</button></div>
+                                    <span class="ct-help" data-ct-media-info>اختار صورة صغيرة تظهر بدل الأيقونة الجاهزة.</span>
+                                </div>
+                            </div>
+                        <?php endforeach; ?>
+                    </div>
+                </section>
+            </div>
+            <?php submit_button('حفظ'); ?>
+        </form>
+    </div>
+    <script>
+    (function(){
+        function update(card){
+            var source = card.querySelector('.ct-process-icon-source');
+            var value = source ? source.value : 'icon';
+            var ready = card.querySelector('.ct-process-icon-ready');
+            var image = card.querySelector('.ct-process-icon-image');
+            if (ready) { ready.style.display = value === 'icon' ? '' : 'none'; }
+            if (image) { image.style.display = value === 'image' ? '' : 'none'; }
+        }
+        document.querySelectorAll('[data-ct-process-icon-card]').forEach(function(card){
+            var source = card.querySelector('.ct-process-icon-source');
+            if (source) { source.addEventListener('change', function(){ update(card); }); }
+            update(card);
+        });
+    })();
+    </script>
+    <?php computech_admin_media_script_once(); ?>
+    <?php
+}
+
+function computech_services_process_icon_html(array $step): string {
+    $source = sanitize_key((string)($step['icon_source'] ?? 'icon'));
+    if ($source === 'image') {
+        $image_id = absint($step['image_id'] ?? 0);
+        $url = $image_id ? wp_get_attachment_image_url($image_id, 'thumbnail') : '';
+        if ($url) {
+            return '<img src="' . esc_url($url) . '" alt="" loading="lazy">';
+        }
+    }
+    $icon = sanitize_key((string)($step['icon'] ?? 'shield')) ?: 'shield';
+    return computech_home_extra_icon_svg($icon);
+}
+
+function computech_render_services_process_section(): void {
+    $process_posts = computech_service_process_step_posts();
+    $steps = array();
+    foreach ($process_posts as $post) {
+        if (!$post instanceof WP_Post) { continue; }
+        $step = computech_service_process_step_to_array($post);
+        if ($step['title'] === '' && $step['description'] === '') { continue; }
+        $steps[] = $step;
+    }
+    if (!$steps) { return; }
+    ?>
+    <section class="services-process">
+        <div class="services-container">
+            <div class="svc-section-header">
+                <span class="svc-section-badge">خطوات بسيطة</span>
+                <h2 class="svc-section-title">كيف نخدمك؟</h2>
+                <p class="svc-section-subtitle">أربع خطوات بسيطة للحصول على خدمتك</p>
+            </div>
+            <div class="process-steps">
+                <?php foreach ($steps as $index => $step) : ?>
+                    <div class="process-step">
+                        <div class="process-step-connector"></div>
+                        <div class="process-step-number"><?php echo esc_html((string)($index + 1)); ?></div>
+                        <div class="process-step-icon"><?php echo computech_services_process_icon_html($step); ?></div>
+                        <?php if ($step['title'] !== '') : ?><h3 class="process-step-title"><?php echo esc_html($step['title']); ?></h3><?php endif; ?>
+                        <?php if ($step['description'] !== '') : ?><p class="process-step-desc"><?php echo esc_html($step['description']); ?></p><?php endif; ?>
+                    </div>
+                <?php endforeach; ?>
+            </div>
+        </div>
+    </section>
+    <?php
+}
+
+function computech_render_services_featured_section(): void {
+    $s = computech_services_featured_settings();
+    if (trim((string)($s['button_1_text'] ?? '')) === '' && trim((string)($s['button_text'] ?? '')) !== '') {
+        $s['button_1_text'] = (string)$s['button_text'];
+        $s['button_1_link_type'] = (string)($s['link_type'] ?? 'none');
+        $s['button_1_page_id'] = (string)($s['page_id'] ?? '0');
+        $s['button_1_page_slug'] = (string)($s['page_slug'] ?? '');
+        $s['button_1_term_id'] = (string)($s['term_id'] ?? '0');
+        $s['button_1_url'] = (string)($s['url'] ?? '');
+        $s['button_1_new_tab'] = (string)($s['new_tab'] ?? '0');
+    }
+
+    $title = trim((string)$s['title']);
+    $desc = trim((string)$s['description']);
+    $image_id = absint($s['image_id']);
+    $image = $image_id ? wp_get_attachment_image_url($image_id, 'large') : '';
+    $tags_text = trim((string)($s['tags_text'] ?? ''));
+    if ($tags_text !== '') {
+        $tag_lines = preg_split('/\r\n|\r|\n/', $tags_text);
+        $tags = is_array($tag_lines) ? array_values(array_filter(array_map('trim', $tag_lines), static function($value){ return $value !== ''; })) : array();
+        $tags = array_slice($tags, 0, 3);
+    } else {
+        $tags = array_slice(array_values(array_filter(array(
+            trim((string)($s['tag_1'] ?? '')),
+            trim((string)($s['tag_2'] ?? '')),
+            trim((string)($s['tag_3'] ?? '')),
+        ))), 0, 3);
+    }
+
+    $buttons = array();
+    foreach (array(1, 2) as $num) {
+        $text = trim((string)($s['button_' . $num . '_text'] ?? ''));
+        $url = computech_services_resolve_link(
+            (string)($s['button_' . $num . '_link_type'] ?? 'none'),
+            (string)($s['button_' . $num . '_page_id'] ?? '0'),
+            (string)($s['button_' . $num . '_page_slug'] ?? ''),
+            absint($s['button_' . $num . '_term_id'] ?? 0),
+            (string)($s['button_' . $num . '_url'] ?? '')
+        );
+        if ($text !== '' && $url !== '#') {
+            $buttons[] = array(
+                'text' => $text,
+                'url' => $url,
+                'class' => $num === 1 ? 'btn-primary' : 'btn-secondary',
+                'target' => computech_services_link_target($s['button_' . $num . '_new_tab'] ?? '0'),
+            );
+        }
+    }
+
+    if ($title === '' && $desc === '' && !$tags && !$buttons && $image === '') { return; }
+    ?>
+    <section class="services-featured">
+        <div class="services-container">
+            <div class="services-featured-inner">
+                <div class="services-featured-text">
+                    <span class="svc-section-badge">خدمة مميزة</span>
+                    <?php if ($title !== '') : ?><h2 class="svc-section-title"><?php echo esc_html($title); ?></h2><?php endif; ?>
+                    <?php if ($desc !== '') : ?><p class="services-featured-desc"><?php echo esc_html($desc); ?></p><?php endif; ?>
+                    <?php if ($tags) : ?>
+                        <div class="services-featured-features">
+                            <?php foreach ($tags as $tag) : ?>
+                                <div class="svc-feature-item">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
+                                    <span><?php echo esc_html($tag); ?></span>
+                                </div>
+                            <?php endforeach; ?>
+                        </div>
+                    <?php endif; ?>
+                    <?php if ($buttons) : ?><div class="services-featured-cta">
+                        <?php foreach ($buttons as $button) : ?><a href="<?php echo esc_url($button['url']); ?>" class="<?php echo esc_attr($button['class']); ?>"<?php echo $button['target']; ?>><?php echo esc_html($button['text']); ?></a><?php endforeach; ?>
+                    </div><?php endif; ?>
+                </div>
+                <?php if ($image) : ?><div class="services-featured-image"><div class="services-featured-image-glow"></div><img src="<?php echo esc_url($image); ?>" alt="<?php echo esc_attr($title !== '' ? $title : 'خدمة مميزة'); ?>" class="services-featured-img"></div><?php endif; ?>
+            </div>
+        </div>
+    </section>
+    <?php
 }
 
 // Computech categories/products architecture layer.
@@ -6552,7 +7539,7 @@ function computech_footer_newsletter_mailto_action_url(): string {
 
 function computech_footer_static_feature_items(): array {
     $items = function_exists('computech_rest_footer_feature_items') ? computech_rest_footer_feature_items() : array(
-        array('show' => '1', 'icon' => 'check', 'text' => 'فحص قبل البيع'),
+        array('show' => '1', 'icon' => 'shield', 'text' => 'فحص قبل البيع'),
         array('show' => '1', 'icon' => 'warranty', 'text' => 'ضمان حسب المنتج'),
         array('show' => '1', 'icon' => 'delivery', 'text' => 'توصيل سريع'),
         array('show' => '1', 'icon' => 'support', 'text' => 'دعم فني'),
@@ -6614,7 +7601,7 @@ function computech_render_footer_site_identity_bottom_links(): void {
    ============================================ */
 function computech_rest_footer_feature_defaults(): array {
     return array(
-        array('show' => '1', 'icon' => 'check', 'text' => 'فحص قبل البيع'),
+        array('show' => '1', 'icon' => 'shield', 'text' => 'فحص قبل البيع'),
         array('show' => '1', 'icon' => 'warranty', 'text' => 'ضمان حسب المنتج'),
         array('show' => '1', 'icon' => 'delivery', 'text' => 'توصيل سريع'),
         array('show' => '1', 'icon' => 'support', 'text' => 'دعم فني'),
