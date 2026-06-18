@@ -12,6 +12,34 @@ function computech_wc_active(): bool {
     return class_exists('WooCommerce') && function_exists('wc_get_product');
 }
 
+
+function computech_wc_migrate_legacy_featured_products(): void {
+    if (!computech_wc_active() || get_option('computech_wc_legacy_featured_migrated') === '1') {
+        return;
+    }
+
+    $legacy_ids = get_posts(array(
+        'post_type' => 'product',
+        'post_status' => array('publish', 'draft', 'pending', 'private'),
+        'posts_per_page' => -1,
+        'fields' => 'ids',
+        'meta_key' => '_computech_wc_is_featured',
+        'meta_value' => '1',
+        'no_found_rows' => true,
+    ));
+
+    foreach ($legacy_ids as $product_id) {
+        $product = wc_get_product((int) $product_id);
+        if ($product instanceof WC_Product && !$product->get_featured()) {
+            $product->set_featured(true);
+            $product->save();
+        }
+    }
+
+    update_option('computech_wc_legacy_featured_migrated', '1', false);
+}
+add_action('admin_init', 'computech_wc_migrate_legacy_featured_products');
+
 function computech_wc_products_page_url(): string {
     $page_url = computech_page_url('products');
     if ($page_url !== '') {
@@ -565,8 +593,7 @@ function computech_wc_get_featured_products(int $limit = 8): array {
         'orderby' => 'date',
         'order' => 'DESC',
         'return' => 'objects',
-        'meta_key' => '_computech_wc_is_featured',
-        'meta_value' => '1',
+        'featured' => true,
     ));
     usort($products, static function(WC_Product $a, WC_Product $b): int {
         $ao = (int) get_post_meta($a->get_id(), '_computech_wc_featured_order', true);
@@ -911,9 +938,21 @@ function computech_wc_product_metabox(): void {
 }
 add_action('add_meta_boxes_product', 'computech_wc_product_metabox');
 
+function computech_wc_remove_default_product_short_description_box(): void {
+    remove_meta_box('postexcerpt', 'product', 'normal');
+}
+add_action('add_meta_boxes_product', 'computech_wc_remove_default_product_short_description_box', 99);
+
+function computech_wc_hide_default_product_short_description_box_css(): void {
+    $screen = function_exists('get_current_screen') ? get_current_screen() : null;
+    if (!$screen || $screen->post_type !== 'product') { return; }
+    echo '<style>#postexcerpt{display:none!important}</style>';
+}
+add_action('admin_head-post.php', 'computech_wc_hide_default_product_short_description_box_css');
+add_action('admin_head-post-new.php', 'computech_wc_hide_default_product_short_description_box_css');
+
 function computech_wc_product_metabox_html(WP_Post $post): void {
     wp_nonce_field('computech_wc_save_product_fields', 'computech_wc_product_nonce');
-    $is_featured = get_post_meta($post->ID, '_computech_wc_is_featured', true) === '1';
     $featured_order = (string) get_post_meta($post->ID, '_computech_wc_featured_order', true);
     $condition = sanitize_key((string) get_post_meta($post->ID, '_computech_wc_condition', true));
     if (!in_array($condition, array('new', 'imported'), true)) { $condition = 'new'; }
@@ -921,15 +960,14 @@ function computech_wc_product_metabox_html(WP_Post $post): void {
     <div class="computech-product-admin" style="direction:rtl;display:grid;gap:18px">
         <div style="display:flex;gap:12px;flex-wrap:wrap;align-items:stretch">
             <div style="max-width:520px;background:#fff;border:1px solid #d7e2f2;border-radius:14px;padding:12px 14px;box-shadow:0 8px 24px rgba(15,23,42,.06)"><strong>ظهور الكارت</strong><p class="description" style="margin:8px 0 0;color:#64748b">Published + Public = يظهر. Draft / Pending / Private / Password protected = لا يظهر.</p></div>
-            <div style="max-width:520px;background:#fff;border:1px solid #d7e2f2;border-radius:14px;padding:12px 14px;box-shadow:0 8px 24px rgba(15,23,42,.06)"><strong>تنبيه منتجات مميزة</strong><p class="description" style="margin:8px 0 0;color:#64748b">الصفحة الرئيسية تعرض 8 منتجات مميزة كحد أقصى. إذا زاد العدد سيظهر آخر 8 منتجات فقط حسب Featured Order.</p></div>
+            <div style="max-width:520px;background:#fff;border:1px solid #d7e2f2;border-radius:14px;padding:12px 14px;box-shadow:0 8px 24px rgba(15,23,42,.06)"><strong>تنبيه منتجات مميزة</strong><p class="description" style="margin:8px 0 0;color:#64748b">الصفحة الرئيسية تعرض المنتجات التي تم تفعيل Featured لها من صندوق Publish > Catalog visibility في WooCommerce، بحد أقصى 8 منتجات مرتبة حسب Featured Order.</p></div>
         </div>
         <p><strong>WooCommerce controls:</strong> price, stock, product image, gallery, categories, and core data.</p>
-        <div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px">
-            <p><label style="display:block;font-weight:700;margin-bottom:6px"><input type="checkbox" name="_computech_wc_is_featured" value="1" <?php checked($is_featured); ?>> Is Featured</label><span class="description">Shows this product in homepage featured products.</span></p>
-            <p><label style="display:block;font-weight:700;margin-bottom:6px">Featured Order</label><input type="number" name="_computech_wc_featured_order" value="<?php echo esc_attr($featured_order); ?>" class="widefat" min="0" step="1"></p>
+        <div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px">
+            <p><label style="display:block;font-weight:700;margin-bottom:6px">Featured Order</label><input type="number" name="_computech_wc_featured_order" value="<?php echo esc_attr($featured_order); ?>" class="widefat" min="0" step="1"><span class="description">لتفعيل ظهوره في الرئيسية: من صندوق Publish اضغط Edit أمام Catalog visibility ثم فعل Featured.</span></p>
             <p><label style="display:block;font-weight:700;margin-bottom:6px">Status</label><select name="_computech_wc_condition" class="widefat"><option value="new" <?php selected($condition, 'new'); ?>>جديد</option><option value="imported" <?php selected($condition, 'imported'); ?>>استيراد</option></select></p>
         </div>
-        <p><label style="display:block;font-weight:700;margin-bottom:6px">Product short description</label><textarea name="_computech_wc_short_desc" rows="3" class="widefat" placeholder="وصف قصير نص فقط بدون صور"><?php echo esc_textarea((string) get_post_meta($post->ID, '_computech_wc_short_desc', true)); ?></textarea><span class="description">نص فقط. يستخدم في كروت المنتجات.</span></p>
+        <p><label style="display:block;font-weight:700;margin-bottom:6px">Product short description</label><textarea name="_computech_wc_short_desc" rows="3" class="widefat" placeholder="وصف قصير نص فقط بدون صور"><?php echo esc_textarea((string) get_post_meta($post->ID, '_computech_wc_short_desc', true)); ?></textarea><span class="description">نص فقط. هذا الحقل هو المعتمد بدل صندوق WooCommerce الافتراضي ويستخدم في كروت المنتجات.</span></p>
         <div class="computech-specs-editor">
             <h3 style="margin:0 0 8px">مواصفات المنتج</h3>
             <p class="description">أضف أي عدد من المواصفات. مثال: المعالج / Intel Core i9-14900K.</p>
@@ -986,7 +1024,6 @@ function computech_wc_save_product_fields(int $post_id): void {
     if (defined('DOING_AUTOSAVE') && DOING_AUTOSAVE) { return; }
     if (!current_user_can('edit_post', $post_id)) { return; }
 
-    update_post_meta($post_id, '_computech_wc_is_featured', !empty($_POST['_computech_wc_is_featured']) ? '1' : '0');
     update_post_meta($post_id, '_computech_wc_featured_order', absint($_POST['_computech_wc_featured_order'] ?? 0));
     $condition = sanitize_key(wp_unslash($_POST['_computech_wc_condition'] ?? 'new'));
     update_post_meta($post_id, '_computech_wc_condition', in_array($condition, array('new', 'imported'), true) ? $condition : 'new');

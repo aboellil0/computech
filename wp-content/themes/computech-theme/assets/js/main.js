@@ -882,13 +882,13 @@
                 if (visible === 1) {
                     slide.classList.add('ct-topbar-slot-single');
                 } else if (visible === 2) {
-                    slide.classList.add(slot === 0 ? 'ct-topbar-slot-left' : 'ct-topbar-slot-right');
+                    slide.classList.add(slot === 0 ? 'ct-topbar-slot-right' : 'ct-topbar-slot-left');
                 } else if (slot === 0) {
-                    slide.classList.add('ct-topbar-slot-left');
+                    slide.classList.add('ct-topbar-slot-right');
                 } else if (slot === 1) {
                     slide.classList.add('ct-topbar-slot-center');
                 } else {
-                    slide.classList.add('ct-topbar-slot-right');
+                    slide.classList.add('ct-topbar-slot-left');
                 }
             }
         }

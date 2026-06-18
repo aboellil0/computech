@@ -16341,3 +16341,57 @@ body.home .contact-section .contact-panel .contact-social-btn span {
 .ct-services-featured-admin .ct-field textarea[name="tags_text"] {
     min-height: 116px;
 }
+
+
+/* Computech topbar slot alignment fix:
+   first visible item is the right slot, second is center, third is left. */
+.computech-topbar .benefits-track {
+    direction: rtl !important;
+}
+
+.computech-topbar .benefits-track > .benefit-item.ct-topbar-slot-right,
+.computech-topbar .benefits-track > .benefit-item:nth-child(1) {
+    justify-content: flex-start !important;
+    text-align: right !important;
+}
+
+.computech-topbar .benefits-track > .benefit-item.ct-topbar-slot-center,
+.computech-topbar .benefits-track > .benefit-item:nth-child(2) {
+    justify-content: center !important;
+    text-align: center !important;
+}
+
+.computech-topbar .benefits-track > .benefit-item.ct-topbar-slot-left,
+.computech-topbar .benefits-track > .benefit-item:nth-child(3) {
+    justify-content: flex-end !important;
+    text-align: left !important;
+}
+
+.computech-topbar .benefits-track > .benefit-item.ct-topbar-slot-right .benefit-text,
+.computech-topbar .benefits-track > .benefit-item:nth-child(1) .benefit-text {
+    text-align: right !important;
+}
+
+.computech-topbar .benefits-track > .benefit-item.ct-topbar-slot-center .benefit-text,
+.computech-topbar .benefits-track > .benefit-item:nth-child(2) .benefit-text {
+    text-align: center !important;
+}
+
+.computech-topbar .benefits-track > .benefit-item.ct-topbar-slot-left .benefit-text,
+.computech-topbar .benefits-track > .benefit-item:nth-child(3) .benefit-text {
+    text-align: left !important;
+}
+
+@media (max-width: 640px) {
+    .computech-topbar .benefits-track > .benefit-item,
+    .computech-topbar .benefits-track > .benefit-item.ct-topbar-slot-right,
+    .computech-topbar .benefits-track > .benefit-item.ct-topbar-slot-center,
+    .computech-topbar .benefits-track > .benefit-item.ct-topbar-slot-left,
+    .computech-topbar .benefits-track > .benefit-item.ct-topbar-slot-single {
+        justify-content: center !important;
+        text-align: center !important;
+    }
+    .computech-topbar .benefits-track > .benefit-item .benefit-text {
+        text-align: center !important;
+    }
+}

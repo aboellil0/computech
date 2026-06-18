@@ -803,6 +803,23 @@ function computech_get_visible_topbar_items(): array {
     }));
 }
 
+
+function computech_topbar_slot_class(int $index, int $count): string {
+    if ($count <= 1) {
+        return 'ct-topbar-slot-single';
+    }
+    if ($count === 2) {
+        return $index === 0 ? 'ct-topbar-slot-right' : 'ct-topbar-slot-left';
+    }
+    if ($index === 0) {
+        return 'ct-topbar-slot-right';
+    }
+    if ($index === 1) {
+        return 'ct-topbar-slot-center';
+    }
+    return 'ct-topbar-slot-left';
+}
+
 function computech_render_header_icon(array $item, string $class = 'benefit-icon-frame'): void {
     $icon_id = absint($item['icon_id'] ?? 0);
     if ($icon_id) {
@@ -824,13 +841,15 @@ function computech_render_header_topbar(): void {
     $posts = function_exists('computech_topbar_item_posts') ? computech_topbar_item_posts() : array();
 
     if ($posts) {
-        echo '<div class="benefits-strip computech-topbar" data-count="' . esc_attr((string) count($posts)) . '"><div class="benefits-slider"><div class="benefits-track">';
-        foreach ($posts as $post) {
+        $posts_count = count($posts);
+        echo '<div class="benefits-strip computech-topbar" data-count="' . esc_attr((string) $posts_count) . '"><div class="benefits-slider"><div class="benefits-track">';
+        foreach ($posts as $index => $post) {
             $url = computech_topbar_item_url($post);
             $target = !empty(get_post_meta($post->ID, '_computech_topbar_new_tab', true)) ? ' target="_blank" rel="noopener"' : '';
             $tag = $url !== '' ? 'a' : 'div';
             $attrs = $url !== '' ? ' href="' . esc_url($url) . '"' . $target : '';
-            echo '<' . $tag . ' class="benefit-item topbar-slide"' . $attrs . '>';
+            $slot_class = computech_topbar_slot_class((int) $index, $posts_count);
+            echo '<' . $tag . ' class="benefit-item topbar-slide ' . esc_attr($slot_class) . '"' . $attrs . '>';
             echo computech_topbar_item_icon_html($post);
             echo '<span class="benefit-text">' . esc_html(get_the_title($post)) . '</span>';
             echo '</' . $tag . '>';
@@ -844,11 +863,13 @@ function computech_render_header_topbar(): void {
     if (!$items) {
         return;
     }
-    echo '<div class="benefits-strip computech-topbar" data-count="' . esc_attr((string) count($items)) . '"><div class="benefits-slider"><div class="benefits-track">';
-    foreach ($items as $item) {
+    $items_count = count($items);
+    echo '<div class="benefits-strip computech-topbar" data-count="' . esc_attr((string) $items_count) . '"><div class="benefits-slider"><div class="benefits-track">';
+    foreach ($items as $index => $item) {
         $tag = !empty($item['link']) ? 'a' : 'div';
         $attrs = !empty($item['link']) ? ' href="' . esc_url($item['link']) . '"' : '';
-        echo '<' . $tag . ' class="benefit-item topbar-slide"' . $attrs . '>';
+        $slot_class = computech_topbar_slot_class((int) $index, $items_count);
+        echo '<' . $tag . ' class="benefit-item topbar-slide ' . esc_attr($slot_class) . '"' . $attrs . '>';
         computech_render_header_icon($item);
         echo '<span class="benefit-text">' . esc_html($item['text']) . '</span>';
         echo '</' . $tag . '>';
@@ -2058,7 +2079,7 @@ function computech_register_hero_slides_cpt(): void {
         'show_ui' => true,
         'show_in_menu' => true,
         'menu_icon' => 'dashicons-cover-image',
-        'supports' => array('title', 'page-attributes'),
+        'supports' => array('title', 'thumbnail', 'page-attributes'),
         'capability_type' => 'page',
         'map_meta_cap' => true,
         'show_in_rest' => false,
@@ -2225,9 +2246,16 @@ function computech_get_hero_buttons(WP_Post $slide): array {
 
 
 function computech_hero_full_title(WP_Post $slide): string {
-    $title = trim(computech_hero_meta($slide, '_computech_hero_title', ''));
-    if ($title !== '') {
-        return $title;
+    // The visible hero title is now controlled by the native WordPress post title.
+    // Legacy custom title meta is kept only as a fallback for old content/imports.
+    $post_title = trim((string) get_the_title($slide));
+    if ($post_title !== '') {
+        return $post_title;
+    }
+
+    $legacy_title = trim(computech_hero_meta($slide, '_computech_hero_title', ''));
+    if ($legacy_title !== '') {
+        return $legacy_title;
     }
 
     $parts = array_filter(array_map('trim', array(
@@ -2490,10 +2518,12 @@ function computech_hero_slide_metabox(WP_Post $post): void {
                     </div>
                 </div>
                 <div class="ct-admin-section-body">
-                    <div class="ct-grid ct-grid-2">
-                        <p class="ct-field"><label>عنوان الشريحة</label><input type="text" name="_computech_hero_title" value="<?php echo esc_attr(computech_hero_full_title($post)); ?>" class="widefat" placeholder="كل ما تحتاجه لعالم الكمبيوتر في مكان واحد"></p>
-                        <p class="ct-field"><label>الوصف القصير</label><textarea name="_computech_hero_description" rows="3" class="widefat" maxlength="220"><?php echo esc_textarea(computech_hero_meta($post, '_computech_hero_description', $defaults['_computech_hero_description'])); ?></textarea><span class="ct-help">يفضل ألا يزيد عن سطرين في الواجهة.</span></p>
+                    <div class="ct-card-preview-info" style="margin-bottom:14px">
+                        <div class="ct-mini-info"><strong>عنوان الشريحة</strong><span>عدّله من خانة العنوان الأساسية أعلى الصفحة.</span></div>
+                        <div class="ct-mini-info"><strong>صورة الشريحة</strong><span>اختارها من صندوق Featured Image الجانبي.</span></div>
+                        <div class="ct-mini-info"><strong>الترتيب</strong><span>استخدم Order من Page Attributes.</span></div>
                     </div>
+                    <p class="ct-field"><label>الوصف القصير</label><textarea name="_computech_hero_description" rows="3" class="widefat" maxlength="220"><?php echo esc_textarea(computech_hero_meta($post, '_computech_hero_description', $defaults['_computech_hero_description'])); ?></textarea><span class="ct-help">يفضل ألا يزيد عن سطرين في الواجهة.</span></p>
                     <div class="ct-admin-section" style="margin-top:14px; box-shadow:none;">
                         <div class="ct-admin-section-head">
                             <div>
@@ -2680,10 +2710,6 @@ function computech_save_hero_slide(int $post_id): void {
     }
 
     $text_fields = array(
-        '_computech_hero_title',
-        '_computech_hero_title_line_1',
-        '_computech_hero_title_highlight',
-        '_computech_hero_title_line_3',
         '_computech_hero_primary_text',
         '_computech_hero_secondary_text',
         '_computech_hero_badge_text',
@@ -3017,7 +3043,7 @@ function computech_register_hero_cards_cpt(): void {
         'show_ui' => true,
         'show_in_menu' => true,
         'menu_icon' => 'dashicons-screenoptions',
-        'supports' => array('title', 'page-attributes'),
+        'supports' => array('title', 'thumbnail', 'page-attributes'),
         'capability_type' => 'page',
         'map_meta_cap' => true,
         'show_in_rest' => false,
@@ -3612,7 +3638,7 @@ function computech_register_customer_need_cards_cpt(): void {
         'public' => false,
         'show_ui' => true,
         'show_in_menu' => 'computech-settings',
-        'supports' => array('title', 'page-attributes'),
+        'supports' => array('title', 'thumbnail', 'page-attributes'),
         'capability_type' => 'page',
         'map_meta_cap' => true,
         'show_in_rest' => false,
@@ -5553,7 +5579,7 @@ function computech_register_home_offer_banner_cpt(): void {
         'public' => false,
         'show_ui' => true,
         'show_in_menu' => 'computech-settings',
-        'supports' => array('title', 'page-attributes'),
+        'supports' => array('title', 'thumbnail', 'page-attributes'),
         'capability_type' => 'page',
         'map_meta_cap' => true,
         'show_in_rest' => false,
