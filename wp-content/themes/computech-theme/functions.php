@@ -366,6 +366,7 @@ function computech_enqueue_assets(): void {
         'contactUrl' => function_exists('computech_contact_page_url') ? computech_contact_page_url() : computech_page_url('contact'),
         'ajaxUrl' => admin_url('admin-ajax.php'),
         'liveSearchNonce' => wp_create_nonce('computech_live_search'),
+        'productsFilterNonce' => wp_create_nonce('computech_products_filter'),
         'cartNonce' => wp_create_nonce('computech_cart_count'),
     ));
 }

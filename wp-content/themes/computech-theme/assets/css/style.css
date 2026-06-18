@@ -16395,3 +16395,169 @@ body.home .contact-section .contact-panel .contact-social-btn span {
         text-align: center !important;
     }
 }
+
+/* ============================================
+   Computech fix: Categories page count badge layout
+   - Put product count badge above the button in "جميع الأقسام"
+   - Prevent badge from compressing the blue category button
+   ============================================ */
+.cat-all .cat-card-footer {
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: flex-start !important;
+    justify-content: flex-start !important;
+    gap: 10px !important;
+    width: 100% !important;
+    margin-top: auto !important;
+}
+
+.cat-all .cat-card-count {
+    order: 1 !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    width: fit-content !important;
+    max-width: 100% !important;
+    white-space: nowrap !important;
+    flex: 0 0 auto !important;
+}
+
+.cat-all .cat-card-btn {
+    order: 2 !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    width: fit-content !important;
+    min-width: 150px !important;
+    max-width: 100% !important;
+    flex: 0 0 auto !important;
+    white-space: nowrap !important;
+}
+
+@media (max-width: 480px) {
+    .cat-all .cat-card-btn {
+        width: 100% !important;
+        min-width: 0 !important;
+    }
+}
+
+
+/* ============================================
+   Products page compact hero + AJAX filters fix
+   ============================================ */
+body.page-template-page-products .prod-hero,
+body.page-template-page-products-php .prod-hero,
+.page-template-page-products .prod-hero {
+    padding: 28px 0 26px;
+}
+
+body.page-template-page-products .prod-hero-decorative-dots,
+body.page-template-page-products-php .prod-hero-decorative-dots,
+.page-template-page-products .prod-hero-decorative-dots {
+    margin-bottom: 10px;
+}
+
+body.page-template-page-products .prod-hero-title,
+body.page-template-page-products-php .prod-hero-title,
+.page-template-page-products .prod-hero-title {
+    font-size: clamp(28px, 3vw, 38px);
+    margin-bottom: 8px;
+    line-height: 1.2;
+}
+
+body.page-template-page-products .prod-hero-subtitle,
+body.page-template-page-products-php .prod-hero-subtitle,
+.page-template-page-products .prod-hero-subtitle {
+    font-size: 14.5px;
+    line-height: 1.7;
+    max-width: 720px;
+    margin-bottom: 14px;
+}
+
+body.page-template-page-products .prod-hero-pills,
+body.page-template-page-products-php .prod-hero-pills,
+.page-template-page-products .prod-hero-pills {
+    gap: 8px;
+}
+
+body.page-template-page-products .prod-hero-pill,
+body.page-template-page-products-php .prod-hero-pill,
+.page-template-page-products .prod-hero-pill {
+    padding: 7px 14px;
+    font-size: 12px;
+    box-shadow: none;
+}
+
+body.page-template-page-products .prod-filters,
+body.page-template-page-products-php .prod-filters,
+.page-template-page-products .prod-filters {
+    padding: 14px 0 8px;
+}
+
+body.page-template-page-products .prod-filters-bar,
+body.page-template-page-products-php .prod-filters-bar,
+.page-template-page-products .prod-filters-bar {
+    padding: 12px 14px;
+    gap: 10px;
+    align-items: stretch;
+}
+
+body.page-template-page-products .prod-filter-group,
+body.page-template-page-products-php .prod-filter-group,
+.page-template-page-products .prod-filter-group {
+    flex: 1 1 130px;
+}
+
+body.page-template-page-products .prod-filter-search,
+body.page-template-page-products-php .prod-filter-search,
+.page-template-page-products .prod-filter-search {
+    flex: 2 1 260px;
+}
+
+body.page-template-page-products .prod-filter-input,
+body.page-template-page-products .prod-filter-select,
+body.page-template-page-products-php .prod-filter-input,
+body.page-template-page-products-php .prod-filter-select,
+.page-template-page-products .prod-filter-input,
+.page-template-page-products .prod-filter-select {
+    min-height: 42px;
+    padding: 8px 12px;
+    font-size: 13.5px;
+}
+
+body.page-template-page-products .prod-filter-icon,
+body.page-template-page-products-php .prod-filter-icon,
+.page-template-page-products .prod-filter-icon {
+    width: 42px;
+    height: 42px;
+}
+
+body.page-template-page-products .prod-grid-section,
+body.page-template-page-products-php .prod-grid-section,
+.page-template-page-products .prod-grid-section {
+    padding-top: 24px;
+}
+
+.computech-wc-filters.is-loading {
+    opacity: 0.72;
+    pointer-events: none;
+}
+
+#prodGrid.is-loading {
+    opacity: 0.55;
+    transition: opacity 0.2s ease;
+}
+
+@media (max-width: 900px) {
+    body.page-template-page-products .prod-hero,
+    body.page-template-page-products-php .prod-hero,
+    .page-template-page-products .prod-hero {
+        padding: 24px 0 22px;
+    }
+
+    body.page-template-page-products .prod-hero-pills,
+    body.page-template-page-products-php .prod-hero-pills,
+    .page-template-page-products .prod-hero-pills {
+        display: none;
+    }
+}

@@ -691,83 +691,140 @@
         }
     });
 
-    /* Products Page - Filtering, Search, and Sort */
+    /* Products Page - AJAX Filtering, Search, and Sort */
+    var prodFilterForm = document.querySelector('.computech-wc-filters[data-ajax-filter="1"]');
     var prodSearchInput = document.getElementById('prodSearchInput');
-    var prodCategoryFilter = document.getElementById('prodCategoryFilter');
-    var prodStatusFilter = document.getElementById('prodStatusFilter');
-    var prodSortFilter = document.getElementById('prodSortFilter');
     var prodGrid = document.getElementById('prodGrid');
+    var prodAjaxTimer = null;
+    var prodAjaxController = null;
 
-    if (prodGrid) {
-        var prodCards = Array.from(prodGrid.querySelectorAll('.prod-card'));
-        var prodUrlParams = new URLSearchParams(window.location.search);
-        if (prodSearchInput && prodUrlParams.get('s')) {
-            prodSearchInput.value = prodUrlParams.get('s');
-        }
-        if (prodCategoryFilter && prodUrlParams.get('category')) {
-            prodCategoryFilter.value = prodUrlParams.get('category');
-        }
-        if (prodStatusFilter && prodUrlParams.get('status')) {
-            prodStatusFilter.value = prodUrlParams.get('status');
+    if (prodFilterForm && prodGrid && window.fetch && window.URLSearchParams && typeof computechTheme !== 'undefined' && computechTheme.ajaxUrl) {
+        var prodPagination = document.querySelector('.prod-grid-section .woocommerce-pagination');
+
+        function setProductsLoading(isLoading) {
+            prodFilterForm.classList.toggle('is-loading', isLoading);
+            prodGrid.classList.toggle('is-loading', isLoading);
         }
 
-        function filterProducts() {
-            var searchTerm = prodSearchInput ? prodSearchInput.value.trim().toLowerCase() : '';
-            var category = prodCategoryFilter ? prodCategoryFilter.value : 'all';
-            var status = prodStatusFilter ? prodStatusFilter.value : 'all';
-            var sort = prodSortFilter ? prodSortFilter.value : 'newest';
-
-            var filtered = prodCards.filter(function (card) {
-                var name = (card.getAttribute('data-name') || '').toLowerCase();
-                var cardCategory = card.getAttribute('data-category') || '';
-                var cardStatus = card.getAttribute('data-status') || '';
-
-                var matchSearch = !searchTerm || name.indexOf(searchTerm) !== -1;
-                var matchCategory = category === 'all' || cardCategory.split(/\s+/).indexOf(category) !== -1;
-                var matchStatus = status === 'all' || cardStatus.split(/\s+/).indexOf(status) !== -1;
-
-                return matchSearch && matchCategory && matchStatus;
+        function getProductsParams() {
+            var params = new URLSearchParams();
+            var formData = new FormData(prodFilterForm);
+            formData.forEach(function (value, key) {
+                value = String(value || '').trim();
+                if (value === '' || value === 'all') { return; }
+                params.set(key, value);
             });
+            params.set('action', 'computech_filter_products');
+            params.set('nonce', computechTheme.productsFilterNonce || '');
+            return params;
+        }
 
-            if (sort === 'price-asc') {
-                filtered.sort(function (a, b) {
-                    return parseInt(a.getAttribute('data-price') || '0') - parseInt(b.getAttribute('data-price') || '0');
-                });
-            } else if (sort === 'price-desc') {
-                filtered.sort(function (a, b) {
-                    return parseInt(b.getAttribute('data-price') || '0') - parseInt(a.getAttribute('data-price') || '0');
-                });
-            }
+        function updateProductsUrl(params) {
+            var cleanParams = new URLSearchParams(params.toString());
+            cleanParams.delete('action');
+            cleanParams.delete('nonce');
+            var nextUrl = window.location.pathname + (cleanParams.toString() ? '?' + cleanParams.toString() : '');
+            window.history.replaceState({}, '', nextUrl);
+        }
 
-            prodCards.forEach(function (card) {
-                card.style.display = 'none';
-            });
-
-            filtered.forEach(function (card, index) {
-                card.style.display = '';
+        function revealNewProductCards() {
+            Array.prototype.slice.call(prodGrid.querySelectorAll('.prod-card')).forEach(function (card, index) {
+                card.classList.add('visible');
                 card.style.opacity = '0';
-                card.style.transform = 'translateY(20px)';
-                setTimeout(function () {
-                    card.style.transition = 'opacity 0.4s ease, transform 0.4s ease';
+                card.style.transform = 'translateY(16px)';
+                window.setTimeout(function () {
+                    card.style.transition = 'opacity 0.32s ease, transform 0.32s ease';
                     card.style.opacity = '1';
                     card.style.transform = 'translateY(0)';
-                }, index * 60);
+                }, Math.min(index * 35, 280));
             });
         }
 
+        function runProductsAjax() {
+            var params = getProductsParams();
+            if (prodAjaxController) { prodAjaxController.abort(); }
+            prodAjaxController = new AbortController();
+            setProductsLoading(true);
+
+            fetch(computechTheme.ajaxUrl + '?' + params.toString(), {
+                method: 'GET',
+                credentials: 'same-origin',
+                signal: prodAjaxController.signal
+            })
+                .then(function (response) { return response.json(); })
+                .then(function (payload) {
+                    if (!payload || !payload.success || !payload.data) { throw new Error('Invalid response'); }
+                    prodGrid.innerHTML = payload.data.html || '';
+                    if (prodPagination) {
+                        prodPagination.outerHTML = payload.data.pagination || '';
+                        prodPagination = document.querySelector('.prod-grid-section .woocommerce-pagination');
+                    } else if (payload.data.pagination) {
+                        prodGrid.insertAdjacentHTML('afterend', payload.data.pagination);
+                        prodPagination = document.querySelector('.prod-grid-section .woocommerce-pagination');
+                    }
+                    revealNewProductCards();
+                    updateProductsUrl(params);
+                })
+                .catch(function (error) {
+                    if (error && error.name === 'AbortError') { return; }
+                    prodGrid.innerHTML = '<div class="wp-product-empty"><h2>تعذر تحميل النتائج</h2><p>راجع الاتصال أو جرّب مرة أخرى.</p></div>';
+                })
+                .finally(function () {
+                    setProductsLoading(false);
+                });
+        }
+
+        function scheduleProductsAjax(delay) {
+            if (prodAjaxTimer) { window.clearTimeout(prodAjaxTimer); }
+            prodAjaxTimer = window.setTimeout(runProductsAjax, delay || 0);
+        }
+
+        prodFilterForm.addEventListener('submit', function (event) {
+            event.preventDefault();
+            scheduleProductsAjax(0);
+        });
+
+        prodFilterForm.addEventListener('change', function () {
+            scheduleProductsAjax(120);
+        });
+
         if (prodSearchInput) {
-            prodSearchInput.addEventListener('input', filterProducts);
+            prodSearchInput.addEventListener('input', function () {
+                scheduleProductsAjax(280);
+            });
         }
-        if (prodCategoryFilter) {
-            prodCategoryFilter.addEventListener('change', filterProducts);
+
+        var clearProductsBtn = prodFilterForm.querySelector('.prod-btn-clear');
+        if (clearProductsBtn) {
+            clearProductsBtn.addEventListener('click', function (event) {
+                event.preventDefault();
+                prodFilterForm.reset();
+                Array.prototype.slice.call(prodFilterForm.querySelectorAll('select')).forEach(function (select) {
+                    select.value = 'all';
+                });
+                scheduleProductsAjax(0);
+            });
         }
-        if (prodStatusFilter) {
-            prodStatusFilter.addEventListener('change', filterProducts);
-        }
-        if (prodSortFilter) {
-            prodSortFilter.addEventListener('change', filterProducts);
-        }
-        filterProducts();
+
+        document.addEventListener('click', function (event) {
+            var link = event.target.closest('.prod-grid-section .woocommerce-pagination a');
+            if (!link) { return; }
+            event.preventDefault();
+            var url = new URL(link.href, window.location.origin);
+            var pageMatch = url.pathname.match(/page\/(\d+)/);
+            var paged = pageMatch ? pageMatch[1] : (url.searchParams.get('paged') || '1');
+            var hiddenPaged = prodFilterForm.querySelector('input[name="paged"]');
+            if (!hiddenPaged) {
+                hiddenPaged = document.createElement('input');
+                hiddenPaged.type = 'hidden';
+                hiddenPaged.name = 'paged';
+                prodFilterForm.appendChild(hiddenPaged);
+            }
+            hiddenPaged.value = paged;
+            scheduleProductsAjax(0);
+        });
+
+        revealNewProductCards();
     }
 
     /* Products Page - Scroll Animations */

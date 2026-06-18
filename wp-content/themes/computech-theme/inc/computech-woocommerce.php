@@ -682,10 +682,11 @@ function computech_wc_render_categories_page(): void {
 }
 
 function computech_wc_product_query_args_from_request(int $per_page = 12): array {
-    $paged = max(1, (int) get_query_var('paged'), (int) get_query_var('page'));
+    $paged = max(1, (int) get_query_var('paged'), (int) get_query_var('page'), (int) computech_wc_get_request('paged', '1'));
     $search = computech_wc_get_request(computech_wc_product_search_query_var(), computech_wc_get_request('s', ''));
     $category = computech_wc_get_request('product_cat', computech_wc_get_request('category', ''));
     $stock = computech_wc_get_request('stock_status', '');
+    $product_condition = computech_wc_get_request('product_condition', computech_wc_get_request('status', ''));
     $sort = computech_wc_get_request('sort', 'newest');
     $min_price = computech_wc_clean_price_request('min_price');
     $max_price = computech_wc_clean_price_request('max_price');
@@ -706,6 +707,9 @@ function computech_wc_product_query_args_from_request(int $per_page = 12): array
     $meta_query = array('relation' => 'AND');
     if ($stock !== '' && $stock !== 'all') {
         $meta_query[] = array('key' => '_stock_status', 'value' => $stock, 'compare' => '=');
+    }
+    if (in_array($product_condition, array('new', 'imported'), true)) {
+        $meta_query[] = array('key' => '_computech_wc_condition', 'value' => $product_condition, 'compare' => '=');
     }
     if ($min_price !== '' || $max_price !== '') {
         $range = array('key' => '_price', 'type' => 'NUMERIC');
@@ -755,24 +759,66 @@ function computech_wc_render_products_filters(): void {
     $search_key = computech_wc_product_search_query_var();
     $selected_category = computech_wc_get_request('product_cat', computech_wc_get_request('category', 'all'));
     $selected_stock = computech_wc_get_request('stock_status', 'all');
+    $selected_condition = computech_wc_get_request('product_condition', computech_wc_get_request('status', 'all'));
     $selected_sort = computech_wc_get_request('sort', 'newest');
     $terms = taxonomy_exists('product_cat') ? get_terms(array('taxonomy' => 'product_cat', 'hide_empty' => false)) : array();
     ?>
-    <section class="prod-filters"><div class="prod-container"><form class="prod-filters-bar computech-wc-filters" method="get" action="<?php echo esc_url(computech_wc_products_page_url()); ?>">
-        <div class="prod-filter-group prod-filter-search"><div class="prod-filter-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg></div><input type="text" name="<?php echo esc_attr($search_key); ?>" placeholder="ابحث عن منتج..." class="prod-filter-input" value="<?php echo esc_attr(computech_wc_get_request($search_key, computech_wc_get_request('s', ''))); ?>"></div>
-        <div class="prod-filter-group"><select name="product_cat" class="prod-filter-select"><option value="all">كل الأقسام</option><?php if (!is_wp_error($terms)) { foreach ($terms as $term) { if ($term instanceof WP_Term) { echo '<option value="' . esc_attr($term->slug) . '" ' . selected($selected_category, $term->slug, false) . '>' . esc_html($term->name) . '</option>'; } } } ?></select></div>
-        <div class="prod-filter-group"><select name="stock_status" class="prod-filter-select"><option value="all">كل التوفر</option><option value="instock" <?php selected($selected_stock, 'instock'); ?>>متوفر</option><option value="outofstock" <?php selected($selected_stock, 'outofstock'); ?>>غير متوفر</option><option value="onbackorder" <?php selected($selected_stock, 'onbackorder'); ?>>طلب مسبق</option></select></div>
-        <div class="prod-filter-group"><input type="number" name="min_price" class="prod-filter-input" placeholder="أقل سعر" value="<?php echo esc_attr(computech_wc_clean_price_request('min_price')); ?>"></div>
-        <div class="prod-filter-group"><input type="number" name="max_price" class="prod-filter-input" placeholder="أعلى سعر" value="<?php echo esc_attr(computech_wc_clean_price_request('max_price')); ?>"></div>
+    <section class="prod-filters"><div class="prod-container"><form class="prod-filters-bar computech-wc-filters" method="get" action="<?php echo esc_url(computech_wc_products_page_url()); ?>" data-ajax-filter="1">
+        <div class="prod-filter-group prod-filter-search"><div class="prod-filter-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg></div><input id="prodSearchInput" type="text" name="<?php echo esc_attr($search_key); ?>" placeholder="ابحث عن منتج..." class="prod-filter-input" value="<?php echo esc_attr(computech_wc_get_request($search_key, computech_wc_get_request('s', ''))); ?>" autocomplete="off"></div>
+        <div class="prod-filter-group"><select id="prodCategoryFilter" name="product_cat" class="prod-filter-select"><option value="all">كل الأقسام</option><?php if (!is_wp_error($terms)) { foreach ($terms as $term) { if ($term instanceof WP_Term) { echo '<option value="' . esc_attr($term->slug) . '" ' . selected($selected_category, $term->slug, false) . '>' . esc_html($term->name) . '</option>'; } } } ?></select></div>
+        <div class="prod-filter-group"><select id="prodConditionFilter" name="product_condition" class="prod-filter-select"><option value="all">كل الحالات</option><option value="new" <?php selected($selected_condition, 'new'); ?>>جديد</option><option value="imported" <?php selected($selected_condition, 'imported'); ?>>مستورد</option></select></div>
+        <div class="prod-filter-group"><select id="prodStockFilter" name="stock_status" class="prod-filter-select"><option value="all">كل التوفر</option><option value="instock" <?php selected($selected_stock, 'instock'); ?>>متوفر</option><option value="outofstock" <?php selected($selected_stock, 'outofstock'); ?>>غير متوفر</option><option value="onbackorder" <?php selected($selected_stock, 'onbackorder'); ?>>طلب مسبق</option></select></div>
+        <div class="prod-filter-group prod-price-filter"><input type="number" name="min_price" class="prod-filter-input" placeholder="أقل سعر" value="<?php echo esc_attr(computech_wc_clean_price_request('min_price')); ?>"></div>
+        <div class="prod-filter-group prod-price-filter"><input type="number" name="max_price" class="prod-filter-input" placeholder="أعلى سعر" value="<?php echo esc_attr(computech_wc_clean_price_request('max_price')); ?>"></div>
         <?php foreach (wc_get_attribute_taxonomies() ?: array() as $attribute) : $taxonomy = wc_attribute_taxonomy_name($attribute->attribute_name); if (!taxonomy_exists($taxonomy)) { continue; } $attr_terms = get_terms(array('taxonomy' => $taxonomy, 'hide_empty' => false)); if (is_wp_error($attr_terms) || !$attr_terms) { continue; } $key = 'filter_' . $taxonomy; $selected = computech_wc_get_request($key, 'all'); ?>
-            <div class="prod-filter-group"><select name="<?php echo esc_attr($key); ?>" class="prod-filter-select"><option value="all"><?php echo esc_html(wc_attribute_label($taxonomy)); ?></option><?php foreach ($attr_terms as $term) { if ($term instanceof WP_Term) { echo '<option value="' . esc_attr($term->slug) . '" ' . selected($selected, $term->slug, false) . '>' . esc_html($term->name) . '</option>'; } } ?></select></div>
+            <div class="prod-filter-group prod-attribute-filter"><select name="<?php echo esc_attr($key); ?>" class="prod-filter-select"><option value="all"><?php echo esc_html(wc_attribute_label($taxonomy)); ?></option><?php foreach ($attr_terms as $term) { if ($term instanceof WP_Term) { echo '<option value="' . esc_attr($term->slug) . '" ' . selected($selected, $term->slug, false) . '>' . esc_html($term->name) . '</option>'; } } ?></select></div>
         <?php endforeach; ?>
-        <div class="prod-filter-group"><select name="sort" class="prod-filter-select"><option value="newest" <?php selected($selected_sort, 'newest'); ?>>الأحدث</option><option value="price-asc" <?php selected($selected_sort, 'price-asc'); ?>>السعر الأقل</option><option value="price-desc" <?php selected($selected_sort, 'price-desc'); ?>>السعر الأعلى</option><option value="popular" <?php selected($selected_sort, 'popular'); ?>>الأكثر مبيعًا</option></select></div>
+        <div class="prod-filter-group"><select id="prodSortFilter" name="sort" class="prod-filter-select"><option value="newest" <?php selected($selected_sort, 'newest'); ?>>الأحدث</option><option value="price-asc" <?php selected($selected_sort, 'price-asc'); ?>>السعر الأقل</option><option value="price-desc" <?php selected($selected_sort, 'price-desc'); ?>>السعر الأعلى</option><option value="popular" <?php selected($selected_sort, 'popular'); ?>>الأكثر مبيعًا</option></select></div>
         <button type="submit" class="prod-card-btn prod-btn-details">تصفية</button>
         <a href="<?php echo esc_url(computech_wc_products_page_url()); ?>" class="prod-card-btn prod-btn-clear">مسح</a>
     </form></div></section>
     <?php
 }
+
+
+function computech_wc_ajax_filter_products(): void {
+    if (!check_ajax_referer('computech_products_filter', 'nonce', false)) {
+        wp_send_json_error(array('message' => 'Invalid nonce'), 403);
+    }
+    if (!computech_wc_active()) {
+        wp_send_json_error(array('message' => 'WooCommerce inactive'), 400);
+    }
+
+    $query_args = computech_wc_product_query_args_from_request(12);
+    $products_query = new WP_Query($query_args);
+
+    ob_start();
+    if ($products_query->have_posts()) {
+        while ($products_query->have_posts()) {
+            $products_query->the_post();
+            computech_wc_product_card(get_post());
+        }
+        wp_reset_postdata();
+    } else {
+        echo '<div class="wp-product-empty"><h2>لا توجد منتجات</h2><p>جرّب تغيير كلمات البحث أو الفلاتر.</p></div>';
+    }
+    $html = ob_get_clean();
+
+    $pagination = paginate_links(array(
+        'total' => $products_query->max_num_pages,
+        'current' => max(1, (int) get_query_var('paged'), (int) get_query_var('page'), (int) computech_wc_get_request('paged', '1')),
+        'type' => 'list',
+        'add_args' => array_map('sanitize_text_field', wp_unslash($_GET)),
+    ));
+
+    wp_send_json_success(array(
+        'html' => $html,
+        'count' => (int) $products_query->found_posts,
+        'pagination' => $pagination ? '<nav class="woocommerce-pagination">' . wp_kses_post($pagination) . '</nav>' : '',
+    ));
+}
+add_action('wp_ajax_computech_filter_products', 'computech_wc_ajax_filter_products');
+add_action('wp_ajax_nopriv_computech_filter_products', 'computech_wc_ajax_filter_products');
 
 function computech_wc_render_category_archive(WP_Term $term): void {
     $visibility = computech_wc_term_meta((int) $term->term_id, '_computech_wc_category_visibility', 'visible');
