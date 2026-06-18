@@ -14756,6 +14756,19 @@ body.home .needs-section.computech-dynamic-needs .need-card-image img {
     height: 26px;
     color: currentColor;
 }
+.ct-service-icon-inner img {
+    width: 30px;
+    height: 30px;
+    object-fit: contain;
+    display: block;
+}
+.ct-service-icon-inner-image {
+    padding: 0;
+}
+.ct-service-icon-ready,
+.ct-service-icon-image {
+    margin-top: 14px !important;
+}
 .ct-db-service-card .svc-card-title {
     display: -webkit-box;
     -webkit-line-clamp: 2;

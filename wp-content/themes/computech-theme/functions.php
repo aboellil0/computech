@@ -6491,10 +6491,15 @@ add_action('add_meta_boxes', 'computech_add_service_metaboxes');
 
 function computech_service_metabox(WP_Post $post): void {
     computech_admin_editor_styles_once();
+    wp_enqueue_media();
     wp_nonce_field('computech_save_service', 'computech_service_nonce');
     $desc = (string)get_post_meta($post->ID, '_computech_service_desc', true);
+    $icon_source = sanitize_key((string)get_post_meta($post->ID, '_computech_service_icon_source', true));
+    if (!in_array($icon_source, array('icon', 'image'), true)) { $icon_source = 'icon'; }
     $icon = sanitize_key((string)get_post_meta($post->ID, '_computech_service_icon', true));
     if ($icon === '') { $icon = 'support'; }
+    $icon_image_id = absint(get_post_meta($post->ID, '_computech_service_icon_image_id', true));
+    $icon_image = $icon_image_id ? wp_get_attachment_image_url($icon_image_id, 'thumbnail') : '';
     $color = (string)get_post_meta($post->ID, '_computech_service_icon_color', true);
     if ($color === '') { $color = '#2563eb'; }
     $link_type = sanitize_key((string)get_post_meta($post->ID, '_computech_service_link_type', true));
@@ -6518,9 +6523,17 @@ function computech_service_metabox(WP_Post $post): void {
                 <div class="ct-admin-section-head"><div><h3>1. بيانات الخدمة</h3></div></div>
                 <div class="ct-admin-section-body">
                     <p class="ct-field"><label>الوصف</label><textarea name="_computech_service_desc" rows="4" class="widefat" placeholder="وصف الخدمة"><?php echo esc_textarea($desc); ?></textarea></p>
-                    <div class="ct-grid ct-grid-2">
-                        <p class="ct-field"><label>الأيقونة</label><?php echo computech_service_icon_select('_computech_service_icon', $icon); ?></p>
-                        <p class="ct-field"><label>لون الأيقونة</label><input type="color" name="_computech_service_icon_color" value="<?php echo esc_attr($color); ?>" class="widefat"></p>
+                    <div class="ct-grid ct-grid-2" data-ct-service-icon-card>
+                        <p class="ct-field"><label>نوع الأيقونة</label><select name="_computech_service_icon_source" class="widefat ct-service-icon-source"><option value="icon" <?php selected($icon_source, 'icon'); ?>>أيقونة جاهزة</option><option value="image" <?php selected($icon_source, 'image'); ?>>صورة مرفوعة</option></select></p>
+                        <div class="ct-field ct-service-icon-ready"><label class="ct-field-label">الأيقونة الجاهزة</label><?php echo computech_service_icon_select('_computech_service_icon', $icon); ?></div>
+                        <p class="ct-field ct-service-icon-color-field"><label>لون الأيقونة</label><input type="color" name="_computech_service_icon_color" value="<?php echo esc_attr($color); ?>" class="widefat"></p>
+                    </div>
+                    <div class="ct-service-icon-image ct-field ct-media-field" data-ct-media-field data-title="اختيار صورة أيقونة الخدمة" data-button="استخدام الصورة">
+                        <label>صورة الأيقونة</label>
+                        <input type="hidden" name="_computech_service_icon_image_id" value="<?php echo esc_attr((string)$icon_image_id); ?>">
+                        <div class="ct-media-preview" data-ct-media-preview><?php echo $icon_image ? '<img src="' . esc_url($icon_image) . '" alt="">' : '<span class="ct-media-empty">لم يتم اختيار صورة</span>'; ?></div>
+                        <div class="ct-media-actions"><button type="button" class="button" data-ct-select-media>اختيار / تغيير الصورة</button><button type="button" class="button-link-delete" data-ct-remove-media>إزالة الصورة</button></div>
+                        <span class="ct-help" data-ct-media-info>اختار صورة صغيرة تظهر داخل دائرة الأيقونة بدل الأيقونة الجاهزة.</span>
                     </div>
                 </div>
             </section>
@@ -6558,11 +6571,25 @@ function computech_service_metabox(WP_Post $post): void {
             if (categoryField) { categoryField.style.display = type === 'category' ? '' : 'none'; }
             if (urlField) { urlField.style.display = type === 'custom' ? '' : 'none'; }
         }
+        function updateIconFields(){
+            var source = root.querySelector('.ct-service-icon-source');
+            var value = source ? source.value : 'icon';
+            var ready = root.querySelector('.ct-service-icon-ready');
+            var color = root.querySelector('.ct-service-icon-color-field');
+            var image = root.querySelector('.ct-service-icon-image');
+            if (ready) { ready.style.display = value === 'icon' ? '' : 'none'; }
+            if (color) { color.style.display = value === 'icon' ? '' : 'none'; }
+            if (image) { image.style.display = value === 'image' ? '' : 'none'; }
+        }
         var select = root.querySelector('.ct-service-link-type');
         if (select) { select.addEventListener('change', updateFields); }
+        var iconSource = root.querySelector('.ct-service-icon-source');
+        if (iconSource) { iconSource.addEventListener('change', updateIconFields); }
         updateFields();
+        updateIconFields();
     })();
     </script>
+    <?php computech_admin_media_script_once(); ?>
     <?php
 }
 
@@ -6574,9 +6601,13 @@ function computech_save_service(int $post_id): void {
     if (!current_user_can('edit_post', $post_id)) { return; }
 
     update_post_meta($post_id, '_computech_service_desc', sanitize_textarea_field(wp_unslash($_POST['_computech_service_desc'] ?? '')));
+    $icon_source = sanitize_key(wp_unslash($_POST['_computech_service_icon_source'] ?? 'icon'));
+    if (!in_array($icon_source, array('icon', 'image'), true)) { $icon_source = 'icon'; }
+    update_post_meta($post_id, '_computech_service_icon_source', $icon_source);
     $icon = sanitize_key(wp_unslash($_POST['_computech_service_icon'] ?? 'support'));
     $icons = computech_home_extra_icon_choices();
     update_post_meta($post_id, '_computech_service_icon', array_key_exists($icon, $icons) ? $icon : 'support');
+    update_post_meta($post_id, '_computech_service_icon_image_id', (string)absint($_POST['_computech_service_icon_image_id'] ?? 0));
     $color = sanitize_hex_color(wp_unslash($_POST['_computech_service_icon_color'] ?? '#2563eb')) ?: '#2563eb';
     update_post_meta($post_id, '_computech_service_icon_color', $color);
     $type = sanitize_key(wp_unslash($_POST['_computech_service_link_type'] ?? 'none'));
@@ -6650,6 +6681,18 @@ function computech_service_desc(WP_Post $post): string {
 }
 
 function computech_service_icon_html(WP_Post $post): string {
+    $source = sanitize_key((string)get_post_meta($post->ID, '_computech_service_icon_source', true));
+    if ($source === 'image') {
+        $image_id = absint(get_post_meta($post->ID, '_computech_service_icon_image_id', true));
+        if ($image_id > 0) {
+            $image_url = wp_get_attachment_image_url($image_id, 'thumbnail');
+            if ($image_url) {
+                $alt = trim((string)get_post_meta($image_id, '_wp_attachment_image_alt', true));
+                if ($alt === '') { $alt = get_the_title($post); }
+                return '<span class="ct-service-icon-inner ct-service-icon-inner-image"><img src="' . esc_url($image_url) . '" alt="' . esc_attr($alt) . '" loading="lazy"></span>';
+            }
+        }
+    }
     $icon = sanitize_key((string)get_post_meta($post->ID, '_computech_service_icon', true));
     if ($icon === '') { $icon = 'support'; }
     $color = sanitize_hex_color((string)get_post_meta($post->ID, '_computech_service_icon_color', true)) ?: '#2563eb';
