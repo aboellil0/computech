@@ -15718,3 +15718,36 @@ body.home .contact-section .contact-panel .contact-social-btn span {
     object-fit: contain;
     display: block;
 }
+
+/* Computech final fix: topbar slider must show exact slots only */
+.computech-topbar,
+.computech-topbar .benefits-slider {
+    overflow: hidden !important;
+}
+
+.computech-topbar .benefits-slider {
+    display: block !important;
+    max-width: var(--ct-shell-max, 1440px) !important;
+    margin-inline: auto !important;
+}
+
+.computech-topbar .benefits-track {
+    flex-wrap: nowrap !important;
+    justify-content: flex-start !important;
+    align-items: center !important;
+    overflow: visible !important;
+}
+
+.computech-topbar .benefits-track > .benefit-item {
+    flex-shrink: 0 !important;
+    flex-grow: 0 !important;
+    min-width: 0 !important;
+    overflow: hidden !important;
+    white-space: nowrap !important;
+}
+
+.computech-topbar .benefit-text {
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    white-space: nowrap !important;
+}

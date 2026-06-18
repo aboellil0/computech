@@ -871,12 +871,14 @@
             const slideWidth = sliderWidth > 0 ? (sliderWidth / visible) : (slides[0].getBoundingClientRect().width || 0);
 
             slides.forEach(function (slide) {
-                slide.style.flex = '0 0 ' + slideWidth + 'px';
-                slide.style.width = slideWidth + 'px';
-                slide.style.maxWidth = slideWidth + 'px';
+                slide.style.setProperty('flex', '0 0 ' + slideWidth + 'px', 'important');
+                slide.style.setProperty('width', slideWidth + 'px', 'important');
+                slide.style.setProperty('max-width', slideWidth + 'px', 'important');
+                slide.style.setProperty('min-width', slideWidth + 'px', 'important');
             });
 
-            track.style.width = (slideWidth * slides.length) + 'px';
+            track.style.setProperty('width', (slideWidth * slides.length) + 'px', 'important');
+            track.style.setProperty('min-width', (slideWidth * slides.length) + 'px', 'important');
             track.style.transform = 'translateX(' + (-topbarIndex * slideWidth) + 'px)';
         }
 
