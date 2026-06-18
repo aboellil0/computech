@@ -1072,3 +1072,34 @@
 
 
 })();
+
+/* Normalize WooCommerce AJAX "View cart" link inside custom product cards */
+(function () {
+    'use strict';
+
+    function normalizeAddedToCartLinks(context) {
+        var root = context && context.querySelectorAll ? context : document;
+        root.querySelectorAll('.prod-card-actions a.added_to_cart.wc-forward').forEach(function (link) {
+            link.classList.add('prod-card-view-cart');
+            link.textContent = 'عرض السلة';
+            link.setAttribute('aria-label', 'عرض السلة');
+            link.setAttribute('title', 'عرض السلة');
+        });
+    }
+
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', function () {
+            normalizeAddedToCartLinks(document);
+        });
+    } else {
+        normalizeAddedToCartLinks(document);
+    }
+
+    if (window.jQuery) {
+        window.jQuery(document.body).on('added_to_cart wc_fragments_refreshed wc_fragments_loaded', function () {
+            window.setTimeout(function () {
+                normalizeAddedToCartLinks(document);
+            }, 0);
+        });
+    }
+})();

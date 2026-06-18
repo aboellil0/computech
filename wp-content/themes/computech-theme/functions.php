@@ -351,6 +351,7 @@ function computech_enqueue_assets(): void {
 
     if (function_exists('is_woocommerce')) {
         wp_enqueue_script('wc-add-to-cart');
+        wp_add_inline_script('wc-add-to-cart', 'if (window.wc_add_to_cart_params) { window.wc_add_to_cart_params.i18n_view_cart = "عرض السلة"; }', 'after');
         if (wp_script_is('wc-cart-fragments', 'registered')) {
             wp_enqueue_script('wc-cart-fragments');
         }
@@ -7992,3 +7993,239 @@ function computech_handle_rest_footer_save(): void {
     add_settings_error('computech_rest_footer_messages', 'saved', 'تم حفظ باقي الفوتر بنجاح.', 'updated');
 }
 add_action('admin_init', 'computech_handle_rest_footer_save');
+
+/**
+ * Make default WooCommerce cart page title Arabic when the page is still named Cart.
+ */
+function computech_cart_page_title_arabic($title, $post_id = 0) {
+    if (is_admin() || !function_exists('is_cart') || !is_cart()) {
+        return $title;
+    }
+
+    $queried_id = (int) get_queried_object_id();
+    if ($queried_id > 0 && (int) $post_id === $queried_id && trim((string) $title) === 'Cart') {
+        return 'سلة المشتريات';
+    }
+
+    return $title;
+}
+add_filter('the_title', 'computech_cart_page_title_arabic', 10, 2);
+
+/**
+ * Make default WooCommerce checkout page title Arabic when the page is still named Checkout.
+ */
+function computech_checkout_page_title_arabic($title, $post_id = 0) {
+    if (is_admin() || !function_exists('is_checkout') || !is_checkout() || (function_exists('is_order_received_page') && is_order_received_page())) {
+        return $title;
+    }
+
+    $queried_id = (int) get_queried_object_id();
+    if ($queried_id > 0 && (int) $post_id === $queried_id && trim((string) $title) === 'Checkout') {
+        return 'إتمام الطلب';
+    }
+
+    return $title;
+}
+add_filter('the_title', 'computech_checkout_page_title_arabic', 10, 2);
+
+/**
+ * Arabic checkout order button text.
+ */
+function computech_checkout_order_button_text($button_text) {
+    return 'تأكيد الطلب';
+}
+add_filter('woocommerce_order_button_text', 'computech_checkout_order_button_text', 20);
+
+
+/**
+ * Force WooCommerce Cart / Checkout pages to use the classic shortcode output.
+ * This makes our theme templates and Arabic styling apply even if the page was created with WooCommerce Blocks.
+ */
+function computech_use_classic_woocommerce_cart_checkout_pages($content) {
+    if (is_admin() || !is_main_query() || !in_the_loop() || !function_exists('is_cart') || !function_exists('is_checkout')) {
+        return $content;
+    }
+
+    if (is_cart()) {
+        return '[woocommerce_cart]';
+    }
+
+    if (is_checkout()) {
+        return '[woocommerce_checkout]';
+    }
+
+    return $content;
+}
+add_filter('the_content', 'computech_use_classic_woocommerce_cart_checkout_pages', 5);
+
+/**
+ * Arabic front-end labels for WooCommerce cart and checkout screens.
+ */
+function computech_woocommerce_front_arabic_text($translated, $text, $domain) {
+    if (is_admin() || 'woocommerce' !== $domain) {
+        return $translated;
+    }
+
+    $map = array(
+        'Cart' => 'سلة المشتريات',
+        'Checkout' => 'إتمام الطلب',
+        'Product' => 'المنتج',
+        'Products' => 'المنتجات',
+        'Price' => 'السعر',
+        'Quantity' => 'الكمية',
+        'Subtotal' => 'الإجمالي الفرعي',
+        'Total' => 'الإجمالي',
+        'Cart totals' => 'ملخص السلة',
+        'Cart Totals' => 'ملخص السلة',
+        'Proceed to checkout' => 'إتمام الطلب',
+        'Proceed to Checkout' => 'إتمام الطلب',
+        'Update cart' => 'تحديث السلة',
+        'Apply coupon' => 'تطبيق الكوبون',
+        'Coupon code' => 'كود الخصم',
+        'Coupon:' => 'كود الخصم:',
+        'Coupon' => 'كود الخصم',
+        'Remove item' => 'حذف المنتج',
+        'Remove this item' => 'حذف هذا المنتج',
+        'Return to shop' => 'العودة للمتجر',
+        'View cart' => 'عرض السلة',
+        'Add to cart' => 'إضافة للسلة',
+        'Added to cart' => 'تمت الإضافة للسلة',
+        'Your cart is currently empty.' => 'سلة المشتريات فارغة حاليًا.',
+        'Your order' => 'ملخص الطلب',
+        'Billing details' => 'بيانات العميل',
+        'Billing &amp; Shipping' => 'بيانات العميل والشحن',
+        'Billing & Shipping' => 'بيانات العميل والشحن',
+        'Additional information' => 'ملاحظات إضافية',
+        'Ship to a different address?' => 'الشحن إلى عنوان مختلف؟',
+        'Payment' => 'طريقة الدفع',
+        'Place order' => 'تأكيد الطلب',
+        'Have a coupon?' => 'لديك كوبون خصم؟',
+        'Click here to enter your code' => 'اضغط هنا لإدخال الكود',
+        'Returning customer?' => 'لديك حساب بالفعل؟',
+        'Click here to login' => 'اضغط هنا لتسجيل الدخول',
+        'Shipping' => 'الشحن',
+        'Free shipping' => 'شحن مجاني',
+        'Flat rate' => 'شحن ثابت',
+        'Cash on delivery' => 'الدفع عند الاستلام',
+        'Direct bank transfer' => 'تحويل بنكي مباشر',
+        'Check payments' => 'الدفع بشيك',
+        'First name' => 'الاسم الأول',
+        'Last name' => 'اسم العائلة',
+        'Company name' => 'اسم الشركة',
+        'Country / Region' => 'الدولة / المنطقة',
+        'Street address' => 'العنوان',
+        'Town / City' => 'المدينة',
+        'State / County' => 'المحافظة / المنطقة',
+        'Postcode / ZIP' => 'الرمز البريدي',
+        'Phone' => 'رقم الهاتف',
+        'Email address' => 'البريد الإلكتروني',
+        'Order notes' => 'ملاحظات الطلب',
+        'Notes about your order, e.g. special notes for delivery.' => 'اكتب أي ملاحظات مهمة بخصوص الطلب أو التوصيل.',
+        'Apartment, suite, unit, etc.' => 'رقم الشقة أو الدور أو أي تفاصيل إضافية',
+        'House number and street name' => 'اسم الشارع ورقم المبنى',
+        'Save %s' => 'وفرت %s',
+        'estimated for %s' => 'تقديري لـ %s',
+        'Available on backorder' => 'متاح للحجز المسبق',
+        'Shipping options will be updated during checkout.' => 'سيتم تحديث خيارات الشحن أثناء إتمام الطلب.',
+        'Enter your address to view shipping options.' => 'أدخل عنوانك لعرض خيارات الشحن.',
+        'No payment methods are available. This may be an error on our side. Please contact us if you need any help placing your order.' => 'لا توجد طرق دفع متاحة حاليًا. تواصل معنا لمساعدتك في إتمام الطلب.',
+    );
+
+    return array_key_exists($text, $map) ? $map[$text] : $translated;
+}
+add_filter('gettext', 'computech_woocommerce_front_arabic_text', 20, 3);
+
+/**
+ * Arabic checkout fields and placeholders.
+ */
+function computech_woocommerce_arabic_checkout_fields($fields) {
+    $labels = array(
+        'billing_first_name' => array('label' => 'الاسم الأول', 'placeholder' => 'اكتب الاسم الأول'),
+        'billing_last_name' => array('label' => 'اسم العائلة', 'placeholder' => 'اكتب اسم العائلة'),
+        'billing_company' => array('label' => 'اسم الشركة', 'placeholder' => 'اختياري'),
+        'billing_country' => array('label' => 'الدولة / المنطقة'),
+        'billing_address_1' => array('label' => 'العنوان', 'placeholder' => 'اسم الشارع ورقم المبنى'),
+        'billing_address_2' => array('label' => 'تفاصيل إضافية للعنوان', 'placeholder' => 'رقم الشقة أو الدور أو علامة مميزة'),
+        'billing_city' => array('label' => 'المدينة', 'placeholder' => 'اكتب المدينة'),
+        'billing_state' => array('label' => 'المحافظة / المنطقة', 'placeholder' => 'اكتب المحافظة أو المنطقة'),
+        'billing_postcode' => array('label' => 'الرمز البريدي', 'placeholder' => 'اختياري'),
+        'billing_phone' => array('label' => 'رقم الهاتف', 'placeholder' => 'اكتب رقم الهاتف'),
+        'billing_email' => array('label' => 'البريد الإلكتروني', 'placeholder' => 'name@example.com'),
+        'shipping_first_name' => array('label' => 'الاسم الأول', 'placeholder' => 'اكتب الاسم الأول'),
+        'shipping_last_name' => array('label' => 'اسم العائلة', 'placeholder' => 'اكتب اسم العائلة'),
+        'shipping_company' => array('label' => 'اسم الشركة', 'placeholder' => 'اختياري'),
+        'shipping_country' => array('label' => 'الدولة / المنطقة'),
+        'shipping_address_1' => array('label' => 'عنوان الشحن', 'placeholder' => 'اسم الشارع ورقم المبنى'),
+        'shipping_address_2' => array('label' => 'تفاصيل إضافية للعنوان', 'placeholder' => 'رقم الشقة أو الدور أو علامة مميزة'),
+        'shipping_city' => array('label' => 'مدينة الشحن', 'placeholder' => 'اكتب المدينة'),
+        'shipping_state' => array('label' => 'المحافظة / المنطقة', 'placeholder' => 'اكتب المحافظة أو المنطقة'),
+        'shipping_postcode' => array('label' => 'الرمز البريدي', 'placeholder' => 'اختياري'),
+        'order_comments' => array('label' => 'ملاحظات الطلب', 'placeholder' => 'اكتب أي ملاحظات مهمة بخصوص الطلب أو التوصيل.'),
+    );
+
+    foreach ($fields as $group => $group_fields) {
+        if (!is_array($group_fields)) {
+            continue;
+        }
+
+        foreach ($group_fields as $key => $field) {
+            if (!isset($labels[$key])) {
+                continue;
+            }
+
+            if (isset($labels[$key]['label'])) {
+                $fields[$group][$key]['label'] = $labels[$key]['label'];
+            }
+            if (isset($labels[$key]['placeholder'])) {
+                $fields[$group][$key]['placeholder'] = $labels[$key]['placeholder'];
+            }
+        }
+    }
+
+    return $fields;
+}
+add_filter('woocommerce_checkout_fields', 'computech_woocommerce_arabic_checkout_fields', 30);
+
+/**
+ * Arabic default address fields used by billing and shipping forms.
+ */
+function computech_woocommerce_arabic_default_address_fields($fields) {
+    if (isset($fields['first_name'])) {
+        $fields['first_name']['label'] = 'الاسم الأول';
+        $fields['first_name']['placeholder'] = 'اكتب الاسم الأول';
+    }
+    if (isset($fields['last_name'])) {
+        $fields['last_name']['label'] = 'اسم العائلة';
+        $fields['last_name']['placeholder'] = 'اكتب اسم العائلة';
+    }
+    if (isset($fields['company'])) {
+        $fields['company']['label'] = 'اسم الشركة';
+        $fields['company']['placeholder'] = 'اختياري';
+    }
+    if (isset($fields['country'])) {
+        $fields['country']['label'] = 'الدولة / المنطقة';
+    }
+    if (isset($fields['address_1'])) {
+        $fields['address_1']['label'] = 'العنوان';
+        $fields['address_1']['placeholder'] = 'اسم الشارع ورقم المبنى';
+    }
+    if (isset($fields['address_2'])) {
+        $fields['address_2']['label'] = 'تفاصيل إضافية للعنوان';
+        $fields['address_2']['placeholder'] = 'رقم الشقة أو الدور أو علامة مميزة';
+    }
+    if (isset($fields['city'])) {
+        $fields['city']['label'] = 'المدينة';
+        $fields['city']['placeholder'] = 'اكتب المدينة';
+    }
+    if (isset($fields['state'])) {
+        $fields['state']['label'] = 'المحافظة / المنطقة';
+        $fields['state']['placeholder'] = 'اكتب المحافظة أو المنطقة';
+    }
+    if (isset($fields['postcode'])) {
+        $fields['postcode']['label'] = 'الرمز البريدي';
+        $fields['postcode']['placeholder'] = 'اختياري';
+    }
+
+    return $fields;
+}
+add_filter('woocommerce_default_address_fields', 'computech_woocommerce_arabic_default_address_fields', 30);
