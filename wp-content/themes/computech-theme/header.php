@@ -16,6 +16,9 @@ $computech_logo_label = computech_site_text(computech_header_label('logo_aria_la
 $computech_nav_label = computech_header_label('nav_aria_label', 'القائمة الرئيسية');
 $computech_search_label = computech_header_label('search_button_label', 'بحث');
 $computech_cart_label = computech_header_label('cart_label', 'السلة');
+$computech_account_label = computech_header_label('account_label', 'حسابي');
+$computech_account_url = function_exists('computech_account_url') ? computech_account_url() : (function_exists('wc_get_page_permalink') ? wc_get_page_permalink('myaccount') : wp_login_url());
+$computech_show_account_icon = true;
 $computech_mobile_menu_label = computech_header_label('mobile_menu_button_label', 'القائمة');
 $computech_mobile_menu_title = computech_header_label('mobile_menu_title', 'القائمة');
 $computech_mobile_close_label = computech_header_label('mobile_menu_close_label', 'إغلاق');
@@ -49,8 +52,13 @@ $computech_whatsapp_url = $computech_whatsapp_number !== '' ? computech_whatsapp
                         <div class="computech-live-search-results" aria-live="polite"></div>
                     </form>
                 <?php endif; ?>
-                <?php if (computech_header_bool('show_cart')) : ?>
+                <?php if ($computech_show_account_icon || computech_header_bool('show_cart')) : ?>
                     <div class="action-icons">
+                        <?php if ($computech_show_account_icon) : ?>
+                            <a href="<?php echo esc_url($computech_account_url); ?>" class="action-icon account-icon" aria-label="<?php echo esc_attr($computech_account_label); ?>" title="<?php echo esc_attr($computech_account_label); ?>">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 21a8 8 0 0 0-16 0"/><circle cx="12" cy="7" r="4"/></svg>
+                            </a>
+                        <?php endif; ?>
                         <?php if (computech_header_bool('show_cart')) : ?>
                             <a href="<?php echo esc_url(function_exists('wc_get_cart_url') ? wc_get_cart_url() : computech_page_url('products')); ?>" class="action-icon cart-icon" aria-label="<?php echo esc_attr($computech_cart_label); ?>">
                                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg>

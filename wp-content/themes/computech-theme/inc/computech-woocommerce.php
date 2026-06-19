@@ -54,6 +54,65 @@ function computech_wc_products_page_url(): string {
     return home_url('/products/');
 }
 
+/**
+ * Keep WooCommerce as the products data source, but do not use the default
+ * WooCommerce /shop/ archive as the public products page.
+ *
+ * The theme already owns /products/ with page-products.php. Any WooCommerce
+ * generated "shop" links and direct visits to /shop/ should go to that page.
+ */
+function computech_wc_products_page_permalink_direct(): string {
+    $page = function_exists('computech_find_page_by_slug') ? computech_find_page_by_slug('products') : null;
+    if ($page instanceof WP_Post) {
+        $url = get_permalink($page);
+        if ($url) {
+            return (string) $url;
+        }
+    }
+
+    return home_url('/products/');
+}
+
+function computech_wc_replace_shop_permalink_with_products_page($url): string {
+    $products_url = computech_wc_products_page_permalink_direct();
+    return $products_url !== '' ? $products_url : (string) $url;
+}
+add_filter('woocommerce_get_shop_page_permalink', 'computech_wc_replace_shop_permalink_with_products_page', 20, 1);
+add_filter('woocommerce_return_to_shop_redirect', 'computech_wc_replace_shop_permalink_with_products_page', 20, 1);
+
+function computech_wc_redirect_shop_archive_to_products_page(): void {
+    if (is_admin() || wp_doing_ajax() || (defined('REST_REQUEST') && REST_REQUEST)) {
+        return;
+    }
+
+    if (!function_exists('is_shop') || !is_shop()) {
+        return;
+    }
+
+    $target_url = computech_wc_products_page_permalink_direct();
+    if ($target_url === '') {
+        return;
+    }
+
+    $current_path = isset($_SERVER['REQUEST_URI']) ? (string) wp_parse_url((string) wp_unslash($_SERVER['REQUEST_URI']), PHP_URL_PATH) : '';
+    $target_path = (string) wp_parse_url($target_url, PHP_URL_PATH);
+
+    $current_path = trim(rawurldecode($current_path), '/');
+    $target_path = trim(rawurldecode($target_path), '/');
+
+    if ($current_path !== '' && $target_path !== '' && $current_path === $target_path) {
+        return;
+    }
+
+    if (!empty($_GET)) {
+        $target_url = add_query_arg(array_map('sanitize_text_field', wp_unslash($_GET)), $target_url);
+    }
+
+    wp_safe_redirect(esc_url_raw($target_url), 301);
+    exit;
+}
+add_action('template_redirect', 'computech_wc_redirect_shop_archive_to_products_page', 5);
+
 function computech_wc_category_url(WP_Term $term): string {
     $url = get_term_link($term, 'product_cat');
     return is_wp_error($url) ? computech_wc_products_page_url() : (string) $url;
