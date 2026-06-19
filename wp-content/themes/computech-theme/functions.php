@@ -8725,7 +8725,7 @@ function computech_register_about_item_cpts(): void {
             'show_in_menu' => false,
             'menu_icon' => 'dashicons-id-alt',
             'menu_position' => 57,
-            'supports' => array('title', 'thumbnail', 'page-attributes'),
+            'supports' => array('title', 'page-attributes'),
             'capability_type' => 'post',
             'map_meta_cap' => true,
             'show_in_rest' => false,
@@ -8733,6 +8733,13 @@ function computech_register_about_item_cpts(): void {
     }
 }
 add_action('init', 'computech_register_about_item_cpts');
+
+function computech_remove_about_item_featured_image_support(): void {
+    foreach (array_keys(computech_about_item_configs()) as $post_type) {
+        remove_post_type_support($post_type, 'thumbnail');
+    }
+}
+add_action('init', 'computech_remove_about_item_featured_image_support', 99);
 
 function computech_about_admin_menu(): void {
     $capability = computech_admin_capability();
@@ -9046,9 +9053,8 @@ function computech_about_item_metabox(WP_Post $post): void {
                 </div>
             </section>
             <section class="ct-admin-section ct-admin-section-full">
-                <div class="ct-admin-section-head"><div><h3>3. الصورة والظهور</h3></div></div>
+                <div class="ct-admin-section-head"><div><h3>3. الظهور</h3></div></div>
                 <div class="ct-admin-section-body">
-                    <div class="ct-admin-note">يمكنك استخدام Featured Image كصورة احتياطية للعنصر، لكن الأيقونة الأساسية يتم التحكم بها من نوع الأيقونة أعلاه.</div>
                     <div class="ct-admin-note">Published + Public = يظهر. Draft / Pending / Private / Password protected = لا يظهر.</div>
                 </div>
             </section>
